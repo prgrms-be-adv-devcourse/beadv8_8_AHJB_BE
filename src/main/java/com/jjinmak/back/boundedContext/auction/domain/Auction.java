@@ -1,20 +1,26 @@
 package com.jjinmak.back.boundedContext.auction.domain;
 
+import com.jjinmak.back.global.exception.BadRequestException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(uniqueConstraints = @UniqueConstraint(
+        name = "uk_auction_product_round", columnNames = {"product_id", "round"})) //유니크조건
 public class Auction {
     private static final long START_DELAY_HOURS = 1;
+    private static final Set<Integer> ALLOWED_DURATION_DAYS = Set.of(1, 3, 7);
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -33,15 +39,16 @@ public class Auction {
 
     private Long instantWinPrice;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private AuctionDuration duration;
+    private int duration;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(nullable = false)
     private AuctionStatus status;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private FailureReason failureReason;
 
     private Long highestBidPrice;
@@ -75,7 +82,7 @@ public class Auction {
     private LocalDateTime updatedAt;
 
     private Auction(Long productId, UUID sellerId, int round, Long startPrice, Long instantWinPrice,
-                    AuctionDuration duration, LocalDateTime startAt, LocalDateTime endAt) {
+                     int duration, LocalDateTime startAt, LocalDateTime endAt) {
         this.productId = productId;
         this.sellerId = sellerId;
         this.round = round;
@@ -88,22 +95,25 @@ public class Auction {
         this.bidCount = 0;
     }
     public static Auction create(Long productId, UUID sellerId, int round, Long startPrice,
-                                 Long instantWinPrice, AuctionDuration duration, LocalDateTime now) {
-        if (productId == null || sellerId == null || duration == null || now == null) {
-            throw new IllegalArgumentException("경매 생성에 필요한 값이 누락되었습니다.");
+                                 Long instantWinPrice,int duration, LocalDateTime now) {
+        if (productId == null || sellerId == null || now == null) {
+            throw new BadRequestException("AUCTION003","경매 생성에 필요한 값이 누락되었습니다.");
+        }
+        if (!ALLOWED_DURATION_DAYS.contains(duration)) {
+            throw new BadRequestException("AUCTION004","경매 기간은 1일, 3일, 7일 중에서 선택해야 합니다.");
         }
         if (round < 1) {
-            throw new IllegalArgumentException("경매 회차는 1 이상이어야 합니다.");
+            throw new BadRequestException("AUCTION005","경매 회차는 1 이상이어야 합니다.");
         }
         if(startPrice == null || startPrice <= 0){
-            throw new IllegalArgumentException("시작가는 0원보다 커야합니다.");
+            throw new BadRequestException("AUCTION006","시작가는 0원보다 커야합니다.");
         }
         if(instantWinPrice != null && instantWinPrice <= startPrice){
-            throw new IllegalArgumentException("즉시낙찰가는 시작가보다 커야 합니다.");
+            throw new BadRequestException("AUCTION007","즉시낙찰가는 시작가보다 커야 합니다.");
         }
 
         LocalDateTime startAt = now.plusHours(START_DELAY_HOURS);
-        LocalDateTime endAt = startAt.plusDays(duration.getDays());
+        LocalDateTime endAt = startAt.plusDays(duration);
         return new Auction(productId, sellerId, round, startPrice, instantWinPrice,
                 duration, startAt, endAt);
     }
