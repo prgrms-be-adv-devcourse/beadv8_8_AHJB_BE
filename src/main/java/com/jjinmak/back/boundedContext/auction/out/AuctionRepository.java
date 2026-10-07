@@ -13,4 +13,6 @@ public interface AuctionRepository extends JpaRepository<Auction,Long> {
     List<Auction> findByStatusAndStartAtLessThanEqual(AuctionStatus status, LocalDateTime now);
     // 해당 상품의 가장 최근 경매 찾기
     Optional<Auction> findTopByProductIdOrderByRoundDesc(Long productId);
+
+    boolean existsByProductId(Long productId);
 }

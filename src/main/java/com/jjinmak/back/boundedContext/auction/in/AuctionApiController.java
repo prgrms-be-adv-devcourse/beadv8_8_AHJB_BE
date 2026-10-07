@@ -2,7 +2,7 @@ package com.jjinmak.back.boundedContext.auction.in;
 
 import com.jjinmak.back.boundedContext.auction.app.AuctionFacade;
 import com.jjinmak.back.boundedContext.auction.dto.AuctionCreateDto;
-import com.jjinmak.back.boundedContext.auction.in.dto.AuctionCreateRequestDto;
+import com.jjinmak.back.boundedContext.auction.in.dto.AuctionReAuctionRequestDto;
 import com.jjinmak.back.global.rsData.RsData;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ public class AuctionApiController {
     private final UUID sellerDev = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
 
     @PostMapping
-    public ResponseEntity<RsData<Long>> createAuction(@Valid @RequestBody AuctionCreateRequestDto request){
+    public ResponseEntity<RsData<Long>> reAuction(@Valid @RequestBody AuctionReAuctionRequestDto request){
         AuctionCreateDto dto = new AuctionCreateDto(
                 request.productId(),
                 sellerDev,
@@ -33,7 +33,7 @@ public class AuctionApiController {
                 request.instantWinPrice(),
                 request.duration()
         );
-        Long auctionId = auctionFacade.createAuction(dto);
+        Long auctionId = auctionFacade.reAuction(dto);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(new RsData<>(auctionId));
