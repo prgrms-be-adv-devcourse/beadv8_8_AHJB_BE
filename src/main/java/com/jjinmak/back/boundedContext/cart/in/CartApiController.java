@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/cart")
+@RequestMapping("/api/v1/cart")
 public class CartApiController {
 
     private final CartFacade cartFacade;

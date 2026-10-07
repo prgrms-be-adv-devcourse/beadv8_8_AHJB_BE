@@ -35,4 +35,10 @@ public class GlobalExceptionHandler {
         ErrorResponse response = new ErrorResponse(false, "COMMON001", "요청 내용이 잘못됐습니다.");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ErrorResponse> handleBadRequestException(BadRequestException e){
+        ErrorResponse response = new ErrorResponse(false, e.getErrorCode(), e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
 }
