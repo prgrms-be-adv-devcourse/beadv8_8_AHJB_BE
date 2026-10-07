@@ -29,10 +29,10 @@ public class CartCreateCartItemUseCase {
         UUID sellerId = auctionDto.sellerId();
 
         CartMember winner = cartMemberRepository.findByUuid(winnerId)
-                .orElseThrow(()->new NotFoundException("COMMON???", "존재하지 않는 회원입니다."));
+                .orElseThrow(()->new NotFoundException("COMMON103", "존재하지 않는 회원입니다."));
 
         CartMember seller = cartMemberRepository.findByUuid(sellerId)
-                .orElseThrow(()->new NotFoundException("COMMON???", "존재하지 않는 회원입니다."));
+                .orElseThrow(()->new NotFoundException("COMMON103", "존재하지 않는 회원입니다."));
 
         Long productId = auctionDto.productId();
         Long winningPrice = auctionDto.winningPrice();
