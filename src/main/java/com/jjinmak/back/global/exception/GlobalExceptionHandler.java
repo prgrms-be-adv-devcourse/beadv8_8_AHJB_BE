@@ -41,4 +41,11 @@ public class GlobalExceptionHandler {
         ErrorResponse response = new ErrorResponse(false, e.getErrorCode(), e.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ErrorResponse> handle(BusinessException e){
+        ErrorCode code = e.getErrorCode();
+        ErrorResponse response = new ErrorResponse(false, code.getCode(), code.getMessage());
+        return ResponseEntity.status(code.getStatus()).body(response);
+    }
 }
