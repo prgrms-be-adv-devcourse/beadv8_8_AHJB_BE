@@ -10,4 +10,5 @@ import java.util.UUID;
 public interface AuctionMemberRepository extends JpaRepository<AuctionMember,Long> {
    //uuid로 회원찾기
     Optional<AuctionMember> findByUuid(UUID uuid);
+    boolean existsByUuid(UUID uuid);
 }
