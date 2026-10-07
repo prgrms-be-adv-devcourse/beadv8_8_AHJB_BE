@@ -13,6 +13,7 @@ RUN chmod +x gradlew && ./gradlew bootJar --no-daemon
 
 # 2단계: 실행 스테이지 (최종 이미지 생성)
 FROM eclipse-temurin:25-jre
+ENV TZ=Asia/Seoul
 WORKDIR /app
 
 
