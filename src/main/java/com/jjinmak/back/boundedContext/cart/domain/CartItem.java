@@ -1,5 +1,6 @@
 package com.jjinmak.back.boundedContext.cart.domain;
 
+import com.jjinmak.back.shared.cart.dto.CartItemDto;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -45,5 +46,13 @@ public class CartItem {
         this.deliveryFee = deliveryFee;
         this.winAt = winAt;
         this.paymentDueAt = winAt.plusDays(1);
+    }
+
+    public CartItemDto dto(){
+        return new CartItemDto(
+                id, winner.getUuid(), seller.getUuid(),
+                productId, winningPrice, deliveryFee,
+                winAt, paymentDueAt
+        );
     }
 }
