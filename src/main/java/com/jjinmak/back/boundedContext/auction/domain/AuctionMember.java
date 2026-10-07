@@ -2,7 +2,6 @@ package com.jjinmak.back.boundedContext.auction.domain;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -14,7 +13,7 @@ import java.util.UUID;
 public class AuctionMember {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private UUID id;
+    private Long id;
     @Column(nullable = false,unique = true)
     private UUID uuid;
     @Column(nullable = false)

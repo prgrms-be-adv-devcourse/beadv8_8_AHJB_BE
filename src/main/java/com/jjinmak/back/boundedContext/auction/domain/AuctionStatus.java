@@ -1,10 +1,6 @@
 package com.jjinmak.back.boundedContext.auction.domain;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
-@Getter
-@RequiredArgsConstructor
 public enum AuctionStatus {
     READY,      // 시작대기
     IN_PROGRESS, // 진행중
