@@ -46,8 +46,7 @@ Thumbs.db
 *.log
 logs/
 
-### Env / Secrets ###
+### Env / Secrets env.example 제외###
 .env
 .env.*
-application-local.yaml
-application-local.yml
+!.env.example
