@@ -1,5 +1,6 @@
 package com.jjinmak.back.boundedContext.product.in.dto;
 
+import com.jjinmak.back.boundedContext.product.domain.AuctionDuration;
 import com.jjinmak.back.boundedContext.product.domain.Manufacturer;
 import com.jjinmak.back.boundedContext.product.domain.ProductCategory;
 import com.jjinmak.back.boundedContext.product.domain.ShippingFeeType;

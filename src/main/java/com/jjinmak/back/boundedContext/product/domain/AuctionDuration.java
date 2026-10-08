@@ -1,4 +1,4 @@
-package com.jjinmak.back.boundedContext.product.in.dto;
+package com.jjinmak.back.boundedContext.product.domain;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

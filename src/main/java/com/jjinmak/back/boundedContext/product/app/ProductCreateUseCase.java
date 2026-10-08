@@ -1,9 +1,10 @@
 package com.jjinmak.back.boundedContext.product.app;
 
+import com.jjinmak.back.boundedContext.product.domain.AuctionDuration;
 import com.jjinmak.back.boundedContext.product.domain.Product;
+import com.jjinmak.back.boundedContext.product.domain.ProductAuctionTerms;
 import com.jjinmak.back.boundedContext.product.domain.ProductErrorCode;
 import com.jjinmak.back.boundedContext.product.domain.ProductMember;
-import com.jjinmak.back.boundedContext.product.in.dto.AuctionDuration;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductCreateRequestDto;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductCreateRequestDto.AuctionTerms;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductCreateRequestDto.Shipping;
@@ -11,9 +12,7 @@ import com.jjinmak.back.boundedContext.product.out.ProductMemberRepository;
 import com.jjinmak.back.boundedContext.product.out.ProductRepository;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.global.exception.CommonErrorCode;
-import com.jjinmak.back.shared.product.event.ProductRegisteredEvent;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -24,7 +23,6 @@ public class ProductCreateUseCase {
 
     private final ProductRepository productRepository;
     private final ProductMemberRepository productMemberRepository;
-    private final ApplicationEventPublisher eventPublisher;
 
     public Product createProduct(Long sellerId, ProductCreateRequestDto request){
         // TODO: 판매자 등록 여부(PRODUCT002), 계정 정지/차단(PRODUCT003) 검사는 회원 컨텍스트 구현 후 추가
@@ -41,27 +39,19 @@ public class ProductCreateUseCase {
 
         Shipping shipping = request.shipping();
 
+        // 경매 조건은 수정 기간 동안 보관했다가, 수정 기간이 끝나면 경매 컨텍스트로 전달한다.
         Product product = Product.create(
                 seller, request.name(), request.category(),
                 request.manufacturer(), request.manufacturerEtc(), request.description(),
                 shipping.feeType(), shipping.customFee(), shipping.bundleAllowed(),
-                request.policyVersion(), LocalDateTime.now()
+                request.policyVersion(), LocalDateTime.now(),
+                new ProductAuctionTerms(
+                        auctionTerms.startingPrice(), auctionTerms.instantWinPrice(),
+                        auctionTerms.duration(), auctionTerms.customEndAt()
+                )
         );
 
-        productRepository.save(product);
-
-        AuctionDuration duration = auctionTerms.duration();
-
-        eventPublisher.publishEvent(new ProductRegisteredEvent(
-                product.getId(),
-                seller.getId(),
-                auctionTerms.startingPrice(),
-                auctionTerms.instantWinPrice(),
-                duration.getDays(),
-                duration == AuctionDuration.CUSTOM ? auctionTerms.customEndAt() : null
-        ));
-
-        return product;
+        return productRepository.save(product);
     }
 
     private void validateAuctionTerms(AuctionTerms auctionTerms){
