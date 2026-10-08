@@ -21,18 +21,17 @@ public class SwaggerConfig {
         String jwt = "JWT";
         SecurityRequirement securityRequirement = new SecurityRequirement().addList(jwt);
 
-/*      Spring Security 인증방식 설정 후 주석 해제
         Components components = new Components()
                 .addSecuritySchemes(jwt, new SecurityScheme()
                         .name(jwt)
                         .type(SecurityScheme.Type.HTTP)
                         .scheme("bearer")
                         .bearerFormat("JWT"));
- */
+
 
         return new OpenAPI()
-//                .components(components)
-//                .addSecurityItem(securityRequirement)
+                .components(components)
+                .addSecurityItem(securityRequirement)
                 .info(apiInfo());
     }
 
