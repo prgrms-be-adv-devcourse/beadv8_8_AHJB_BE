@@ -16,6 +16,8 @@ import java.util.Set;
 import java.util.UUID;
 
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.*;
+import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_FORBIDDEN;
+import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_NOT_FOUND;
 import static com.jjinmak.back.global.exception.CommonErrorCode.USER_NOT_FOUND;
 
 @Service
@@ -59,5 +61,25 @@ public class OrderReadOrderUseCase {
                         order.getState()
                 )
         ).toList();
+    }
+
+    public OrderDto readOrder(UUID memberId, Long orderId){
+
+        // TODO: 불필요한 member 조회 리팩토링 필요
+        OrderMember member = orderMemberRepository.findByUuid(memberId)
+                .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
+
+        Order order = orderRepository.findByIdAndStateInWithWinnerAndSeller(orderId, READ_STATES)
+                .orElseThrow(() -> new BusinessException(ORDER_NOT_FOUND));
+
+        if (!order.getWinner().getUuid().equals(memberId) && !order.getSeller().getUuid().equals(memberId)){
+            throw new BusinessException(ORDER_FORBIDDEN);
+        }
+
+        return new OrderDto(
+                order.getId(), order.getWinner().getUuid(), order.getSeller().getUuid(),
+                order.getProductId(), order.getWinningPrice(), order.getDeliveryFee(),
+                order.getState()
+        );
     }
 }

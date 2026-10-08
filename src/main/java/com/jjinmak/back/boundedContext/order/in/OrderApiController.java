@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -34,6 +35,13 @@ public class OrderApiController {
     @GetMapping("/seller")
     public ResponseEntity<RsData<List<OrderDto>>> readSellerOrders(){
         List<OrderDto> response = orderFacade.readSellerOrders(userDev);
+
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
+
+    @GetMapping("/{orderId}")
+    public ResponseEntity<RsData<OrderDto>> readOrder(@PathVariable Long orderId){
+        OrderDto response = orderFacade.readOrder(userDev, orderId);
 
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }

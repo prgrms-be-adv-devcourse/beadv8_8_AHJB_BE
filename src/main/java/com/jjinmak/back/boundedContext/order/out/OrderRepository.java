@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
@@ -16,4 +17,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("select o from Order o join fetch o.winner where o.seller = :seller and o.state in :states")
     List<Order> findAllBySellerAndStateIn(OrderMember seller, Set<OrderState> states);
+
+    @Query("select o from Order o join fetch o.winner join fetch o.seller where o.id = :orderId and o.state in :states")
+    Optional<Order> findByIdAndStateInWithWinnerAndSeller(Long orderId, Set<OrderState> states);
 }

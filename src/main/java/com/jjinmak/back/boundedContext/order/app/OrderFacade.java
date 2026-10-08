@@ -39,4 +39,9 @@ public class OrderFacade {
     public List<OrderDto> readSellerOrders(UUID sellerId){
         return orderReadOrderUseCase.readSellerOrders(sellerId);
     }
+
+    @Transactional(readOnly = true)
+    public OrderDto readOrder(UUID memberId, Long orderId){
+        return orderReadOrderUseCase.readOrder(memberId, orderId);
+    }
 }
