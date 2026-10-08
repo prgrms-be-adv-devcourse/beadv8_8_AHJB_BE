@@ -64,10 +64,6 @@ public record ProductCreateRequestDto(
             @Positive
             Long startingPrice,
 
-            @NotNull
-            @Positive
-            Long bidIncrement,
-
             @Positive
             Long instantWinPrice,
 

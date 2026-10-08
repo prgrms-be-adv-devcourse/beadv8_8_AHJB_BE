@@ -57,7 +57,6 @@ public class ProductCreateUseCase {
                 seller.getId(),
                 auctionTerms.startingPrice(),
                 auctionTerms.instantWinPrice(),
-                auctionTerms.bidIncrement(),
                 duration.getDays(),
                 duration == AuctionDuration.CUSTOM ? auctionTerms.customEndAt() : null
         ));
