@@ -1,5 +1,6 @@
 package com.jjinmak.back.boundedContext.refund.domain;
 
+import com.jjinmak.back.shared.refund.dto.RefundDto;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
@@ -54,5 +55,9 @@ public class Refund {
         this.amount = refundOrder.PaymentAmount();
         this.status = RefundStatus.REQUESTED;
         this.requestedAt = requestedAt;
+    }
+
+    public RefundDto dto() {
+        return new RefundDto(id, refundOrder.getOrderId(), status, amount, requestedAt);
     }
 }
