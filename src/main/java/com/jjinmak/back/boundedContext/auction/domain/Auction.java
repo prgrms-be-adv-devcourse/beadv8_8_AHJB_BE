@@ -1,35 +1,30 @@
 package com.jjinmak.back.boundedContext.auction.domain;
 
 import com.jjinmak.back.global.exception.BadRequestException;
+import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 import java.util.Set;
-import java.util.UUID;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(uniqueConstraints = @UniqueConstraint(
         name = "uk_auction_product_round", columnNames = {"product_id", "round"})) //유니크조건
-public class Auction {
+public class Auction extends BaseIdAndTime {
     private static final long START_DELAY_HOURS = 1;
     private static final Set<Integer> ALLOWED_DURATION_DAYS = Set.of(1, 3, 7);
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
     @Column(nullable = false)
     private Long productId;
 
     @Column(nullable = false)
-    private UUID sellerId;
+    private Long sellerId;
 
     @Column(nullable = false)
     private int round;
@@ -53,12 +48,12 @@ public class Auction {
 
     private Long highestBidPrice;
 
-    private UUID highestBidderId;
+    private Long highestBidderId;
 
     @Column(nullable = false)
     private int bidCount;
 
-    private UUID winnerId;
+    private Long winnerId;
 
     private Long winningPrice;
 
@@ -73,15 +68,7 @@ public class Auction {
     @Version
     private Long version;
 
-    @CreationTimestamp
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
-
-    private Auction(Long productId, UUID sellerId, int round, Long startPrice, Long instantWinPrice,
+    private Auction(Long productId, Long sellerId, int round, Long startPrice, Long instantWinPrice,
                      int duration, LocalDateTime startAt, LocalDateTime endAt) {
         this.productId = productId;
         this.sellerId = sellerId;
@@ -94,7 +81,7 @@ public class Auction {
         this.status = AuctionStatus.READY;
         this.bidCount = 0;
     }
-    public static Auction create(Long productId, UUID sellerId, int round, Long startPrice,
+    public static Auction create(Long productId, Long sellerId, int round, Long startPrice,
                                  Long instantWinPrice,int duration, LocalDateTime now) {
         if (productId == null || sellerId == null || now == null) {
             throw new BadRequestException("AUCTION003","경매 생성에 필요한 값이 누락되었습니다.");

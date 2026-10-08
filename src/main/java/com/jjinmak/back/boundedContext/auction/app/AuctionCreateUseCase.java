@@ -20,7 +20,7 @@ public class AuctionCreateUseCase {
     private final AuctionMemberRepository auctionMemberRepository;
 
     public Long createAuction(AuctionCreateDto dto){
-        if(!auctionMemberRepository.existsByUuid(dto.sellerId())){
+        if(!auctionMemberRepository.existsById(dto.sellerId())){
             throw new NotFoundException("AUCTION001","존재하지 않는 회원입니다.");
         }
         if (auctionRepository.existsByProductId(dto.productId())) {

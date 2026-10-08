@@ -1,9 +1,8 @@
 package com.jjinmak.back.shared.member.dto;
 
-import java.util.UUID;
 
 public record MemberDto(
-        UUID uuid,
+        Long id,
         String nickname
 ) {
 }
