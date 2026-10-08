@@ -1,19 +1,18 @@
 package com.jjinmak.back.boundedContext.order.domain;
 
+import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Entity
 @NoArgsConstructor
 @Table(name = "orders")
-public class Order {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+public class Order extends BaseIdAndTime {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
@@ -37,6 +36,9 @@ public class Order {
     Long deliveryFee;
 
     @NotNull
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(length = 30)
     OrderState state;
 
     public Order(OrderGroup group, OrderMember winner, OrderMember seller, Long productId, Long winningPrice, Long deliveryFee){

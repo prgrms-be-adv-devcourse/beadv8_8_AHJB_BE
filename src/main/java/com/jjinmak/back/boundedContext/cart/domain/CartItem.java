@@ -1,5 +1,6 @@
 package com.jjinmak.back.boundedContext.cart.domain;
 
+import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
 import com.jjinmak.back.shared.cart.dto.CartItemDto;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -11,11 +12,7 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor
-public class CartItem {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class CartItem extends BaseIdAndTime {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
@@ -50,7 +47,7 @@ public class CartItem {
 
     public CartItemDto dto(){
         return new CartItemDto(
-                id, winner.getUuid(), seller.getUuid(),
+                this.getId(), winner.getUuid(), seller.getUuid(),
                 productId, winningPrice, deliveryFee,
                 winAt, paymentDueAt
         );

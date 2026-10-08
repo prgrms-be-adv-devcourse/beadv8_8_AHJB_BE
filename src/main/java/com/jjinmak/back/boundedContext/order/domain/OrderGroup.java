@@ -1,5 +1,6 @@
 package com.jjinmak.back.boundedContext.order.domain;
 
+import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -11,11 +12,7 @@ import java.util.List;
 @Entity
 @Getter
 @NoArgsConstructor
-public class OrderGroup {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+public class OrderGroup extends BaseIdAndTime {
 
     @NotNull
     Long totalPrice;

@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,7 +21,7 @@ public class AuctionApiController {
     private final AuctionFacade auctionFacade;
 
     // 인증 방식이 정해진 후에, 접속 유저 정보 가져오기
-    private final UUID sellerDev = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+    private final Long sellerDev = 1L;
 
     @PostMapping
     public ResponseEntity<RsData<Long>> reAuction(@Valid @RequestBody AuctionReAuctionRequestDto request){
