@@ -11,6 +11,9 @@ import java.util.Set;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
-    @Query("select o from Order o join fetch o.seller where o.winner = :winner and o.state in :state")
-    List<Order> findAllByWinnerAndStateIn(OrderMember winner, Set<OrderState> state);
+    @Query("select o from Order o join fetch o.seller where o.winner = :winner and o.state in :states")
+    List<Order> findAllByWinnerAndStateIn(OrderMember winner, Set<OrderState> states);
+
+    @Query("select o from Order o join fetch o.winner where o.seller = :seller and o.state in :states")
+    List<Order> findAllBySellerAndStateIn(OrderMember seller, Set<OrderState> states);
 }

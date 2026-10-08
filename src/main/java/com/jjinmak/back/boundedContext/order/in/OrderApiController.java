@@ -21,12 +21,19 @@ public class OrderApiController {
     private final OrderFacade orderFacade;
 
     // TODO: 비즈니스 로직 내에서 사용자 정보 가져오기
-    private final UUID winnerDev = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+    private final UUID userDev = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
 
     @GetMapping("/winner")
     public ResponseEntity<RsData<List<OrderDto>>> readWinnerOrders(){
 
-        List<OrderDto> response = orderFacade.readWinnerOrders(winnerDev);
+        List<OrderDto> response = orderFacade.readWinnerOrders(userDev);
+
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
+
+    @GetMapping("/seller")
+    public ResponseEntity<RsData<List<OrderDto>>> readSellerOrders(){
+        List<OrderDto> response = orderFacade.readSellerOrders(userDev);
 
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }

@@ -22,7 +22,7 @@ import static com.jjinmak.back.global.exception.CommonErrorCode.USER_NOT_FOUND;
 @RequiredArgsConstructor
 public class OrderReadOrderUseCase {
 
-    private static final Set<OrderState> WINNER_STATES = EnumSet.of(
+    private static final Set<OrderState> READ_STATES = EnumSet.of(
             PAID, SHIPPING, SHIPPED, CONFIRMED, REFUND_REQUESTED, REFUNDED
     );
 
@@ -34,11 +34,27 @@ public class OrderReadOrderUseCase {
         OrderMember winner = orderMemberRepository.findByUuid(winnerId)
                 .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
 
-        List<Order> orders = orderRepository.findAllByWinnerAndStateIn(winner, WINNER_STATES);
+        List<Order> orders = orderRepository.findAllByWinnerAndStateIn(winner, READ_STATES);
 
         return orders.stream().map(
                 (order) -> new OrderDto(
                         order.getId(), winnerId, order.getSeller().getUuid(),
+                        order.getProductId(), order.getWinningPrice(), order.getDeliveryFee(),
+                        order.getState()
+                )
+        ).toList();
+    }
+
+    public List<OrderDto> readSellerOrders(UUID sellerId){
+
+        OrderMember seller = orderMemberRepository.findByUuid(sellerId)
+                .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
+
+        List<Order> orders = orderRepository.findAllBySellerAndStateIn(seller,READ_STATES);
+
+        return orders.stream().map(
+                (order) -> new OrderDto(
+                        order.getId(), order.getWinner().getUuid(), sellerId,
                         order.getProductId(), order.getWinningPrice(), order.getDeliveryFee(),
                         order.getState()
                 )
