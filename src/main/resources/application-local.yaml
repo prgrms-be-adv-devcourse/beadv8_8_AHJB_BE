@@ -10,6 +10,11 @@ spring:
       hibernate:
         format_sql: true
 
+# 해당 키는 로컬에서만 쓰이는 키 입니다.
+jwt:
+  secret: dGhpcy1pcy1hLXZlcnktbG9uZy1zZWNyZXQta2V5LWZvci1qd3QtaHMyNTY=
+  access-token-expiration: 900000
+
 logging:
   level:
     org.hibernate.SQL: debug
