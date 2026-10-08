@@ -28,18 +28,18 @@ public class RefundOrder {
     private Long sellerId;
 
     @NotNull
-    private Long winnerPrice;
+    private Long winningPrice;
 
     @NotNull
     private Long deliveryFee;
 
     private LocalDateTime confirmedAt;
 
-    public RefundOrder(Long orderId, Long winnerId, Long sellerId, Long winnerPrice, Long deliveryFee) {
+    public RefundOrder(Long orderId, Long winnerId, Long sellerId, Long winningPrice, Long deliveryFee) {
         this.orderId = orderId;
         this.winnerId = winnerId;
         this.sellerId = sellerId;
-        this.winnerPrice = winnerPrice;
+        this.winningPrice = winningPrice;
         this.deliveryFee = deliveryFee;
     }
 
@@ -56,7 +56,7 @@ public class RefundOrder {
     }
 
     public Long PaymentAmount() {
-        return winnerPrice + deliveryFee;
+        return winningPrice + deliveryFee;
     }
 
 }
