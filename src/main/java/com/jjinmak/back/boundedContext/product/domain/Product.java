@@ -52,11 +52,6 @@ public class Product extends BaseIdAndTime {
     @Column(nullable = false)
     private int wishCount;
 
-    @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.VARCHAR)
-    @Column(name = "product_status", nullable = false)
-    private ProductStatus status;
-
     // 판매자가 동의한 판매 정책 버전과 동의 시각
     @Column(nullable = false)
     private String policyVersion;
@@ -80,7 +75,6 @@ public class Product extends BaseIdAndTime {
         this.shippingFee = shippingFee;
         this.bundleShipping = bundleShipping;
         this.wishCount = 0;
-        this.status = ProductStatus.SELLING;
         this.policyVersion = policyVersion;
         this.policyAgreedAt = policyAgreedAt;
     }
