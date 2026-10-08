@@ -10,7 +10,8 @@ import org.springframework.http.HttpStatus;
 public enum OrderErrorCode implements ErrorCode {
 
     ORDER_NOT_FOUND("ORDER001", "존재하지 않는 주문입니다.", HttpStatus.NOT_FOUND),
-    ORDER_FORBIDDEN("ORDER002", "주문의 조회 권한이 없습니다.", HttpStatus.FORBIDDEN)
+    ORDER_FORBIDDEN("ORDER002", "주문에 대한 권한이 없습니다.", HttpStatus.FORBIDDEN),
+    ORDER_STATE_BAD_REQUEST("ORDER003", "잘못된 상태 요청입니다.", HttpStatus.BAD_REQUEST)
     ;
 
     private final String code;

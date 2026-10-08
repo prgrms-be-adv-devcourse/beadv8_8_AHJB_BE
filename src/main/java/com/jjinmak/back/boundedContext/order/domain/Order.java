@@ -50,4 +50,8 @@ public class Order extends BaseIdAndTime {
         this.deliveryFee = deliveryFee;
         this.state = OrderState.WAITING;
     }
+
+    public void updateState(OrderState state){
+        this.state = state;
+    }
 }

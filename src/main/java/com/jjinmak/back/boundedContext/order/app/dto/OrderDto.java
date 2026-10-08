@@ -2,6 +2,7 @@ package com.jjinmak.back.boundedContext.order.app.dto;
 
 import com.jjinmak.back.boundedContext.order.domain.OrderState;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record OrderDto(
@@ -11,6 +12,8 @@ public record OrderDto(
         Long productId,
         Long winningPrice,
         Long deliveryFee,
-        OrderState state
+        OrderState state,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
 ) {
 }
