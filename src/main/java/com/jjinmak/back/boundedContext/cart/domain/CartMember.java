@@ -1,5 +1,6 @@
 package com.jjinmak.back.boundedContext.cart.domain;
 
+import com.jjinmak.back.global.jpa.entity.BaseManualIdAndTime;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -10,11 +11,7 @@ import java.util.UUID;
 @Entity
 @Getter
 @NoArgsConstructor
-public class CartMember {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class CartMember extends BaseManualIdAndTime {
 
     @NotNull
     @Column(unique = true)
@@ -23,7 +20,8 @@ public class CartMember {
     @NotNull
     private String nickname;
 
-    public CartMember(UUID uuid, String nickname){
+    public CartMember(Long id, UUID uuid, String nickname){
+        super(id);
         this.uuid = uuid;
         this.nickname = nickname;
     }

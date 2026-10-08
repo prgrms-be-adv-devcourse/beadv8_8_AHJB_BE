@@ -1,5 +1,6 @@
 package com.jjinmak.back.boundedContext.order.domain;
 
+import com.jjinmak.back.global.jpa.entity.BaseManualIdAndTime;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -10,11 +11,7 @@ import java.util.UUID;
 @Entity
 @Getter
 @NoArgsConstructor
-public class OrderMember {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+public class OrderMember extends BaseManualIdAndTime {
 
     @NotNull
     @Column(unique = true)
@@ -23,7 +20,8 @@ public class OrderMember {
     @NotNull
     String nickname;
 
-    public OrderMember(UUID uuid, String nickname){
+    public OrderMember(Long id, UUID uuid, String nickname){
+        super(id);
         this.uuid = uuid;
         this.nickname = nickname;
     }
