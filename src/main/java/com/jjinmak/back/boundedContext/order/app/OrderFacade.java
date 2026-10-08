@@ -19,6 +19,7 @@ public class OrderFacade {
     private final OrderSyncMemberUseCase orderSyncMemberUseCase;
     private final OrderPaymentUseCase orderPaymentUseCase;
     private final OrderReadOrderUseCase orderReadOrderUseCase;
+    private final OrderConfirmPurchaseUseCase orderConfirmPurchaseUseCase;
 
     @Transactional
     public OrderMember syncMember(MemberDto memberDto){
@@ -43,5 +44,10 @@ public class OrderFacade {
     @Transactional(readOnly = true)
     public OrderDto readOrder(UUID memberId, Long orderId){
         return orderReadOrderUseCase.readOrder(memberId, orderId);
+    }
+
+    @Transactional
+    public void confirmPurchase(UUID memberId, Long orderId){
+        orderConfirmPurchaseUseCase.confirmPurchase(memberId, orderId);
     }
 }

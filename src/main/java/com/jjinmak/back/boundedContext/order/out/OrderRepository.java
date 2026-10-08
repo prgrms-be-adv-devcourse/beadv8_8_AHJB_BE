@@ -20,4 +20,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("select o from Order o join fetch o.winner join fetch o.seller where o.id = :orderId and o.state in :states")
     Optional<Order> findByIdAndStateInWithWinnerAndSeller(Long orderId, Set<OrderState> states);
+
+    @Query("select o from Order o join fetch o.winner join fetch o.seller where o.id = :orderId")
+    Optional<Order> findByIdWithWinnerAndSeller(Long orderId);
 }
