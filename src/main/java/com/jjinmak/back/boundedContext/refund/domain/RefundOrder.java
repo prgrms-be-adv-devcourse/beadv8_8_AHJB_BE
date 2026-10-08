@@ -1,5 +1,6 @@
 package com.jjinmak.back.boundedContext.refund.domain;
 
+import com.jjinmak.back.global.jpa.entity.BaseManualIdAndTime;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
@@ -11,15 +12,7 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class RefundOrder {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @NotNull
-    @Column(unique = true)
-    private Long orderId;
+public class RefundOrder extends BaseManualIdAndTime {
 
     @NotNull
     private Long winnerId;
@@ -36,7 +29,7 @@ public class RefundOrder {
     private LocalDateTime confirmedAt;
 
     public RefundOrder(Long orderId, Long winnerId, Long sellerId, Long winningPrice, Long deliveryFee) {
-        this.orderId = orderId;
+        super(orderId);
         this.winnerId = winnerId;
         this.sellerId = sellerId;
         this.winningPrice = winningPrice;

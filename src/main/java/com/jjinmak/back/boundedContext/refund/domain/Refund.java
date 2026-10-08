@@ -1,5 +1,7 @@
 package com.jjinmak.back.boundedContext.refund.domain;
 
+import com.jjinmak.back.global.jpa.entity.BaseEntity;
+import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
 import com.jjinmak.back.shared.refund.dto.RefundDto;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -14,11 +16,7 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Refund {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Refund extends BaseIdAndTime {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
@@ -43,20 +41,15 @@ public class Refund {
     @Column(length = 20)
     private RefundStatus status;
 
-    @NotNull
-    private LocalDateTime requestedAt;
-
-    public Refund(RefundOrder refundOrder, RefundReason reason,
-                  String detail, LocalDateTime requestedAt) {
+    public Refund(RefundOrder refundOrder, RefundReason reason, String detail) {
         this.refundOrder = refundOrder;
         this.reason = reason;
         this.detail = detail;
         this.amount = refundOrder.PaymentAmount();
         this.status = RefundStatus.REQUESTED;
-        this.requestedAt = requestedAt;
     }
 
     public RefundDto dto() {
-        return new RefundDto(id, refundOrder.getOrderId(), status, amount, requestedAt);
+        return new RefundDto(getId(), refundOrder.getId(), status, amount, getCreatedAt());
     }
 }

@@ -28,10 +28,10 @@ public class RefundCreateRefundUseCase {
      * @return Refund - 생성된 환불 (REQUESTED)
      */
     public Refund createRefund(Long memberId, Long orderId, RefundReason reason, String detail) {
-        if (reason == RefundReason.OTHER && (detail == null) || detail.isEmpty()) {
+        if (reason == RefundReason.OTHER && (detail == null || detail.isBlank())) {
             throw new BusinessException(RefundErrorCode.DETAIL_REQUIRED);
         }
-        RefundOrder refundOrder = refundOrderRepository.findByOrderId(orderId)
+        RefundOrder refundOrder = refundOrderRepository.findById(orderId)
                 .orElseThrow(() -> new BusinessException(RefundErrorCode.ORDER_NOT_FOUND));
 
         if (!refundOrder.isWinner(memberId)) {
@@ -46,7 +46,7 @@ public class RefundCreateRefundUseCase {
             throw new BusinessException(RefundErrorCode.ALREADY_REQUESTED);
         }
 
-        Refund refund = new Refund(refundOrder, reason, detail, LocalDateTime.now());
+        Refund refund = new Refund(refundOrder, reason, detail);
         return refundRepository.save(refund);
     }
 }
