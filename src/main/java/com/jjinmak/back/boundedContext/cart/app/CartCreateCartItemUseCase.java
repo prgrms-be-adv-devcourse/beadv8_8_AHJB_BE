@@ -4,13 +4,15 @@ import com.jjinmak.back.boundedContext.cart.domain.CartItem;
 import com.jjinmak.back.boundedContext.cart.domain.CartMember;
 import com.jjinmak.back.boundedContext.cart.out.CartItemRepository;
 import com.jjinmak.back.boundedContext.cart.out.CartMemberRepository;
-import com.jjinmak.back.global.exception.NotFoundException;
+import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.auction.dto.AuctionDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import static com.jjinmak.back.global.exception.CommonErrorCode.USER_NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor
@@ -29,10 +31,10 @@ public class CartCreateCartItemUseCase {
         UUID sellerId = auctionDto.sellerId();
 
         CartMember winner = cartMemberRepository.findByUuid(winnerId)
-                .orElseThrow(()->new NotFoundException("COMMON103", "존재하지 않는 회원입니다."));
+                .orElseThrow(()->new BusinessException(USER_NOT_FOUND));
 
         CartMember seller = cartMemberRepository.findByUuid(sellerId)
-                .orElseThrow(()->new NotFoundException("COMMON103", "존재하지 않는 회원입니다."));
+                .orElseThrow(()->new BusinessException(USER_NOT_FOUND));
 
         Long productId = auctionDto.productId();
         Long winningPrice = auctionDto.winningPrice();

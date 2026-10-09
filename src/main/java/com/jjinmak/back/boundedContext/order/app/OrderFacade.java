@@ -20,6 +20,7 @@ public class OrderFacade {
     private final OrderPaymentUseCase orderPaymentUseCase;
     private final OrderReadOrderUseCase orderReadOrderUseCase;
     private final OrderConfirmPurchaseUseCase orderConfirmPurchaseUseCase;
+    private final OrderPaymentResultUseCase orderPaymentResultUseCase;
 
     @Transactional
     public OrderMember syncMember(MemberDto memberDto){
@@ -49,5 +50,15 @@ public class OrderFacade {
     @Transactional
     public void confirmPurchase(UUID memberId, Long orderId){
         orderConfirmPurchaseUseCase.confirmPurchase(memberId, orderId);
+    }
+
+    @Transactional
+    public void paymentSucceed(Long groupId){
+        orderPaymentResultUseCase.paymentSucceed(groupId);
+    }
+
+    @Transactional
+    public void paymentFailed(Long groupId){
+        orderPaymentResultUseCase.paymentFailed(groupId);
     }
 }
