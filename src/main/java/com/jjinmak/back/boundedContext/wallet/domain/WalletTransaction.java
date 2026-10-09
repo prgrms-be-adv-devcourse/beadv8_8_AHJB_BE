@@ -5,6 +5,9 @@ import com.jjinmak.back.boundedContext.wallet.domain.enums.ReferenceType;
 import com.jjinmak.back.boundedContext.wallet.domain.enums.WalletTransactionType;
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -28,47 +31,47 @@ import java.time.LocalDateTime;
         }
 )
 @Getter
-public class WalletTransactions {
+@NoArgsConstructor
+public class WalletTransaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "wallet_transaction_id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "wallet_id", nullable = false)
+    @JoinColumn(nullable = false)
     private Wallet wallet;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false, length = 30)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 30)
     private WalletTransactionType type;
 
-    @Column(name = "amount", nullable = false)
+    @Column(nullable = false)
     private long amount;
 
-    @Column(name = "balance_after", nullable = false)
+    @Column(nullable = false)
     private long balanceAfter;
 
-    @Column(name = "transaction_group_id", nullable = false, length = 36)
+    @Column(nullable = false, length = 36)
     private String transactionGroupId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "reference_type", nullable = false, length = 20)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 20)
     private ReferenceType referenceType;
 
-    @Column(name = "reference_id", nullable = false)
+    @Column(nullable = false)
     private Long referenceId;
 
-    @Column(name = "idempotency_key", nullable = false, length = 100)
+    @Column(nullable = false, length = 100)
     private String idempotencyKey;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    protected WalletTransactions() {
-    }
 
-    private WalletTransactions(Wallet wallet,
+    private WalletTransaction(Wallet wallet,
                               WalletTransactionType type,
                               long amount,
                               String transactionGroupId,
@@ -92,14 +95,14 @@ public class WalletTransactions {
     /**
      * 지갑 잔액을 먼저 변경한 뒤 호출한다. balanceAfter는 호출 시점의 wallet.balance를 그대로 저장한다.
      */
-    public static WalletTransactions record(Wallet wallet,
+    public static WalletTransaction record(Wallet wallet,
                                            WalletTransactionType type,
                                            long signedAmount,
                                            String transactionGroupId,
                                            ReferenceType referenceType,
                                            Long referenceId,
                                            String idempotencyKey) {
-        return new WalletTransactions(wallet, type, signedAmount, transactionGroupId,
+        return new WalletTransaction(wallet, type, signedAmount, transactionGroupId,
                 referenceType, referenceId, idempotencyKey);
     }
 }

@@ -1,4 +1,4 @@
-package com.jjinmak.back.boundedContext.wallet.domain;
+package com.jjinmak.back.boundedContext.wallet.domain.enums;
 
 
 
