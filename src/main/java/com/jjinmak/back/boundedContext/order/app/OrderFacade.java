@@ -21,6 +21,7 @@ public class OrderFacade {
     private final OrderReadOrderUseCase orderReadOrderUseCase;
     private final OrderConfirmPurchaseUseCase orderConfirmPurchaseUseCase;
     private final OrderPaymentResultUseCase orderPaymentResultUseCase;
+    private final OrderRequestRefundUseCase orderRequestRefundUseCase;
 
     @Transactional
     public OrderMember syncMember(MemberDto memberDto){
@@ -60,5 +61,10 @@ public class OrderFacade {
     @Transactional
     public void paymentFailed(Long groupId){
         orderPaymentResultUseCase.paymentFailed(groupId);
+    }
+
+    @Transactional
+    public void requestRefund(UUID memberId, Long orderId){
+        orderRequestRefundUseCase.requestRefund(memberId, orderId);
     }
 }

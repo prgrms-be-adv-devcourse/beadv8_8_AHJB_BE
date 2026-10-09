@@ -49,4 +49,11 @@ public class OrderApiController {
 
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(null));
     }
+
+    @PostMapping("/{orderId}/request-refund")
+    public ResponseEntity<RsData<Void>> requestRefund(@PathVariable Long orderId){
+        orderFacade.requestRefund(userDev, orderId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(null));
+    }
 }
