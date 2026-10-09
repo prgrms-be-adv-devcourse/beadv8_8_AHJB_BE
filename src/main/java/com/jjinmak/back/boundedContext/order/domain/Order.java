@@ -54,4 +54,12 @@ public class Order extends BaseIdAndTime {
     public void updateState(OrderState state){
         this.state = state;
     }
+
+    public boolean isWinner(OrderMember member){
+        return this.winner.getId().equals(member.getId());
+    }
+
+    public boolean isSeller(OrderMember member){
+        return this.seller.getId().equals(member.getId());
+    }
 }

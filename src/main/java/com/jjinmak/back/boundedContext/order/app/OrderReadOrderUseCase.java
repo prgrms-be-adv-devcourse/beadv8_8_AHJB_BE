@@ -72,7 +72,7 @@ public class OrderReadOrderUseCase {
         Order order = orderRepository.findByIdAndStateInWithWinnerAndSeller(orderId, READ_STATES)
                 .orElseThrow(() -> new BusinessException(ORDER_NOT_FOUND));
 
-        if (!order.getWinner().getUuid().equals(memberId) && !order.getSeller().getUuid().equals(memberId)){
+        if (!order.isWinner(member) && !order.isSeller(member)){
             throw new BusinessException(ORDER_FORBIDDEN);
         }
 

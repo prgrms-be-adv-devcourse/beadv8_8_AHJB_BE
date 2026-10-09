@@ -32,7 +32,7 @@ public class OrderConfirmPurchaseUseCase {
         Order order = orderRepository.findByIdWithWinnerAndSeller(orderId)
                 .orElseThrow(() -> new BusinessException(ORDER_NOT_FOUND));
 
-        if (!order.getWinner().getId().equals(winner.getId())){
+        if (!order.isWinner(winner)){
             throw new BusinessException(ORDER_FORBIDDEN);
         }
 
