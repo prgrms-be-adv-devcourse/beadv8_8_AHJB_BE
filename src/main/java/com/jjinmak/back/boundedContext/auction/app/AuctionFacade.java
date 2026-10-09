@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 public class AuctionFacade {
     private final AuctionSyncMemberUseCase auctionSyncMemberUseCase;
     private final AuctionCreateUseCase auctionCreateUseCase;
-    private final AuctionReAuctionUseCase auctionReAuctionUseCase;
 
     @Transactional
     public AuctionMember syncMember(MemberDto dto){
@@ -20,12 +19,8 @@ public class AuctionFacade {
     }
 
     @Transactional
-    public Long createAuction(AuctionCreateDto dto){
-        return auctionCreateUseCase.createAuction(dto);
+    public void createAuction(AuctionCreateDto dto){
+         auctionCreateUseCase.createAuction(dto);
     }
 
-    @Transactional
-    public Long reAuction(AuctionCreateDto dto) {
-        return auctionReAuctionUseCase.reAuction(dto);
-    }
 }
