@@ -1,0 +1,4 @@
+package com.jjinmak.back.boundedContext.wallet.out;
+
+public interface WalletRepository {
+}
