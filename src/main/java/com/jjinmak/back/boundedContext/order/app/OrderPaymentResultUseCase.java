@@ -21,7 +21,6 @@ public class OrderPaymentResultUseCase {
     private final OrderGroupRepository orderGroupRepository;
 
     public void paymentSucceed(Long groupId){
-
         OrderGroup group = orderGroupRepository.findByIdWithOrders(groupId)
                 .orElseThrow(() -> new BusinessException(ORDER_GROUP_NOT_FOUND));
 
@@ -38,6 +37,20 @@ public class OrderPaymentResultUseCase {
         // TODO: 결제성공 이벤트 발행
         for (Order order : orders){
             OrderPaymentSucceedEvent event = new OrderPaymentSucceedEvent(order.getId(), order.getProductId(), paidAt);
+        }
+    }
+
+    public void paymentFailed(Long groupId){
+        OrderGroup group = orderGroupRepository.findByIdWithOrders(groupId)
+                .orElseThrow(() -> new BusinessException(ORDER_GROUP_NOT_FOUND));
+
+        List<Order> orders = group.getOrders();
+
+        for (Order order : orders){
+            if (!order.getState().equals(WAITING))
+                throw new BusinessException(ORDER_STATE_BAD_REQUEST);
+
+            order.updateState(FAILED);
         }
     }
 }

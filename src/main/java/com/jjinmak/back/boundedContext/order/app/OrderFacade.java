@@ -56,4 +56,9 @@ public class OrderFacade {
     public void paymentSucceed(Long groupId){
         orderPaymentResultUseCase.paymentSucceed(groupId);
     }
+
+    @Transactional
+    public void paymentFailed(Long groupId){
+        orderPaymentResultUseCase.paymentFailed(groupId);
+    }
 }
