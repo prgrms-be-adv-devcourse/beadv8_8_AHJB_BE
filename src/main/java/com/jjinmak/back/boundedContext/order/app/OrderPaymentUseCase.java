@@ -6,8 +6,7 @@ import com.jjinmak.back.boundedContext.order.domain.OrderMember;
 import com.jjinmak.back.boundedContext.order.out.OrderGroupRepository;
 import com.jjinmak.back.boundedContext.order.out.OrderMemberRepository;
 import com.jjinmak.back.boundedContext.order.out.OrderRepository;
-import com.jjinmak.back.global.exception.BadRequestException;
-import com.jjinmak.back.global.exception.NotFoundException;
+import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.cart.dto.CartCreateOrderDto;
 import com.jjinmak.back.shared.cart.dto.CartItemDto;
 import com.jjinmak.back.shared.order.dto.OrderCreatePaymentDto;
@@ -18,6 +17,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+
+import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_BAD_REQUEST;
+import static com.jjinmak.back.global.exception.CommonErrorCode.USER_NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +38,7 @@ public class OrderPaymentUseCase {
     public OrderGroup tryPayment(CartCreateOrderDto dto){
 
         if (dto.cartItems().isEmpty()){
-            throw new BadRequestException("ORDER001", "올바르지 않은 주문 요청입니다.");
+            throw new BusinessException(ORDER_BAD_REQUEST);
         }
 
         List<CartItemDto> cartItems = dto.cartItems();
@@ -46,7 +48,7 @@ public class OrderPaymentUseCase {
         Long totalPrice = dto.totalPrice();
 
         OrderMember winner = orderMemberRepository.findByUuid(winnerId)
-                .orElseThrow(() -> new NotFoundException("COMMON103", "존재하지 않는 회원입니다."));
+                .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
 
         OrderGroup orderGroup = orderGroupRepository.save(new OrderGroup(dto.totalPrice()));
 
@@ -54,7 +56,7 @@ public class OrderPaymentUseCase {
             UUID sellerId = cartItem.sellerId();
 
             OrderMember seller = orderMemberRepository.findByUuid(sellerId)
-                    .orElseThrow(() -> new NotFoundException("COMMON103", "존재하지 않는 회원입니다."));
+                    .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
 
             Order order = new Order(orderGroup, winner, seller, cartItem.productId(), cartItem.winningPrice(), cartItem.deliveryFee());
 
@@ -71,7 +73,7 @@ public class OrderPaymentUseCase {
         Set<UUID> set = new HashSet<>(dtoList.stream().map(CartItemDto::winnerId).toList());
 
         if (set.size() > 1){
-            throw new BadRequestException("ORDER002", "주문 간 낙찰자가 서로 다릅니다.");
+            throw new BusinessException(ORDER_BAD_REQUEST);
         }
 
         return set.stream().toList().getFirst();
