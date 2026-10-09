@@ -5,6 +5,7 @@ import com.jjinmak.back.boundedContext.order.domain.OrderGroup;
 import com.jjinmak.back.boundedContext.order.domain.OrderMember;
 import com.jjinmak.back.shared.cart.dto.CartCreateOrderDto;
 import com.jjinmak.back.shared.member.dto.MemberDto;
+import com.jjinmak.back.shared.refund.dto.RefundDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ public class OrderFacade {
     private final OrderConfirmPurchaseUseCase orderConfirmPurchaseUseCase;
     private final OrderPaymentResultUseCase orderPaymentResultUseCase;
     private final OrderRequestRefundUseCase orderRequestRefundUseCase;
+    private final OrderAcceptRefundUseCase orderAcceptRefundUseCase;
 
     @Transactional
     public OrderMember syncMember(MemberDto memberDto){
@@ -66,5 +68,10 @@ public class OrderFacade {
     @Transactional
     public void requestRefund(UUID memberId, Long orderId){
         orderRequestRefundUseCase.requestRefund(memberId, orderId);
+    }
+
+    @Transactional
+    public void acceptRefund(RefundDto refund){
+        orderAcceptRefundUseCase.acceptRefund(refund);
     }
 }
