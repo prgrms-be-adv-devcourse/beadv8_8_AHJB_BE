@@ -41,7 +41,9 @@ public class AuctionBidUseCase {
                     true
             );
         }
-
+        if(bidderId.equals(auction.getHighestBidderId())){
+            throw new BusinessException(AuctionErrorCode.ALREADY_HIGHEST_BIDDER);
+        }
         // 금액 검증
         validatePrice(auction,bidPrice);
         // 입찰
@@ -73,9 +75,6 @@ public class AuctionBidUseCase {
         }
         if(auction.getSellerId().equals(bidderId)){
             throw new BusinessException(AuctionErrorCode.SELLER_CANNOT_BID);
-        }
-        if(bidderId.equals(auction.getHighestBidderId())){
-            throw new BusinessException(AuctionErrorCode.ALREADY_HIGHEST_BIDDER);
         }
     }
     // validatePrice - 최소입찰이상인지, 단위 배수인지

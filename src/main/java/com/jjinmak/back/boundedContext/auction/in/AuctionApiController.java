@@ -2,6 +2,7 @@ package com.jjinmak.back.boundedContext.auction.in;
 
 import com.jjinmak.back.boundedContext.auction.app.AuctionFacade;
 import com.jjinmak.back.boundedContext.auction.dto.AuctionBidResponseDto;
+import com.jjinmak.back.boundedContext.auction.dto.AuctionInstantWinResponseDto;
 import com.jjinmak.back.boundedContext.auction.exception.AuctionErrorCode;
 import com.jjinmak.back.boundedContext.auction.in.dto.AuctionBidRequestDto;
 import com.jjinmak.back.global.exception.BusinessException;
@@ -36,5 +37,20 @@ public class AuctionApiController {
             throw new BusinessException(AuctionErrorCode.BID_CONFLICT);
         }
         return ResponseEntity.status(HttpStatus.CREATED).body(new RsData<>(true,"입찰이 완료되었습니다.",response));
+    }
+
+    @PostMapping("/{auctionId}/instant-win")
+    public ResponseEntity<RsData<AuctionInstantWinResponseDto>> instantWin(
+            @PathVariable Long auctionId,
+            @AuthenticationPrincipal AuthPrincipal principal
+    ) {
+        AuctionInstantWinResponseDto response;
+        try {
+            response = auctionFacade.instantWin(auctionId, principal.memberId());
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new BusinessException(AuctionErrorCode.BID_CONFLICT);
+        }
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new RsData<>(true, "즉시 낙찰되었습니다.", response));
     }
 }
