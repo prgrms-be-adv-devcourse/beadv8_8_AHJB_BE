@@ -4,7 +4,6 @@ import com.jjinmak.back.boundedContext.order.domain.Order;
 import com.jjinmak.back.boundedContext.order.domain.OrderGroup;
 import com.jjinmak.back.boundedContext.order.domain.OrderMember;
 import com.jjinmak.back.boundedContext.order.out.OrderGroupRepository;
-import com.jjinmak.back.boundedContext.order.out.OrderMemberRepository;
 import com.jjinmak.back.boundedContext.order.out.OrderRepository;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.cart.dto.CartCreateOrderDto;
@@ -19,15 +18,14 @@ import java.util.Set;
 import java.util.UUID;
 
 import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_BAD_REQUEST;
-import static com.jjinmak.back.global.exception.CommonErrorCode.USER_NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor
 public class OrderPaymentUseCase {
 
+    private final OrderSupport orderSupport;
     private final OrderRepository orderRepository;
     private final OrderGroupRepository orderGroupRepository;
-    private final OrderMemberRepository orderMemberRepository;
 
     /**
      * 전달받은 CartCreateOrderDto를 통해 Order과 OrderGroup을 생성한다.
@@ -47,16 +45,14 @@ public class OrderPaymentUseCase {
 
         Long totalPrice = dto.totalPrice();
 
-        OrderMember winner = orderMemberRepository.findByUuid(winnerId)
-                .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
+        OrderMember winner = orderSupport.getMember(winnerId);
 
         OrderGroup orderGroup = orderGroupRepository.save(new OrderGroup(dto.totalPrice()));
 
         for (CartItemDto cartItem : cartItems){
             UUID sellerId = cartItem.sellerId();
 
-            OrderMember seller = orderMemberRepository.findByUuid(sellerId)
-                    .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
+            OrderMember seller = orderSupport.getMember(sellerId);
 
             Order order = new Order(orderGroup, winner, seller, cartItem.productId(), cartItem.winningPrice(), cartItem.deliveryFee());
 
