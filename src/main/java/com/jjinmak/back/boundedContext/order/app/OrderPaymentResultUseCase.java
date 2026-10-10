@@ -47,10 +47,7 @@ public class OrderPaymentResultUseCase {
         List<Order> orders = group.getOrders();
 
         for (Order order : orders){
-            if (!order.getState().equals(WAITING))
-                throw new BusinessException(ORDER_STATE_BAD_REQUEST);
-
-            order.updateState(FAILED);
+            order.validateAndUpdateState(WAITING, FAILED);
         }
     }
 }

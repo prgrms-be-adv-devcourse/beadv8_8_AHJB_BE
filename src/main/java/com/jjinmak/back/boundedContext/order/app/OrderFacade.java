@@ -23,7 +23,7 @@ public class OrderFacade {
     private final OrderConfirmPurchaseUseCase orderConfirmPurchaseUseCase;
     private final OrderPaymentResultUseCase orderPaymentResultUseCase;
     private final OrderRequestRefundUseCase orderRequestRefundUseCase;
-    private final OrderAcceptRefundUseCase orderAcceptRefundUseCase;
+    private final OrderRefundResultUseCase orderRefundResultUseCase;
 
     @Transactional
     public OrderMember syncMember(MemberDto memberDto){
@@ -72,6 +72,11 @@ public class OrderFacade {
 
     @Transactional
     public void acceptRefund(RefundDto refund){
-        orderAcceptRefundUseCase.acceptRefund(refund);
+        orderRefundResultUseCase.acceptRefund(refund);
+    }
+
+    @Transactional
+    public void rejectRefund(RefundDto refund){
+        orderRefundResultUseCase.rejectRefund(refund);
     }
 }
