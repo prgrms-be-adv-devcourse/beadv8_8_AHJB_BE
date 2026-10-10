@@ -1,6 +1,7 @@
 package com.jjinmak.back.boundedContext.auction.app;
 
 import com.jjinmak.back.boundedContext.auction.domain.AuctionMember;
+import com.jjinmak.back.boundedContext.auction.dto.AuctionBidResponseDto;
 import com.jjinmak.back.boundedContext.auction.dto.AuctionCreateDto;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Service;
 public class AuctionFacade {
     private final AuctionSyncMemberUseCase auctionSyncMemberUseCase;
     private final AuctionCreateUseCase auctionCreateUseCase;
-
+    private final AuctionBidUseCase auctionBidUseCase;
     @Transactional
     public AuctionMember syncMember(MemberDto dto){
         return auctionSyncMemberUseCase.syncMember(dto);
@@ -21,6 +22,11 @@ public class AuctionFacade {
     @Transactional
     public void createAuction(AuctionCreateDto dto){
          auctionCreateUseCase.createAuction(dto);
+    }
+
+    @Transactional
+    public AuctionBidResponseDto bid(Long auctionId, Long bidderId, Long bidPrice){
+        return auctionBidUseCase.bid(auctionId,bidderId,bidPrice);
     }
 
 }
