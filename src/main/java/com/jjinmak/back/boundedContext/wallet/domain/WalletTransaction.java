@@ -3,6 +3,7 @@ package com.jjinmak.back.boundedContext.wallet.domain;
 
 import com.jjinmak.back.boundedContext.wallet.domain.enums.ReferenceType;
 import com.jjinmak.back.boundedContext.wallet.domain.enums.WalletTransactionType;
+import com.jjinmak.back.global.exception.BusinessException;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,6 +11,8 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+
+import static com.jjinmak.back.boundedContext.wallet.exception.WalletErrorCode.INVALID_TRANSACTION_AMOUNT;
 
 /**
  * 원장. 지갑 잔액이 바뀔 때마다 한 줄씩 append-only로 기록한다. 수정·삭제하지 않는다.
@@ -79,7 +82,7 @@ public class WalletTransaction {
                               Long referenceId,
                               String idempotencyKey) {
         if (amount == 0) {
-            throw new IllegalArgumentException("원장 금액은 0일 수 없습니다.");
+            throw new BusinessException(INVALID_TRANSACTION_AMOUNT);
         }
         this.wallet = wallet;
         this.type = type;

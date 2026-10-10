@@ -5,7 +5,7 @@ import com.jjinmak.back.boundedContext.wallet.domain.Wallet;
 import com.jjinmak.back.boundedContext.wallet.domain.WalletMember;
 import com.jjinmak.back.boundedContext.wallet.out.WalletMemberRepository;
 import com.jjinmak.back.boundedContext.wallet.out.WalletRepository;
-import com.jjinmak.back.shared.wallet.WalletMemberDto;
+import com.jjinmak.back.shared.wallet.dto.WalletMemberDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

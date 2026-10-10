@@ -1,4 +1,4 @@
-package com.jjinmak.back.shared.wallet;
+package com.jjinmak.back.shared.wallet.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

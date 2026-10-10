@@ -2,7 +2,7 @@ package com.jjinmak.back.boundedContext.wallet.domain;
 
 
 import com.jjinmak.back.global.jpa.entity.BaseManualIdAndTime;
-import com.jjinmak.back.shared.wallet.WalletMemberDto;
+import com.jjinmak.back.shared.wallet.dto.WalletMemberDto;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.validation.constraints.NotNull;

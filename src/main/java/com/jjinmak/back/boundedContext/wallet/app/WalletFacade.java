@@ -2,7 +2,7 @@ package com.jjinmak.back.boundedContext.wallet.app;
 
 import com.jjinmak.back.boundedContext.wallet.domain.WalletMember;
 import com.jjinmak.back.shared.member.dto.MemberDto;
-import com.jjinmak.back.shared.wallet.WalletMemberDto;
+import com.jjinmak.back.shared.wallet.dto.WalletMemberDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
