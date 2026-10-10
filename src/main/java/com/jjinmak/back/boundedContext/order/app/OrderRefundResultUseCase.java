@@ -12,20 +12,21 @@ import java.time.LocalDateTime;
 
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.*;
 import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_NOT_FOUND;
-import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_STATE_BAD_REQUEST;
 
 @Service
 @RequiredArgsConstructor
 public class OrderRefundResultUseCase {
 
+    private final OrderSupport orderSupport;
     private final OrderRepository orderRepository;
 
     public void acceptRefund(RefundDto refund){
         Long orderId = refund.orderId();
 
-        Order order = checkOrder(orderId);
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new BusinessException(ORDER_NOT_FOUND));
 
-        order.updateState(REFUNDED);
+        order.validateAndUpdateState(REFUND_REQUESTED, REFUNDED);
 
         // TODO: 환불 처리됨 이벤트를 발행해야 하나?
     }
@@ -33,9 +34,9 @@ public class OrderRefundResultUseCase {
     public void rejectRefund(RefundDto refund){
         Long orderId = refund.orderId();
 
-        Order order = checkOrder(orderId);
+        Order order = orderSupport.getOrderWithParticipants(orderId);
 
-        order.updateState(CONFIRMED);
+        order.validateAndUpdateState(REFUND_REQUESTED, CONFIRMED);
 
         // TODO: 정산 컨텍스트로 구매 확정됨 이벤트 발행
         OrderConfirmPurchaseEvent event = new OrderConfirmPurchaseEvent(
@@ -43,16 +44,5 @@ public class OrderRefundResultUseCase {
                 order.getProductId(), order.getWinningPrice(), order.getDeliveryFee(),
                 LocalDateTime.now()
         );
-    }
-
-    private Order checkOrder(Long orderId){
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new BusinessException(ORDER_NOT_FOUND));
-
-        if (!order.getState().equals(REFUND_REQUESTED)){
-            throw new BusinessException(ORDER_STATE_BAD_REQUEST);
-        }
-
-        return order;
     }
 }
