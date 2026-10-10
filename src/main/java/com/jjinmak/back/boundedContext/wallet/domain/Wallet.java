@@ -1,17 +1,20 @@
 package com.jjinmak.back.boundedContext.wallet.domain;
 
 import com.jjinmak.back.boundedContext.wallet.domain.enums.WalletType;
-import com.jjinmak.back.global.jpa.entity.BaseManualIdAndTime;
+import com.jjinmak.back.global.exception.BusinessException;
+import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import static com.jjinmak.back.boundedContext.wallet.exception.WalletErrorCode.*;
+
 @Entity
 @NoArgsConstructor
 @Getter
-public class Wallet extends BaseManualIdAndTime {
+public class Wallet extends BaseIdAndTime {
 
     @Column(nullable = false)
     private long balance;
@@ -36,7 +39,6 @@ public class Wallet extends BaseManualIdAndTime {
 
 
     public Wallet(WalletMember holder, WalletType type) {
-        super(holder.getId());
         this.holder = holder;
         this.type = type;
         this.balance = 0L;
@@ -48,7 +50,7 @@ public class Wallet extends BaseManualIdAndTime {
 
     public static Wallet createSystemWallet(WalletType type) {
         if (type == WalletType.USER) {
-            throw new IllegalArgumentException("USER 타입은 시스템 지갑이 될 수 없습니다.");
+            throw new BusinessException(INVALID_SYSTEM_WALLET_TYPE);
         }
         return new Wallet(null, type);
     }
@@ -62,14 +64,14 @@ public class Wallet extends BaseManualIdAndTime {
         validatePositive(amount);
 
         if (this.balance < amount) {
-            throw new IllegalStateException("잔액이 부족합니다. balance=" + balance + ", requested=" + amount);
+            throw new BusinessException(INSUFFICIENT_BALANCE);
         }
         this.balance -= amount;
     }
 
     private void validatePositive(long amount) {
         if (amount <= 0) {
-            throw new IllegalArgumentException("금액은 0보다 커야 합니다. amount=" + amount);
+            throw new BusinessException(INVALID_AMOUNT);
         }
     }
 

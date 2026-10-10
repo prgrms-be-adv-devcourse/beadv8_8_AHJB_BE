@@ -1,7 +1,8 @@
 package com.jjinmak.back.boundedContext.wallet.domain;
 
 import com.jjinmak.back.boundedContext.wallet.domain.enums.HoldingStatus;
-import com.jjinmak.back.global.jpa.entity.BaseManualIdAndTime;
+import com.jjinmak.back.global.exception.BusinessException;
+import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,6 +10,9 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+
+import static com.jjinmak.back.boundedContext.wallet.exception.WalletErrorCode.HOLDING_NOT_HELD;
+import static com.jjinmak.back.boundedContext.wallet.exception.WalletErrorCode.INVALID_FEE_AMOUNT;
 
 /**
  * 주문 1건당 1개. 결제 시 구매자 지갑에서 빠져나간 대금이
@@ -23,7 +27,7 @@ import java.time.LocalDateTime;
 )
 @Getter
 @NoArgsConstructor
-public class Holding extends BaseManualIdAndTime {
+public class Holding extends BaseIdAndTime {
 
 
     /** order 컨텍스트의 주문 id. FK 없음 */
@@ -51,18 +55,16 @@ public class Holding extends BaseManualIdAndTime {
     @Column(nullable = false, length = 20)
     private HoldingStatus status;
 
-    @Column(name = "released_at")
     private LocalDateTime releasedAt;
 
-    @Column(name = "refunded_at")
     private LocalDateTime refundedAt;
 
     private Holding(Long orderId, Wallet buyerWallet, Wallet sellerWallet, long amount, long feeAmount) {
         if (amount <= 0) {
-            throw new IllegalArgumentException("홀딩 금액은 0보다 커야 합니다.");
+            throw new BusinessException(INVALID_FEE_AMOUNT);
         }
         if (feeAmount < 0 || feeAmount > amount) {
-            throw new IllegalArgumentException("수수료는 0 이상, 홀딩 금액 이하여야 합니다.");
+            throw new BusinessException(INVALID_FEE_AMOUNT);
         }
         this.orderId = orderId;
         this.buyerWallet = buyerWallet;
@@ -95,7 +97,7 @@ public class Holding extends BaseManualIdAndTime {
 
     private void requireHeld() {
         if (this.status != HoldingStatus.HELD) {
-            throw new IllegalStateException("HELD 상태에서만 처리할 수 있습니다. 현재 상태=" + status);
+            throw new BusinessException(HOLDING_NOT_HELD);
         }
     }
 }
