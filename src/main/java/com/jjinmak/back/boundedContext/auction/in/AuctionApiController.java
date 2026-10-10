@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +25,7 @@ public class AuctionApiController {
     private final AuctionFacade auctionFacade;
 
     //입찰메서드 추가하기
+    @PreAuthorize("hasAuthority('PERM_TRADE')")
     @PostMapping("/{auctionId}/bids")
     public ResponseEntity<RsData<AuctionBidResponseDto>> bid(
             @PathVariable Long auctionId,
@@ -38,7 +40,7 @@ public class AuctionApiController {
         }
         return ResponseEntity.status(HttpStatus.CREATED).body(new RsData<>(true,"입찰이 완료되었습니다.",response));
     }
-
+    @PreAuthorize("hasAuthority('PERM_TRADE')")
     @PostMapping("/{auctionId}/instant-win")
     public ResponseEntity<RsData<AuctionInstantWinResponseDto>> instantWin(
             @PathVariable Long auctionId,
