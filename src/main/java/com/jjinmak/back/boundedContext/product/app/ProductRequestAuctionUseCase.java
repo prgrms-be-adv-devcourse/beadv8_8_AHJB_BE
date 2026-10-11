@@ -22,10 +22,10 @@ public class ProductRequestAuctionUseCase {
     private final ApplicationEventPublisher eventPublisher;
 
     public List<Long> findTargetIds(LocalDateTime now){
-        return productRepository.findAuctionRequestTargetIds(now.minus(Product.EDITABLE_PERIOD));
+        return productRepository.findAuctionRequestTargetIds(now);
     }
 
-    // 수정 기간이 끝난 상품의 경매 생성을 경매 컨텍스트에 요청한다.
+    // 시작 예정 시각이 된 상품의 경매 생성을 경매 컨텍스트에 요청한다.
     // 경매 생성이 실패하면 요청 표시도 롤백되어 다음 주기에 다시 시도된다.
     public void requestAuction(Long productId, LocalDateTime now){
         Product product = productRepository.findById(productId)
