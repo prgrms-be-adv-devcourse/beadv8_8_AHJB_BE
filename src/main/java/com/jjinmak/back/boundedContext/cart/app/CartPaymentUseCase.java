@@ -4,8 +4,9 @@ import com.jjinmak.back.boundedContext.cart.domain.CartItem;
 import com.jjinmak.back.boundedContext.cart.domain.CartMember;
 import com.jjinmak.back.boundedContext.cart.out.CartItemRepository;
 import com.jjinmak.back.boundedContext.cart.out.CartMemberRepository;
+import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.global.exception.BusinessException;
-import com.jjinmak.back.shared.cart.dto.CartCreateOrderDto;
+import com.jjinmak.back.shared.cart.event.CartCreateOrderEvent;
 import com.jjinmak.back.shared.cart.dto.CartItemDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ public class CartPaymentUseCase {
 
     private final CartMemberRepository cartMemberRepository;
     private final CartItemRepository cartItemRepository;
+    private final EventPublisher eventPublisher;
 
     /**
      * 낙찰자가 해당하는 상품을 보유하고 있는지 검사한 후, 주문 컨텍스트로 이벤트를 발행한다.
@@ -45,7 +47,8 @@ public class CartPaymentUseCase {
                 .mapToLong(i -> i.getWinningPrice() + i.getDeliveryFee())
                 .sum();
 
-        // TODO: 생성된 cartItems를 주문 컨텍스트로 전달
-        CartCreateOrderDto cartCreateOrderDto = new CartCreateOrderDto(totalPrice, cartItemDtoList);
+        CartCreateOrderEvent cartCreateOrderEvent = new CartCreateOrderEvent(totalPrice, cartItemDtoList);
+
+        eventPublisher.publish(cartCreateOrderEvent);
     }
 }
