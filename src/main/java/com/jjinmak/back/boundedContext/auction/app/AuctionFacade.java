@@ -1,6 +1,7 @@
 package com.jjinmak.back.boundedContext.auction.app;
 
 import com.jjinmak.back.boundedContext.auction.domain.AuctionMember;
+import com.jjinmak.back.boundedContext.auction.dto.AuctionBidHistoryResponseDto;
 import com.jjinmak.back.boundedContext.auction.dto.AuctionBidResponseDto;
 import com.jjinmak.back.boundedContext.auction.dto.AuctionCreateDto;
 import com.jjinmak.back.boundedContext.auction.dto.AuctionInstantWinResponseDto;
@@ -16,6 +17,7 @@ public class AuctionFacade {
     private final AuctionCreateUseCase auctionCreateUseCase;
     private final AuctionBidUseCase auctionBidUseCase;
     private final AuctionInstantWinUseCase auctionInstantWinUseCase;
+    private final AuctionBidHistoryUseCase auctionBidHistoryUseCase;
     @Transactional
     public AuctionMember syncMember(MemberDto dto){
         return auctionSyncMemberUseCase.syncMember(dto);
@@ -36,4 +38,8 @@ public class AuctionFacade {
         return auctionInstantWinUseCase.instantWin(auctionId,bidderId);
     }
 
+    @Transactional(readOnly = true)
+    public AuctionBidHistoryResponseDto bidHistory(Long auctionId,Long memberId,int page,int size){
+        return auctionBidHistoryUseCase.bidHistory(auctionId,memberId,page,size);
+    }
 }

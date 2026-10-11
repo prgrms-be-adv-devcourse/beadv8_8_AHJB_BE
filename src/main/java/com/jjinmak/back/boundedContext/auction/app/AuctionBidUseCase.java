@@ -33,7 +33,7 @@ public class AuctionBidUseCase {
             Bid bid = bidRepository.save(new Bid(auction.getId(),bidderId, auction.getInstantWinPrice(), now));
             return new AuctionBidResponseDto(
                     bid.getId(),
-                    bidPrice,
+                    bid.getBidPrice(),
                     auction.getInstantWinPrice(),
                     null,
                     auction.getEndAt(),
@@ -65,7 +65,7 @@ public class AuctionBidUseCase {
                 false
         );
     }
-    // validateBid - 진행중,종료전,판매자아님,최고입찰자아님
+    // validateBid - 진행중,종료전,판매자아님
     private void validateBid(Auction auction,Long bidderId,LocalDateTime now){
         if(auction.getStatus()!= AuctionStatus.IN_PROGRESS){
             throw new BusinessException(AuctionErrorCode.AUCTION_NOT_IN_PROGRESS);

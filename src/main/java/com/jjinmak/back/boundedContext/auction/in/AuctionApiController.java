@@ -1,6 +1,7 @@
 package com.jjinmak.back.boundedContext.auction.in;
 
 import com.jjinmak.back.boundedContext.auction.app.AuctionFacade;
+import com.jjinmak.back.boundedContext.auction.dto.AuctionBidHistoryResponseDto;
 import com.jjinmak.back.boundedContext.auction.dto.AuctionBidResponseDto;
 import com.jjinmak.back.boundedContext.auction.dto.AuctionInstantWinResponseDto;
 import com.jjinmak.back.boundedContext.auction.exception.AuctionErrorCode;
@@ -16,6 +17,8 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
 
 
 @RestController
@@ -54,5 +57,13 @@ public class AuctionApiController {
         }
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new RsData<>(true, "즉시 낙찰되었습니다.", response));
+    }
+
+    @GetMapping("/{auctionId}/bids")
+    public ResponseEntity<RsData<AuctionBidHistoryResponseDto>> bidHistory(
+            @PathVariable Long auctionId,@AuthenticationPrincipal AuthPrincipal principal, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size){
+        AuctionBidHistoryResponseDto response = auctionFacade.bidHistory(auctionId,principal.memberId(),page,size);
+        return  ResponseEntity.ok(new RsData<>(true,"입찰 내역 조회에 성공했습니다.",response));
+
     }
 }
