@@ -4,15 +4,13 @@ import com.jjinmak.back.boundedContext.product.app.ProductFacade;
 import com.jjinmak.back.boundedContext.product.domain.Product;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductCreateRequestDto;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductCreateResponseDto;
+import com.jjinmak.back.boundedContext.product.in.dto.ProductUpdateRequestDto;
 import com.jjinmak.back.global.rsData.RsData;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -31,5 +29,24 @@ public class ProductApiController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(new RsData<>(new ProductCreateResponseDto(product.getId())));
+    }
+
+    @PatchMapping("/{productId}")
+    public ResponseEntity<Void> updateProduct(@PathVariable Long productId,
+                                              @Valid @RequestBody ProductUpdateRequestDto request){
+        productFacade.updateProduct(sellerDev, productId, request);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .build();
+    }
+
+    @DeleteMapping("/{productId}")
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long productId){
+        productFacade.deleteProduct(sellerDev, productId);
+
+        return ResponseEntity
+                .status(HttpStatus.NO_CONTENT)
+                .build();
     }
 }
