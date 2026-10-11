@@ -2,6 +2,7 @@ package com.jjinmak.back.boundedContext.order.app;
 
 import com.jjinmak.back.boundedContext.order.domain.Order;
 import com.jjinmak.back.boundedContext.order.domain.OrderMember;
+import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.shared.order.event.OrderConfirmPurchaseEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import static com.jjinmak.back.boundedContext.order.domain.OrderState.SHIPPED;
 public class OrderConfirmPurchaseUseCase {
 
     private final OrderSupport orderSupport;
+    private final EventPublisher eventPublisher;
 
     public void confirmPurchase(UUID memberId, Long orderId){
 
@@ -28,11 +30,12 @@ public class OrderConfirmPurchaseUseCase {
 
         order.validateAndUpdateState(SHIPPED, CONFIRMED);
 
-        // TODO: 구매 확정 이벤트 발행
         OrderConfirmPurchaseEvent event = new OrderConfirmPurchaseEvent(
                 orderId, winner.getId(), order.getSeller().getId(),
                 order.getProductId(), order.getWinningPrice(), order.getDeliveryFee(),
                 LocalDateTime.now()
         );
+
+        eventPublisher.publish(event);
     }
 }
