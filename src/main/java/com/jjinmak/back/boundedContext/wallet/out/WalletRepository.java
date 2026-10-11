@@ -1,6 +1,7 @@
 package com.jjinmak.back.boundedContext.wallet.out;
 
 import com.jjinmak.back.boundedContext.wallet.domain.Wallet;
+import com.jjinmak.back.boundedContext.wallet.domain.WalletMember;
 import com.jjinmak.back.boundedContext.wallet.domain.enums.WalletType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -11,6 +12,8 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
     Optional<Wallet> findByTypeAndHolderIsNull(WalletType type);
 
     Optional<Wallet> findByHolderId(Long holderId);
+
+    Optional<Wallet> findByHolder(WalletMember member);
 
     boolean existsByTypeAndHolderIsNull(WalletType type);
 }
