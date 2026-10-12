@@ -1,0 +1,89 @@
+package com.jjinmak.back.boundedContext.delivery.out;
+
+import com.jjinmak.back.boundedContext.delivery.out.dto.DeliveryStatusRequestDto;
+import com.jjinmak.back.boundedContext.delivery.out.dto.DeliveryStatusResponseDto;
+import com.jjinmak.back.global.exception.BusinessException;
+import com.jjinmak.back.shared.delivery.domain.CarrierType;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+
+import static com.jjinmak.back.boundedContext.delivery.exception.DeliveryErrorCode.*;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class DeliveryTracker {
+
+    private final RestClient deliveryTrackerRestClient;
+
+    @Value("${DELIVERY_TRACKER_CLIENT_ID:asdf}")
+    private String clientId;
+
+    @Value("${DELIVERY_TRACKER_CLIENT_SECRET:qwer}")
+    private String clientSecret;
+
+    private static final String TRACK_QUERY = """
+        query Track($carrierId: ID!, $trackingNumber: String!) {
+          track(carrierId: $carrierId, trackingNumber: $trackingNumber) {
+            lastEvent {
+              time
+              status { code }
+            }
+          }
+        }
+        """;
+
+    public DeliveryStatusResponseDto trackLastStatus(CarrierType carrier, String waybill){
+        DeliveryStatusRequestDto requestDto = new DeliveryStatusRequestDto(
+                TRACK_QUERY,
+                new DeliveryStatusRequestDto.Variables(carrier.getCarrierCode(), waybill)
+        );
+
+        DeliveryStatusResponseDto response;
+
+        try{
+            response =  deliveryTrackerRestClient.post()
+                    .uri("")
+                    .header(HttpHeaders.AUTHORIZATION, "TRACKQL-API-KEY %s:%s".formatted(clientId, clientSecret))
+                    .body(requestDto)
+                    .exchange((request, res) -> res.bodyTo(DeliveryStatusResponseDto.class));
+        } catch (RestClientException e){
+            log.error("배송 조회 API 호출 실패", e);
+            throw new BusinessException(DELIVERY_TRACKING_UNAVAILABLE);
+        }
+
+        if (response == null)
+            throw new BusinessException(DELIVERY_TRACKING_UNAVAILABLE);
+
+        throwIfError(response);
+
+        if (response.data() == null || response.data().track() == null || response.data().track().lastEvent() == null)
+            throw new BusinessException(DELIVERY_TRACKING_NOT_FOUND);
+
+        return response;
+    }
+
+    private void throwIfError(DeliveryStatusResponseDto response){
+        if (response.errors() == null || response.errors().isEmpty()){
+            return;
+        }
+
+        DeliveryStatusResponseDto.GraphQlError error = response.errors().getFirst();
+        String code = (error.extensions() == null || error.extensions().code() == null)
+                ? "" : error.extensions().code();
+
+        switch (code) {
+            case "NOT_FOUND" -> throw new BusinessException(DELIVERY_TRACKING_NOT_FOUND);
+            case "BAD_REQUEST" -> throw new BusinessException(DELIVERY_TRACKING_INVALID_WAYBILL);
+            default -> {
+                log.error("배송 조회 API 오류: code=%s, message=%s".formatted(code, error.message()));
+                throw new BusinessException(DELIVERY_TRACKING_UNAVAILABLE);
+            }
+        }
+    }
+}
