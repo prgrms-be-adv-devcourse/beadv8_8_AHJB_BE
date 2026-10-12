@@ -2,7 +2,9 @@ package com.jjinmak.back.boundedContext.order.in;
 
 import com.jjinmak.back.boundedContext.order.app.OrderFacade;
 import com.jjinmak.back.boundedContext.order.app.dto.OrderDto;
+import com.jjinmak.back.boundedContext.order.in.dto.OrderDeliveryDto;
 import com.jjinmak.back.global.rsData.RsData;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -53,6 +55,13 @@ public class OrderApiController {
     @PostMapping("/{orderId}/request-refund")
     public ResponseEntity<RsData<Void>> requestRefund(@PathVariable Long orderId){
         orderFacade.requestRefund(userDev, orderId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(null));
+    }
+
+    @PostMapping("/{orderId}/send-product")
+    public ResponseEntity<RsData<Void>> requestDelivery(@PathVariable Long orderId, @Valid @RequestBody OrderDeliveryDto dto){
+        orderFacade.requestDelivery(userDev, orderId, dto.carrier(), dto.waybill());
 
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(null));
     }

@@ -80,7 +80,7 @@ public class Order extends BaseIdAndTime {
         }
     }
 
-    private void validateState(OrderState state){
+    public void validateState(OrderState state){
         if (!this.state.equals(state)){
             throw new BusinessException(ORDER_STATE_BAD_REQUEST);
         }
