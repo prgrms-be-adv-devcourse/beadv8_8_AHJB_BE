@@ -30,6 +30,11 @@ public class OrderSupport {
                 .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
     }
 
+    public Order getOrder(Long orderId){
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new BusinessException(ORDER_NOT_FOUND));
+    }
+
     public Order getOrderWithParticipants(Long orderId){
         return orderRepository.findByIdWithWinnerAndSeller(orderId)
                 .orElseThrow(() -> new BusinessException(ORDER_NOT_FOUND));

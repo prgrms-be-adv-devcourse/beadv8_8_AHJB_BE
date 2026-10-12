@@ -1,8 +1,8 @@
-package com.jjinmak.back.shared.order.dto;
+package com.jjinmak.back.shared.order.event;
 
 import java.util.UUID;
 
-public record OrderCreatePaymentDto(
+public record OrderCreatePaymentEvent(
         Long orderGroupId,
         UUID winnerId,
         Long totalPrice

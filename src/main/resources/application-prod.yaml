@@ -4,5 +4,11 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
 jwt:
   secret: ${JWT_SECRET}

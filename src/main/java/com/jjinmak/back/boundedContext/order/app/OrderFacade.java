@@ -3,7 +3,9 @@ package com.jjinmak.back.boundedContext.order.app;
 import com.jjinmak.back.boundedContext.order.app.dto.OrderDto;
 import com.jjinmak.back.boundedContext.order.domain.OrderGroup;
 import com.jjinmak.back.boundedContext.order.domain.OrderMember;
-import com.jjinmak.back.shared.cart.dto.CartCreateOrderDto;
+import com.jjinmak.back.shared.cart.event.CartCreateOrderEvent;
+import com.jjinmak.back.shared.delivery.domain.CarrierType;
+import com.jjinmak.back.shared.delivery.event.DeliveryCreatedEvent;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import com.jjinmak.back.shared.refund.dto.RefundDto;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ public class OrderFacade {
     private final OrderPaymentResultUseCase orderPaymentResultUseCase;
     private final OrderRequestRefundUseCase orderRequestRefundUseCase;
     private final OrderRefundResultUseCase orderRefundResultUseCase;
+    private final OrderDeliveryUseCase orderDeliveryUseCase;
 
     @Transactional
     public OrderMember syncMember(MemberDto memberDto){
@@ -31,8 +34,8 @@ public class OrderFacade {
     }
 
     @Transactional
-    public OrderGroup createOrder(CartCreateOrderDto dto){
-        return orderPaymentUseCase.tryPayment(dto);
+    public void createOrder(CartCreateOrderEvent event){
+        orderPaymentUseCase.tryPayment(event);
     }
 
     @Transactional(readOnly = true)
@@ -78,5 +81,15 @@ public class OrderFacade {
     @Transactional
     public void rejectRefund(RefundDto refund){
         orderRefundResultUseCase.rejectRefund(refund);
+    }
+
+    @Transactional(readOnly = true)
+    public void requestDelivery(UUID sellerId, Long orderId, CarrierType carrier, String waybill){
+        orderDeliveryUseCase.requestDelivery(sellerId, orderId, carrier, waybill);
+    }
+
+    @Transactional
+    public void startDelivery(DeliveryCreatedEvent event){
+        orderDeliveryUseCase.startDelivery(event);
     }
 }
