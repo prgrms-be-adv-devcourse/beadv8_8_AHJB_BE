@@ -4,7 +4,6 @@ import com.jjinmak.back.boundedContext.order.app.dto.OrderDto;
 import com.jjinmak.back.boundedContext.order.domain.Order;
 import com.jjinmak.back.boundedContext.order.domain.OrderMember;
 import com.jjinmak.back.boundedContext.order.domain.OrderState;
-import com.jjinmak.back.boundedContext.order.out.OrderMemberRepository;
 import com.jjinmak.back.boundedContext.order.out.OrderRepository;
 import com.jjinmak.back.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -16,9 +15,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.*;
-import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_FORBIDDEN;
 import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_NOT_FOUND;
-import static com.jjinmak.back.global.exception.CommonErrorCode.USER_NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor
@@ -28,13 +25,12 @@ public class OrderReadOrderUseCase {
             PAID, SHIPPING, SHIPPED, CONFIRMED, REFUND_REQUESTED, REFUNDED
     );
 
+    private final OrderSupport orderSupport;
     private final OrderRepository orderRepository;
-    private final OrderMemberRepository orderMemberRepository;
 
     public List<OrderDto> readWinnerOrders(UUID winnerId){
 
-        OrderMember winner = orderMemberRepository.findByUuid(winnerId)
-                .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
+        OrderMember winner = orderSupport.getMember(winnerId);
 
         List<Order> orders = orderRepository.findAllByWinnerAndStateIn(winner, READ_STATES);
 
@@ -49,8 +45,7 @@ public class OrderReadOrderUseCase {
 
     public List<OrderDto> readSellerOrders(UUID sellerId){
 
-        OrderMember seller = orderMemberRepository.findByUuid(sellerId)
-                .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
+        OrderMember seller = orderSupport.getMember(sellerId);
 
         List<Order> orders = orderRepository.findAllBySellerAndStateIn(seller,READ_STATES);
 
@@ -65,16 +60,12 @@ public class OrderReadOrderUseCase {
 
     public OrderDto readOrder(UUID memberId, Long orderId){
 
-        // TODO: 불필요한 member 조회 리팩토링 필요
-        OrderMember member = orderMemberRepository.findByUuid(memberId)
-                .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
+        OrderMember member = orderSupport.getMember(memberId);
 
         Order order = orderRepository.findByIdAndStateInWithWinnerAndSeller(orderId, READ_STATES)
                 .orElseThrow(() -> new BusinessException(ORDER_NOT_FOUND));
 
-        if (!order.isWinner(member) && !order.isSeller(member)){
-            throw new BusinessException(ORDER_FORBIDDEN);
-        }
+        order.validateParticipant(member);
 
         return new OrderDto(
                 order.getId(), order.getWinner().getUuid(), order.getSeller().getUuid(),

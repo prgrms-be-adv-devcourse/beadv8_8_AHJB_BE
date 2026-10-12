@@ -3,7 +3,7 @@ package com.jjinmak.back.boundedContext.order.app;
 import com.jjinmak.back.boundedContext.order.app.dto.OrderDto;
 import com.jjinmak.back.boundedContext.order.domain.OrderGroup;
 import com.jjinmak.back.boundedContext.order.domain.OrderMember;
-import com.jjinmak.back.shared.cart.dto.CartCreateOrderDto;
+import com.jjinmak.back.shared.cart.event.CartCreateOrderEvent;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import com.jjinmak.back.shared.refund.dto.RefundDto;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class OrderFacade {
     private final OrderConfirmPurchaseUseCase orderConfirmPurchaseUseCase;
     private final OrderPaymentResultUseCase orderPaymentResultUseCase;
     private final OrderRequestRefundUseCase orderRequestRefundUseCase;
-    private final OrderAcceptRefundUseCase orderAcceptRefundUseCase;
+    private final OrderRefundResultUseCase orderRefundResultUseCase;
 
     @Transactional
     public OrderMember syncMember(MemberDto memberDto){
@@ -31,8 +31,8 @@ public class OrderFacade {
     }
 
     @Transactional
-    public OrderGroup createOrder(CartCreateOrderDto dto){
-        return orderPaymentUseCase.tryPayment(dto);
+    public void createOrder(CartCreateOrderEvent event){
+        orderPaymentUseCase.tryPayment(event);
     }
 
     @Transactional(readOnly = true)
@@ -72,6 +72,11 @@ public class OrderFacade {
 
     @Transactional
     public void acceptRefund(RefundDto refund){
-        orderAcceptRefundUseCase.acceptRefund(refund);
+        orderRefundResultUseCase.acceptRefund(refund);
+    }
+
+    @Transactional
+    public void rejectRefund(RefundDto refund){
+        orderRefundResultUseCase.rejectRefund(refund);
     }
 }

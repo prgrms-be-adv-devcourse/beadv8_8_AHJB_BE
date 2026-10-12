@@ -3,6 +3,7 @@ package com.jjinmak.back.boundedContext.order.app;
 import com.jjinmak.back.boundedContext.order.domain.Order;
 import com.jjinmak.back.boundedContext.order.domain.OrderGroup;
 import com.jjinmak.back.boundedContext.order.out.OrderGroupRepository;
+import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.order.event.OrderPaymentSucceedEvent;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.*;
 public class OrderPaymentResultUseCase {
 
     private final OrderGroupRepository orderGroupRepository;
+    private final EventPublisher eventPublisher;
 
     public void paymentSucceed(Long groupId){
         OrderGroup group = orderGroupRepository.findByIdWithOrders(groupId)
@@ -34,9 +36,9 @@ public class OrderPaymentResultUseCase {
 
         LocalDateTime paidAt = LocalDateTime.now();
 
-        // TODO: 결제성공 이벤트 발행
         for (Order order : orders){
             OrderPaymentSucceedEvent event = new OrderPaymentSucceedEvent(order.getId(), order.getProductId(), paidAt);
+            eventPublisher.publish(event);
         }
     }
 
@@ -47,10 +49,7 @@ public class OrderPaymentResultUseCase {
         List<Order> orders = group.getOrders();
 
         for (Order order : orders){
-            if (!order.getState().equals(WAITING))
-                throw new BusinessException(ORDER_STATE_BAD_REQUEST);
-
-            order.updateState(FAILED);
+            order.validateAndUpdateState(WAITING, FAILED);
         }
     }
 }

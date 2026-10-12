@@ -1,6 +1,7 @@
 package com.jjinmak.back.boundedContext.order.in;
 
 import com.jjinmak.back.boundedContext.order.app.OrderFacade;
+import com.jjinmak.back.shared.cart.event.CartCreateOrderEvent;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import com.jjinmak.back.shared.member.event.MemberCreatedEvent;
 import lombok.RequiredArgsConstructor;
@@ -23,5 +24,11 @@ public class OrderEventListener {
         MemberDto member = event.member();
 
         orderFacade.syncMember(member);
+    }
+
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    @Transactional(propagation = REQUIRES_NEW)
+    public void handle(CartCreateOrderEvent event){
+        orderFacade.createOrder(event);
     }
 }

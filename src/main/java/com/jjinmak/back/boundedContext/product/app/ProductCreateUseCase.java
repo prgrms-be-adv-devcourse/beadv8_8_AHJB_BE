@@ -1,6 +1,5 @@
 package com.jjinmak.back.boundedContext.product.app;
 
-import com.jjinmak.back.boundedContext.product.domain.AuctionDuration;
 import com.jjinmak.back.boundedContext.product.domain.Product;
 import com.jjinmak.back.boundedContext.product.domain.ProductAuctionTerms;
 import com.jjinmak.back.boundedContext.product.domain.ProductErrorCode;
@@ -35,8 +34,6 @@ public class ProductCreateUseCase {
         }
 
         AuctionTerms auctionTerms = request.auctionTerms();
-        validateAuctionTerms(auctionTerms);
-
         Shipping shipping = request.shipping();
 
         // 경매 조건은 수정 기간 동안 보관했다가, 수정 기간이 끝나면 경매 컨텍스트로 전달한다.
@@ -45,24 +42,12 @@ public class ProductCreateUseCase {
                 request.manufacturer(), request.manufacturerEtc(), request.description(),
                 shipping.feeType(), shipping.customFee(), shipping.bundleAllowed(),
                 request.policyVersion(), LocalDateTime.now(),
-                new ProductAuctionTerms(
+                ProductAuctionTerms.create(
                         auctionTerms.startingPrice(), auctionTerms.instantWinPrice(),
                         auctionTerms.duration(), auctionTerms.customEndAt()
                 )
         );
 
         return productRepository.save(product);
-    }
-
-    private void validateAuctionTerms(AuctionTerms auctionTerms){
-        Long instantWinPrice = auctionTerms.instantWinPrice();
-
-        if (instantWinPrice != null && instantWinPrice <= auctionTerms.startingPrice()){
-            throw new BusinessException(ProductErrorCode.INVALID_INSTANT_WIN_PRICE);
-        }
-
-        if (auctionTerms.duration() == AuctionDuration.CUSTOM && auctionTerms.customEndAt() == null){
-            throw new BusinessException(ProductErrorCode.DIRECT_INPUT_REQUIRED);
-        }
     }
 }

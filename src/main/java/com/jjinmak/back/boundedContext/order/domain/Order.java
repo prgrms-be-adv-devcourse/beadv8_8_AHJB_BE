@@ -1,5 +1,6 @@
 package com.jjinmak.back.boundedContext.order.domain;
 
+import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -7,6 +8,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+
+import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_FORBIDDEN;
+import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_STATE_BAD_REQUEST;
 
 @Getter
 @Entity
@@ -55,11 +59,30 @@ public class Order extends BaseIdAndTime {
         this.state = state;
     }
 
-    public boolean isWinner(OrderMember member){
-        return this.winner.getId().equals(member.getId());
+    public void validateAndUpdateState(OrderState before, OrderState after){
+        validateState(before);
+        this.state = after;
     }
 
-    public boolean isSeller(OrderMember member){
-        return this.seller.getId().equals(member.getId());
+    public void validateWinner(OrderMember member){
+        if (!this.winner.getId().equals(member.getId()))
+            throw new BusinessException(ORDER_FORBIDDEN);
+    }
+
+    public void validateSeller(OrderMember member){
+        if (!this.seller.getId().equals(member.getId()))
+            throw new BusinessException(ORDER_FORBIDDEN);
+    }
+
+    public void validateParticipant(OrderMember member){
+        if (!this.winner.getId().equals(member.getId()) && !this.seller.getId().equals(member.getId())){
+            throw new BusinessException(ORDER_FORBIDDEN);
+        }
+    }
+
+    private void validateState(OrderState state){
+        if (!this.state.equals(state)){
+            throw new BusinessException(ORDER_STATE_BAD_REQUEST);
+        }
     }
 }
