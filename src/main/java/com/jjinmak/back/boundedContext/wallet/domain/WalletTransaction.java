@@ -104,8 +104,11 @@ public class WalletTransaction {
                                        String transactionGroupId,
                                        ReferenceType referenceType,
                                        Long referenceId) {
-        String key = referenceType + ":" + referenceId + ":" + type;
         return new WalletTransaction(wallet, type, signedAmount, transactionGroupId,
-                referenceType, referenceId, key);
+                referenceType, referenceId, idempotencyKeyOf(referenceType, referenceId, type));
+    }
+
+    public static String idempotencyKeyOf(ReferenceType referenceType, Long referenceId, WalletTransactionType type) {
+        return referenceType + ":" + referenceId + ":" + type;
     }
 }

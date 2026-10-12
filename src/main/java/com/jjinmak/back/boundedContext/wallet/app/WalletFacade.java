@@ -14,6 +14,7 @@ public class WalletFacade {
     private final WalletSyncMemberUseCase walletSyncMemberUseCase;
     private final WalletCreateUseCase walletCreateUseCase;
     private final WalletChargeUseCase walletChargeUseCase;
+    private final WalletChargeCancelUseCase walletChargeCancelUseCase;
 
     @Transactional
     public WalletMember syncMember(MemberDto member) {
@@ -28,5 +29,15 @@ public class WalletFacade {
     @Transactional
     public void charge(ChargeDto dto) {
         walletChargeUseCase.charge(dto);
+    }
+
+    @Transactional
+    public void cancelCharge(ChargeDto dto) {
+        walletChargeCancelUseCase.cancelCharge(dto);
+    }
+
+    @Transactional
+    public void revertCancelCharge(ChargeDto dto) {
+        walletChargeCancelUseCase.revertCancelCharge(dto);
     }
 }
