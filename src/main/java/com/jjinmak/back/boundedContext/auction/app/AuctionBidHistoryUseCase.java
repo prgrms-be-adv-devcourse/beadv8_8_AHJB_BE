@@ -43,7 +43,7 @@ public class AuctionBidHistoryUseCase {
         //dto로 변환
         List<AuctionBidHistoryItemDto> content = bids.stream().map(bid -> new AuctionBidHistoryItemDto(
                 bid.getId(),
-                maskNickname(nicknameMap.getOrDefault(bid.getBidderId(),"알 수 없음")),
+                maskNickname(nicknameMap.get(bid.getBidderId())),
                 bid.getBidPrice(),
                 bid.getBidAt(),
                 bid.getBidderId().equals(memberId)
@@ -53,6 +53,7 @@ public class AuctionBidHistoryUseCase {
         return new AuctionBidHistoryResponseDto(content,bids.getNumber(),bids.getSize(),bids.getTotalElements(),bids.hasNext());
     }
     private String maskNickname(String nickname){
+        if(nickname==null){return"알 수 없음";}
         if(nickname.length()<=1){return "*";}
         return nickname.charAt(0)+"**";
     }
