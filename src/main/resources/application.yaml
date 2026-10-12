@@ -3,3 +3,7 @@ spring:
     name: back
   jpa:
     open-in-view: false
+
+jwt:
+  access-token-expiration: 900000
+  secret: dGhpcy1pcy1hLXZlcnktbG9uZy1zZWNyZXQta2V5LWZvci1qd3QtaHMyNTY=
