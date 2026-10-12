@@ -15,10 +15,10 @@ public class WalletCreateUseCase {
     private final WalletRepository walletRepository;
     private final WalletMemberRepository walletMemberRepository;
 
-    public Wallet createWallet(WalletMemberDto member) {
-        WalletMember _member = walletMemberRepository.getReferenceById(member.getId());
+    public void createWallet(WalletMemberDto member) {
+        WalletMember _member = walletMemberRepository.getReferenceById(member.id());
         Wallet wallet = Wallet.createUserWallet(_member);
 
-        return walletRepository.save(wallet);
+        walletRepository.save(wallet);
     }
 }

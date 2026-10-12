@@ -9,7 +9,7 @@ package com.jjinmak.back.boundedContext.wallet.domain.enums;
 public enum WalletTransactionType {
 
     // ===== 충전 =====
-    CHARGE,          // 충전: 외부 PG → USER (+)
+    CHARGE,                  // 충전: 외부 PG → USER (+)
 
     // ===== 결제 (홀딩) =====
     HOLD_PAY,                // 결제: 구매자 USER (-)
@@ -25,6 +25,9 @@ public enum WalletTransactionType {
 
     // ===== 환불 =====
     REFUND_PAY,              // 환불: ESCROW (-)
-    REFUND_RECEIVE           // 환불: 구매자 USER (+)
+    REFUND_RECEIVE,          // 환불: 구매자 USER (+)
+
+    // ===== 수정 =====
+    REVERSAL                 // 수정: 잘못된 기록 수정 (+), (-)
 }
 

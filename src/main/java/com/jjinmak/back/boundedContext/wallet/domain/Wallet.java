@@ -3,6 +3,7 @@ package com.jjinmak.back.boundedContext.wallet.domain;
 import com.jjinmak.back.boundedContext.wallet.domain.enums.WalletType;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
+import com.jjinmak.back.shared.wallet.dto.WalletBalanceDto;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -44,6 +45,14 @@ public class Wallet extends BaseIdAndTime {
         this.balance = 0L;
     }
 
+
+    public WalletBalanceDto toDto() {
+        return new WalletBalanceDto(
+                getId(),
+                balance
+        );
+    }
+
     public static Wallet createUserWallet(WalletMember member) {
         return new Wallet(member, WalletType.USER);
     }
@@ -55,12 +64,12 @@ public class Wallet extends BaseIdAndTime {
         return new Wallet(null, type);
     }
 
-    public void increase(long amount) {
+    public void deposit(long amount) {
         validatePositive(amount);
         this.balance += amount;
     }
 
-    public void decrease(long amount) {
+    public void withdrawal(long amount) {
         validatePositive(amount);
 
         if (this.balance < amount) {

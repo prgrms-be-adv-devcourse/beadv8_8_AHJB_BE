@@ -98,14 +98,14 @@ public class WalletTransaction {
     /**
      * 지갑 잔액을 먼저 변경한 뒤 호출한다. balanceAfter는 호출 시점의 wallet.balance를 그대로 저장한다.
      */
-    public static WalletTransaction record(Wallet wallet,
-                                           WalletTransactionType type,
-                                           long signedAmount,
-                                           String transactionGroupId,
-                                           ReferenceType referenceType,
-                                           Long referenceId,
-                                           String idempotencyKey) {
+    public static WalletTransaction of(Wallet wallet,
+                                       WalletTransactionType type,
+                                       long signedAmount,
+                                       String transactionGroupId,
+                                       ReferenceType referenceType,
+                                       Long referenceId) {
+        String key = referenceType + ":" + referenceId + ":" + type;
         return new WalletTransaction(wallet, type, signedAmount, transactionGroupId,
-                referenceType, referenceId, idempotencyKey);
+                referenceType, referenceId, key);
     }
 }
