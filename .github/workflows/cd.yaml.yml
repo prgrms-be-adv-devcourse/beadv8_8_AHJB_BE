@@ -87,15 +87,15 @@ jobs:
       - name: compose 파일 동기화 및 배포
         run: |
           IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}:${{ github.sha }}"
-                    cp docker-compose.server.yaml ~/app/docker-compose.server.yaml
-                    cd ~/app
-                    sed -i "s|^APP_IMAGE=.*|APP_IMAGE=${IMAGE}|" .env
-                    docker compose -f docker-compose.server.yaml pull app
-                    docker compose -f docker-compose.server.yaml up -d
-                    docker compose -f docker-compose.server.yaml ps
+          cp docker-compose.server.yaml ~/app/docker-compose.server.yaml
+          cd ~/app
+          sed -i "s|^APP_IMAGE=.*|APP_IMAGE=${IMAGE}|" .env
+          docker compose -f docker-compose.server.yaml pull app
+          docker compose -f docker-compose.server.yaml up -d
+          docker compose -f docker-compose.server.yaml ps
 
       - name: 사용하지 않는 이미지 정리
-        run: docker image prune -f
+        run: docker image prune -af
       - name: GHCR 로그아웃
         if: always()
         run: docker logout ghcr.io
