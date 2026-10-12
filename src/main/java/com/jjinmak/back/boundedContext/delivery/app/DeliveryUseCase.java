@@ -1,5 +1,6 @@
 package com.jjinmak.back.boundedContext.delivery.app;
 
+import com.jjinmak.back.boundedContext.delivery.app.dto.DeliveryResponseDto;
 import com.jjinmak.back.boundedContext.delivery.domain.Delivery;
 import com.jjinmak.back.boundedContext.delivery.domain.DeliveryMember;
 import com.jjinmak.back.boundedContext.delivery.out.DeliveryRepository;
@@ -9,6 +10,8 @@ import com.jjinmak.back.shared.delivery.event.DeliveryCreatedEvent;
 import com.jjinmak.back.shared.order.event.OrderSendProductEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -35,5 +38,16 @@ public class DeliveryUseCase {
         DeliveryCreatedEvent deliveryCreatedEvent = new DeliveryCreatedEvent(orderId);
 
         eventPublisher.publish(deliveryCreatedEvent);
+    }
+
+    public DeliveryResponseDto updateDeliveryData(UUID sellerId, Long orderId, CarrierType carrier, String waybill){
+        Delivery delivery = deliverySupport.getDeliveryWithParticipant(orderId);
+        DeliveryMember seller = deliverySupport.getMember(sellerId);
+
+        delivery.validateSeller(seller);
+
+        delivery.update(carrier, waybill);
+
+        return new DeliveryResponseDto(delivery.getOrderId(), delivery.getCarrier(), delivery.getWaybill());
     }
 }
