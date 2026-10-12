@@ -28,13 +28,13 @@ public class WalletChargeUseCase {
         Wallet customerWallet = walletSupport.findWalletByHolderId(chargeDto.holderId())
                 .orElseThrow(() -> new BusinessException(WALLET_NOT_FOUND));
 
-        if (chargeDto.pgAmount() > 0) {
-            customerWallet.deposit(chargeDto.pgAmount());
+        if (chargeDto.amount() > 0) {
+            customerWallet.deposit(chargeDto.amount());
             walletTransactionRepository.save(
                     WalletTransaction.of(
                             customerWallet,
                         WalletTransactionType.CHARGE,
-                        chargeDto.pgAmount(),
+                        chargeDto.amount(),
                         UUID.randomUUID().toString(),
                         ReferenceType.PAYMENT,
                         chargeDto.paymentId())
