@@ -1,6 +1,7 @@
 package com.jjinmak.back.boundedContext.delivery.app;
 
 import com.jjinmak.back.boundedContext.delivery.app.dto.DeliveryResponseDto;
+import com.jjinmak.back.boundedContext.delivery.app.dto.DeliveryStatusDto;
 import com.jjinmak.back.shared.delivery.domain.CarrierType;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import com.jjinmak.back.shared.order.event.OrderSendProductEvent;
@@ -30,5 +31,9 @@ public class DeliveryFacade {
     @Transactional
     public DeliveryResponseDto updateDeliveryData(UUID sellerId, Long orderId, CarrierType carrier, String waybill){
         return deliveryUseCase.updateDeliveryData(sellerId, orderId, carrier, waybill);
+    }
+
+    public DeliveryStatusDto getDeliveryStatus(UUID memberId, Long orderId){
+        return deliveryUseCase.getDeliveryStatus(memberId, orderId);
     }
 }
