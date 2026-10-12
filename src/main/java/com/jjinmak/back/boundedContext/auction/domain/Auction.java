@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+
 import java.time.LocalDateTime;
 
 
@@ -80,4 +81,35 @@ public class Auction extends BaseIdAndTime {
         return new Auction(productId, sellerId, startPrice, instantWinPrice,
                 shippingFee, now, endAt);
     }
+
+    // 입찰
+    public Long getCurrentPrice(){
+        if(bidCount==0){return startPrice;}
+        return highestBidPrice;
+    }
+    public Long getMinBidPrice(){
+        if(bidCount==0){return startPrice;}
+        return highestBidPrice + BidIncrement.unitOf(highestBidPrice);
+    }
+    public boolean isEnded(LocalDateTime now){
+        return !now.isBefore(endAt);
+    }
+
+    public void updateHighestBid(Long bidderId, Long price){
+        this.highestBidPrice=price;
+        this.highestBidderId=bidderId;
+        this.bidCount++;
+    }
+    public void extendEndAt(LocalDateTime newEndAt){
+        this.endAt=newEndAt;
+    }
+    //즉시낙찰
+    public void winInstantly(Long bidderId, LocalDateTime now){
+        updateHighestBid(bidderId,instantWinPrice);
+        this.status=AuctionStatus.WON;
+        this.winnerId=bidderId;
+        this.winningPrice=instantWinPrice;
+        this.winAt=now;
+    }
+
 }
