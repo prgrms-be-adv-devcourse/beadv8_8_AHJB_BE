@@ -106,10 +106,31 @@ public class Auction extends BaseIdAndTime {
     //즉시낙찰
     public void winInstantly(Long bidderId, LocalDateTime now){
         updateHighestBid(bidderId,instantWinPrice);
+        win(bidderId,instantWinPrice,now);
         this.status=AuctionStatus.WON;
         this.winnerId=bidderId;
         this.winningPrice=instantWinPrice;
         this.winAt=now;
+    }
+    //낙찰관련 메소드
+    public boolean hasBids(){return bidCount>0;}
+
+    public void win(Long winnerId,Long price,LocalDateTime now){
+        validateInProgress();
+        this.status=AuctionStatus.WON;
+        this.winnerId=winnerId;
+        this.winningPrice=price;
+        this.winAt=now;
+    }
+    public void fail(FailureReason reason){
+        validateInProgress();
+        this.status=AuctionStatus.FAILED;
+        this.failureReason = reason;
+    }
+    private void validateInProgress(){
+        if(status!=AuctionStatus.IN_PROGRESS){
+            throw new IllegalStateException("진행 중인 경매만 종료할 수 있습니다. status="+status);
+        }
     }
 
 }
