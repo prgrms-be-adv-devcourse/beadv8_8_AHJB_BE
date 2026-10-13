@@ -3,8 +3,11 @@ package com.jjinmak.back.boundedContext.order.app;
 import com.jjinmak.back.boundedContext.order.app.dto.OrderDto;
 import com.jjinmak.back.boundedContext.order.domain.OrderGroup;
 import com.jjinmak.back.boundedContext.order.domain.OrderMember;
-import com.jjinmak.back.shared.cart.dto.CartCreateOrderDto;
+import com.jjinmak.back.shared.cart.event.CartCreateOrderEvent;
+import com.jjinmak.back.shared.delivery.domain.CarrierType;
+import com.jjinmak.back.shared.delivery.event.DeliveryCreatedEvent;
 import com.jjinmak.back.shared.member.dto.MemberDto;
+import com.jjinmak.back.shared.refund.dto.RefundDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +23,10 @@ public class OrderFacade {
     private final OrderPaymentUseCase orderPaymentUseCase;
     private final OrderReadOrderUseCase orderReadOrderUseCase;
     private final OrderConfirmPurchaseUseCase orderConfirmPurchaseUseCase;
+    private final OrderPaymentResultUseCase orderPaymentResultUseCase;
+    private final OrderRequestRefundUseCase orderRequestRefundUseCase;
+    private final OrderRefundResultUseCase orderRefundResultUseCase;
+    private final OrderDeliveryUseCase orderDeliveryUseCase;
 
     @Transactional
     public OrderMember syncMember(MemberDto memberDto){
@@ -27,8 +34,8 @@ public class OrderFacade {
     }
 
     @Transactional
-    public OrderGroup createOrder(CartCreateOrderDto dto){
-        return orderPaymentUseCase.tryPayment(dto);
+    public void createOrder(CartCreateOrderEvent event){
+        orderPaymentUseCase.tryPayment(event);
     }
 
     @Transactional(readOnly = true)
@@ -49,5 +56,40 @@ public class OrderFacade {
     @Transactional
     public void confirmPurchase(UUID memberId, Long orderId){
         orderConfirmPurchaseUseCase.confirmPurchase(memberId, orderId);
+    }
+
+    @Transactional
+    public void paymentSucceed(Long groupId){
+        orderPaymentResultUseCase.paymentSucceed(groupId);
+    }
+
+    @Transactional
+    public void paymentFailed(Long groupId){
+        orderPaymentResultUseCase.paymentFailed(groupId);
+    }
+
+    @Transactional
+    public void requestRefund(UUID memberId, Long orderId){
+        orderRequestRefundUseCase.requestRefund(memberId, orderId);
+    }
+
+    @Transactional
+    public void acceptRefund(RefundDto refund){
+        orderRefundResultUseCase.acceptRefund(refund);
+    }
+
+    @Transactional
+    public void rejectRefund(RefundDto refund){
+        orderRefundResultUseCase.rejectRefund(refund);
+    }
+
+    @Transactional(readOnly = true)
+    public void requestDelivery(UUID sellerId, Long orderId, CarrierType carrier, String waybill){
+        orderDeliveryUseCase.requestDelivery(sellerId, orderId, carrier, waybill);
+    }
+
+    @Transactional
+    public void startDelivery(DeliveryCreatedEvent event){
+        orderDeliveryUseCase.startDelivery(event);
     }
 }

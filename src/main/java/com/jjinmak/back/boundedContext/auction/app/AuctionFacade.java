@@ -1,7 +1,10 @@
 package com.jjinmak.back.boundedContext.auction.app;
 
 import com.jjinmak.back.boundedContext.auction.domain.AuctionMember;
+import com.jjinmak.back.boundedContext.auction.dto.AuctionBidHistoryResponseDto;
+import com.jjinmak.back.boundedContext.auction.dto.AuctionBidResponseDto;
 import com.jjinmak.back.boundedContext.auction.dto.AuctionCreateDto;
+import com.jjinmak.back.boundedContext.auction.dto.AuctionInstantWinResponseDto;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -12,20 +15,31 @@ import org.springframework.stereotype.Service;
 public class AuctionFacade {
     private final AuctionSyncMemberUseCase auctionSyncMemberUseCase;
     private final AuctionCreateUseCase auctionCreateUseCase;
-    private final AuctionReAuctionUseCase auctionReAuctionUseCase;
-
+    private final AuctionBidUseCase auctionBidUseCase;
+    private final AuctionInstantWinUseCase auctionInstantWinUseCase;
+    private final AuctionBidHistoryUseCase auctionBidHistoryUseCase;
     @Transactional
     public AuctionMember syncMember(MemberDto dto){
         return auctionSyncMemberUseCase.syncMember(dto);
     }
 
     @Transactional
-    public Long createAuction(AuctionCreateDto dto){
-        return auctionCreateUseCase.createAuction(dto);
+    public void createAuction(AuctionCreateDto dto){
+         auctionCreateUseCase.createAuction(dto);
     }
 
     @Transactional
-    public Long reAuction(AuctionCreateDto dto) {
-        return auctionReAuctionUseCase.reAuction(dto);
+    public AuctionBidResponseDto bid(Long auctionId, Long bidderId, Long bidPrice){
+        return auctionBidUseCase.bid(auctionId,bidderId,bidPrice);
+    }
+
+    @Transactional
+    public AuctionInstantWinResponseDto instantWin(Long auctionId,Long bidderId){
+        return auctionInstantWinUseCase.instantWin(auctionId,bidderId);
+    }
+
+    @Transactional(readOnly = true)
+    public AuctionBidHistoryResponseDto bidHistory(Long auctionId,Long memberId,int page,int size){
+        return auctionBidHistoryUseCase.bidHistory(auctionId,memberId,page,size);
     }
 }

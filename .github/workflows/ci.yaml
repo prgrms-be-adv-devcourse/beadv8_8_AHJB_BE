@@ -4,10 +4,6 @@ on:
   pull_request:
     branches: [develop, main]
 
-  # CD 워크플로 추가 전까지 머지 후 테스트용 (CD 추가 시 CD에서 테스트하므로 제거)
-  push:
-    branches: [develop, main]
-
 permissions:
   contents: read
 

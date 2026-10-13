@@ -20,6 +20,7 @@ public class CartFacade {
     private final CartCreateCartItemUseCase cartCreateCartItemUseCase;
     private final CartReadItemUseCase cartReadItemUseCase;
     private final CartPaymentUseCase cartPaymentUseCase;
+    private final CartPaymentSucceedUseCase cartPaymentSucceedUseCase;
 
     @Transactional
     public CartMember syncMember(MemberDto memberDto){
@@ -39,5 +40,10 @@ public class CartFacade {
     @Transactional
     public void paymentCartItems(UUID winnerId, List<Long> productIds){
         cartPaymentUseCase.payment(winnerId, productIds);
+    }
+
+    @Transactional
+    public void paymentSucceed(Long productId){
+        cartPaymentSucceedUseCase.paymentSucceed(productId);
     }
 }
