@@ -1,8 +1,11 @@
 package com.jjinmak.back.boundedContext.member.in;
 
+import com.jjinmak.back.boundedContext.member.app.AuthFacade;
 import com.jjinmak.back.boundedContext.member.app.MemberReadUseCase;
 import com.jjinmak.back.boundedContext.member.app.MemberSignUpUseCase;
 import com.jjinmak.back.boundedContext.member.in.dto.AvailabilityResponseDto;
+import com.jjinmak.back.boundedContext.member.in.dto.LoginRequestDto;
+import com.jjinmak.back.boundedContext.member.in.dto.MemberLoginResponseDto;
 import com.jjinmak.back.boundedContext.member.in.dto.MemberSignUpRequestDto;
 import com.jjinmak.back.global.rsData.RsData;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,6 +28,7 @@ public class AuthController {
 
     private final MemberSignUpUseCase memberSignUpUseCase;
     private final MemberReadUseCase memberReadUseCase;
+    private final AuthFacade authFacade;
 
     @Operation(
             summary = "회원가입",
@@ -34,6 +38,16 @@ public class AuthController {
     public ResponseEntity<Void> signUp(@Valid @RequestBody MemberSignUpRequestDto request) {
         memberSignUpUseCase.signUp(request);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @Operation(
+            summary = "로그인",
+            description = "등록한 이메일, 비밀번호를 기반하여 로그인을 시도합니다."
+    )
+    @PostMapping("/login")
+    public ResponseEntity<RsData<MemberLoginResponseDto>> login(@Valid @RequestBody LoginRequestDto request){
+        MemberLoginResponseDto result = authFacade.login(request.email(), request.password());
+        return ResponseEntity.ok(new RsData<>(result));
     }
 
     @Operation(
