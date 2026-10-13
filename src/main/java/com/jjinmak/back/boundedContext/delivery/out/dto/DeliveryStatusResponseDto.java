@@ -18,7 +18,7 @@ public record DeliveryStatusResponseDto(
     ) {}
 
     public record Extensions(
-            String code
+            DeliveryTrackerExtension code
     ) {}
 
     public record Track(LastEvent lastEvent){}

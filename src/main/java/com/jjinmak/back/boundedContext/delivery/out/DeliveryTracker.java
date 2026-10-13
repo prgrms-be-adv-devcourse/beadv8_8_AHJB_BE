@@ -1,7 +1,6 @@
 package com.jjinmak.back.boundedContext.delivery.out;
 
-import com.jjinmak.back.boundedContext.delivery.out.dto.DeliveryStatusRequestDto;
-import com.jjinmak.back.boundedContext.delivery.out.dto.DeliveryStatusResponseDto;
+import com.jjinmak.back.boundedContext.delivery.out.dto.*;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.delivery.domain.CarrierType;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +11,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
+import java.time.OffsetDateTime;
+
 import static com.jjinmak.back.boundedContext.delivery.exception.DeliveryErrorCode.*;
+import static com.jjinmak.back.boundedContext.delivery.out.dto.DeliveryTrackerExtension.PASS;
 
 @Slf4j
 @Component
@@ -27,6 +29,9 @@ public class DeliveryTracker {
     @Value("${DELIVERY_TRACKER_CLIENT_SECRET:qwer}")
     private String clientSecret;
 
+    // TODO: Webhook을 받을 콜백 주소
+    private final String webhookCallbackUrl = "";
+
     private static final String TRACK_QUERY = """
         query Track($carrierId: ID!, $trackingNumber: String!) {
           track(carrierId: $carrierId, trackingNumber: $trackingNumber) {
@@ -35,6 +40,12 @@ public class DeliveryTracker {
               status { code }
             }
           }
+        }
+        """;
+
+    private static final String WEBHOOK_QUERY = """
+        mutation RegisterTrackWebhook($input: RegisterTrackWebhookInput!) {
+          registerTrackWebhook(input: $input)
         }
         """;
 
@@ -47,7 +58,7 @@ public class DeliveryTracker {
         DeliveryStatusResponseDto response;
 
         try{
-            response =  deliveryTrackerRestClient.post()
+            response = deliveryTrackerRestClient.post()
                     .uri("")
                     .header(HttpHeaders.AUTHORIZATION, "TRACKQL-API-KEY %s:%s".formatted(clientId, clientSecret))
                     .body(requestDto)
@@ -68,20 +79,68 @@ public class DeliveryTracker {
         return response;
     }
 
+    public void registerWebhook(Long deliveryId, CarrierType carrier, String waybill, int expirationDays){
+        String webhookCallback = webhookCallbackUrl + '/' + deliveryId + '/' + waybill;
+        WebhookRegisterRequestDto requestDto = new WebhookRegisterRequestDto(
+                WEBHOOK_QUERY,
+                new WebhookRegisterRequestDto.Variables(new WebhookRegisterRequestDto.Input(carrier.getCarrierCode(), waybill, webhookCallback, OffsetDateTime.now().plusDays(expirationDays)))
+        );
+
+        WebhookRegisterResponseDto response;
+
+        try {
+            response = deliveryTrackerRestClient.post()
+                    .uri("")
+                    .header(HttpHeaders.AUTHORIZATION, "TRACKQL-API-KEY %s:%s".formatted(clientId, clientSecret))
+                    .body(requestDto)
+                    .exchange((request, res) -> res.bodyTo(WebhookRegisterResponseDto.class));
+        } catch (RestClientException e){
+            log.error("Webhook 등록 API 호출 실패", e);
+            throw new BusinessException(DELIVERY_TRACKING_UNAVAILABLE);
+        }
+
+        if (response == null)
+            throw new BusinessException(DELIVERY_TRACKING_UNAVAILABLE);
+
+        throwIfError(response);
+
+        if (response.data() == null || response.data().registerTrackWebhook() == null)
+            throw new BusinessException(DELIVERY_TRACKING_NOT_FOUND);
+    }
+
     private void throwIfError(DeliveryStatusResponseDto response){
         if (response.errors() == null || response.errors().isEmpty()){
             return;
         }
 
         DeliveryStatusResponseDto.GraphQlError error = response.errors().getFirst();
-        String code = (error.extensions() == null || error.extensions().code() == null)
-                ? "" : error.extensions().code();
+        DeliveryTrackerExtension code = (error.extensions() == null || error.extensions().code() == null)
+                ? PASS : error.extensions().code();
 
         switch (code) {
-            case "NOT_FOUND" -> throw new BusinessException(DELIVERY_TRACKING_NOT_FOUND);
-            case "BAD_REQUEST" -> throw new BusinessException(DELIVERY_TRACKING_INVALID_WAYBILL);
+            case NOT_FOUND -> throw new BusinessException(DELIVERY_TRACKING_NOT_FOUND);
+            case BAD_REQUEST -> throw new BusinessException(DELIVERY_TRACKING_INVALID_WAYBILL);
             default -> {
                 log.error("배송 조회 API 오류: code=%s, message=%s".formatted(code, error.message()));
+                throw new BusinessException(DELIVERY_TRACKING_UNAVAILABLE);
+            }
+        }
+    }
+
+    private void throwIfError(WebhookRegisterResponseDto response){
+        if (response.errors() == null || response.errors().isEmpty()){
+            return;
+        }
+
+        WebhookRegisterResponseDto.GraphQlError error = response.errors().getFirst();
+        DeliveryTrackerExtension code = (error.extensions() == null || error.extensions().code() == null)
+                ? PASS : error.extensions().code();
+
+        switch (code){
+            case NOT_FOUND -> throw new BusinessException(DELIVERY_TRACKING_NOT_FOUND);
+            case BAD_REQUEST -> throw new BusinessException(DELIVERY_TRACKING_INVALID_WAYBILL);
+            default -> {
+                log.error("Webhook 등록 API 오류: code=%s, message=%s".formatted(code, error.message()));
                 throw new BusinessException(DELIVERY_TRACKING_UNAVAILABLE);
             }
         }
