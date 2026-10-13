@@ -10,6 +10,8 @@ import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.wallet.dto.HoldDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -21,6 +23,7 @@ import static com.jjinmak.back.boundedContext.wallet.exception.WalletErrorCode.*
 
 @Service
 @RequiredArgsConstructor
+@Transactional(propagation = Propagation.MANDATORY)
 public class WalletCreateHoldingUseCase {
 
     public final WalletSupport walletSupport;
@@ -35,7 +38,7 @@ public class WalletCreateHoldingUseCase {
 
         Wallet buyer = walletSupport.findWalletByHolderId(dto.holderId())
                 .orElseThrow(() -> new BusinessException(WALLET_NOT_FOUND));
-        Wallet escrow = finder.escrow();
+        Wallet escrow = finder.escrowForUpdate();
 
         if (!buyer.hasEnough(dto.totalPrice())) {
             throw new BusinessException(INSUFFICIENT_BALANCE);

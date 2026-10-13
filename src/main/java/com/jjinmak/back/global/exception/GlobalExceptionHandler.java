@@ -1,6 +1,7 @@
 package com.jjinmak.back.global.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -49,4 +50,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(code.getStatus()).body(response);
     }
 
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponse> handleOptimisticLock(OptimisticLockingFailureException e) {
+        log.warn("낙관적 락 충돌", e);
+        ErrorCode code = CommonErrorCode.CONFLICT;
+        return ResponseEntity.status(code.getStatus())
+                .body(new ErrorResponse(false, code.getCode(), code.getMessage()));
+    }
 }
