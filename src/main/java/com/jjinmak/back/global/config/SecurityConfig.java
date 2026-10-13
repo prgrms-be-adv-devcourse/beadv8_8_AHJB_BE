@@ -26,11 +26,7 @@ public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
 
     private static final String[] PUBLIC_URLS = {
-            "/auth/signup",
-            "/auth/login",
-            "/auth/reissue",
-            "/auth/email-availability",
-            "/auth/nickname-availability",
+            "/api/v1/auth/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/v3/api-docs/**",
