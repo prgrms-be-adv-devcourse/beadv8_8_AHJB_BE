@@ -103,4 +103,9 @@ public class OrderFacade {
     public void confirmPurchaseAuto(Long orderId){
         orderSchedulerUseCase.confirmPurchaseAuto(orderId);
     }
+
+    @Transactional
+    public void deleteOverWaitingOrders(){
+        orderSchedulerUseCase.deleteOverWaitingOrders();
+    }
 }
