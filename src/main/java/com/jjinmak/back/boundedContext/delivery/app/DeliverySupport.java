@@ -30,7 +30,12 @@ public class DeliverySupport {
                 .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
     }
 
-    public Delivery getDelivery(Long orderId){
+    public Delivery getDeliveryById(Long deliveryId){
+        return deliveryRepository.findById(deliveryId)
+                .orElseThrow(() -> new BusinessException(DELIVERY_NOT_FOUND));
+    }
+
+    public Delivery getDeliveryByOrderId(Long orderId){
         return deliveryRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new BusinessException(DELIVERY_NOT_FOUND));
     }

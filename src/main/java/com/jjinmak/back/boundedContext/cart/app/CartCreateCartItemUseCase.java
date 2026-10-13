@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 import static com.jjinmak.back.global.exception.CommonErrorCode.USER_NOT_FOUND;
 
@@ -27,18 +26,18 @@ public class CartCreateCartItemUseCase {
      * @return CartItem - 생성된 CartItem
      */
     public CartItem createCartItem(AuctionDto auctionDto){
-        UUID winnerId = auctionDto.winnerId();
-        UUID sellerId = auctionDto.sellerId();
+        Long winnerId = auctionDto.winnerId();
+        Long sellerId = auctionDto.sellerId();
 
-        CartMember winner = cartMemberRepository.findByUuid(winnerId)
+        CartMember winner = cartMemberRepository.findById(winnerId)
                 .orElseThrow(()->new BusinessException(USER_NOT_FOUND));
 
-        CartMember seller = cartMemberRepository.findByUuid(sellerId)
+        CartMember seller = cartMemberRepository.findById(sellerId)
                 .orElseThrow(()->new BusinessException(USER_NOT_FOUND));
 
         Long productId = auctionDto.productId();
         Long winningPrice = auctionDto.winningPrice();
-        Long deliveryFee = auctionDto.deliveryFee();
+        Long deliveryFee = auctionDto.shippingFee();
 
         LocalDateTime winAt = auctionDto.winAt();
 

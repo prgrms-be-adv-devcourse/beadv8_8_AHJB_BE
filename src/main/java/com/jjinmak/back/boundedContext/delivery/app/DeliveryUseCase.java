@@ -7,6 +7,7 @@ import com.jjinmak.back.boundedContext.delivery.out.DeliveryRepository;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.shared.delivery.domain.CarrierType;
 import com.jjinmak.back.shared.delivery.event.DeliveryCreatedEvent;
+import com.jjinmak.back.boundedContext.delivery.app.event.WebhookRegisterEvent;
 import com.jjinmak.back.shared.order.event.OrderSendProductEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,10 @@ public class DeliveryUseCase {
         DeliveryCreatedEvent deliveryCreatedEvent = new DeliveryCreatedEvent(orderId);
 
         eventPublisher.publish(deliveryCreatedEvent);
+
+        WebhookRegisterEvent webhookRegisterEvent = new WebhookRegisterEvent(delivery.getId(), carrier, waybill);
+
+        eventPublisher.publish(webhookRegisterEvent);
     }
 
     public DeliveryResponseDto updateDeliveryData(UUID sellerId, Long orderId, CarrierType carrier, String waybill){
@@ -47,6 +52,10 @@ public class DeliveryUseCase {
         delivery.validateSeller(seller);
 
         delivery.update(carrier, waybill);
+
+        WebhookRegisterEvent webhookRegisterEvent = new WebhookRegisterEvent(delivery.getId(), carrier, waybill);
+
+        eventPublisher.publish(webhookRegisterEvent);
 
         return new DeliveryResponseDto(delivery.getOrderId(), delivery.getCarrier(), delivery.getWaybill());
     }
