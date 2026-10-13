@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(indexes = @Index(name = "idx_auction_status_end_at", columnList = "status, end_at"))
 public class Auction extends BaseIdAndTime {
 
     @Column(nullable = false)
@@ -107,10 +108,6 @@ public class Auction extends BaseIdAndTime {
     public void winInstantly(Long bidderId, LocalDateTime now){
         updateHighestBid(bidderId,instantWinPrice);
         win(bidderId,instantWinPrice,now);
-        this.status=AuctionStatus.WON;
-        this.winnerId=bidderId;
-        this.winningPrice=instantWinPrice;
-        this.winAt=now;
     }
     //낙찰관련 메소드
     public boolean hasBids(){return bidCount>0;}

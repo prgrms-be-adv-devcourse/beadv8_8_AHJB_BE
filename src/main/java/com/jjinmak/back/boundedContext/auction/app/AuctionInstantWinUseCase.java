@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 public class AuctionInstantWinUseCase {
     private final BidRepository bidRepository;
     private final AuctionRepository auctionRepository;
+    private final AuctionEventPublisher auctionEventPublisher;
 
     public AuctionInstantWinResponseDto instantWin(Long auctionId,Long bidderId){
 
@@ -28,7 +29,8 @@ public class AuctionInstantWinUseCase {
         validateInstantWin(auction,bidderId,now);
         auction.winInstantly(bidderId,now);
         bidRepository.save(new Bid(auction.getId(),bidderId, auction.getInstantWinPrice(), now));
-
+        // 낙찰 이벤트발행
+        auctionEventPublisher.publishWon(auction);
         return new AuctionInstantWinResponseDto(
                 auctionId,
                 auction.getInstantWinPrice(),
