@@ -21,6 +21,7 @@ public class CartFacade {
     private final CartReadItemUseCase cartReadItemUseCase;
     private final CartPaymentUseCase cartPaymentUseCase;
     private final CartPaymentSucceedUseCase cartPaymentSucceedUseCase;
+    private final CartDefaultPaymentUseCase cartDefaultPaymentUseCase;
 
     @Transactional
     public CartMember syncMember(MemberDto memberDto){
@@ -45,5 +46,15 @@ public class CartFacade {
     @Transactional
     public void paymentSucceed(Long productId){
         cartPaymentSucceedUseCase.paymentSucceed(productId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> findExpiredItemIds(){
+        return cartDefaultPaymentUseCase.findExpiredItemIds();
+    }
+
+    @Transactional
+    public void deleteExpiredItem(Long itemId){
+        cartDefaultPaymentUseCase.deleteExpiredItem(itemId);
     }
 }

@@ -17,7 +17,7 @@ public class OrderGroup extends BaseIdAndTime {
     @NotNull
     Long totalPrice;
 
-    @OneToMany(mappedBy = "group")
+    @OneToMany(mappedBy = "group", cascade = CascadeType.REMOVE)
     List<Order> orders = new ArrayList<>();
 
     public OrderGroup(Long totalPrice){

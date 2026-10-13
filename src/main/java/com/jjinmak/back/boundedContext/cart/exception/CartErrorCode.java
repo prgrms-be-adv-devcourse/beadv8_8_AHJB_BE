@@ -10,7 +10,8 @@ import org.springframework.http.HttpStatus;
 public enum CartErrorCode implements ErrorCode {
 
     CART_ITEM_NOT_FOUND("CART001", "존재하지 않는 상품입니다.", HttpStatus.NOT_FOUND),
-    CART_ITEM_FORBIDDEN("CART002", "상품에 접근할 수 없습니다.", HttpStatus.FORBIDDEN)
+    CART_ITEM_FORBIDDEN("CART002", "상품에 접근할 수 없습니다.", HttpStatus.FORBIDDEN),
+    CART_ITEM_PAYMENT_EXPIRED("CART003", "결제 기한이 만료된 상품입니다.", HttpStatus.FORBIDDEN)
     ;
 
     private final String code;
