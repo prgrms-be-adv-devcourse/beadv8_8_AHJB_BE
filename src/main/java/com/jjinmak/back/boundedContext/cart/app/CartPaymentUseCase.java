@@ -11,9 +11,10 @@ import com.jjinmak.back.shared.cart.dto.CartItemDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
-import static com.jjinmak.back.boundedContext.cart.exception.CartErrorCode.CART_ITEM_FORBIDDEN;
+import static com.jjinmak.back.boundedContext.cart.exception.CartErrorCode.*;
 import static com.jjinmak.back.global.exception.CommonErrorCode.USER_NOT_FOUND;
 
 @Service
@@ -39,6 +40,11 @@ public class CartPaymentUseCase {
 
         if (productIdSet.size() != cartItems.size()){
             throw new BusinessException(CART_ITEM_FORBIDDEN);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (cartItems.stream().anyMatch(i -> i.getPaymentDueAt().isBefore(now))){
+            throw new BusinessException(CART_ITEM_PAYMENT_EXPIRED);
         }
 
         List<CartItemDto> cartItemDtoList = cartItems.stream().map(CartItem::dto).toList();
