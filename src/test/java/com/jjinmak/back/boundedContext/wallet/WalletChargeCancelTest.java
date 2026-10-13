@@ -10,7 +10,7 @@ import com.jjinmak.back.boundedContext.wallet.out.WalletRepository;
 import com.jjinmak.back.boundedContext.wallet.out.WalletTransactionRepository;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.payment.dto.ChargeDto;
-import com.jjinmak.back.shared.wallet.port.WalletChargeCancelPort;
+import com.jjinmak.back.shared.wallet.port.WalletPort;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +40,7 @@ class WalletChargeCancelTest {
     private static final Long PAYMENT_ID = 777L;
 
     @Autowired
-    private WalletChargeCancelPort walletChargeCancelPort;
+    private WalletPort walletPort;
 
     @Autowired
     private WalletFacade walletFacade;
@@ -81,7 +81,7 @@ class WalletChargeCancelTest {
     @DisplayName("충전 취소에 성공하면 잔액이 차감되고 원장에 CHARGE_CANCEL (-) 한 줄이 기록된다")
     void cancelCharge_success() {
         // when
-        walletChargeCancelPort.cancelCharge(new ChargeDto(memberId, CHARGE_AMOUNT, PAYMENT_ID));
+        walletPort.cancelCharge(new ChargeDto(memberId, CHARGE_AMOUNT, PAYMENT_ID));
 
         // then
         assertThat(balance()).isZero();
@@ -99,8 +99,8 @@ class WalletChargeCancelTest {
     void cancelCharge_isIdempotent() {
         ChargeDto dto = new ChargeDto(memberId, CHARGE_AMOUNT, PAYMENT_ID);
 
-        walletChargeCancelPort.cancelCharge(dto);
-        walletChargeCancelPort.cancelCharge(dto);
+        walletPort.cancelCharge(dto);
+        walletPort.cancelCharge(dto);
 
         assertThat(balance()).isZero();
         assertThat(transactionsOfWallet()).hasSize(2);
@@ -114,7 +114,7 @@ class WalletChargeCancelTest {
 
         // when & then
         assertThatThrownBy(() ->
-                walletChargeCancelPort.cancelCharge(new ChargeDto(memberId, CHARGE_AMOUNT, PAYMENT_ID)))
+                walletPort.cancelCharge(new ChargeDto(memberId, CHARGE_AMOUNT, PAYMENT_ID)))
                 .isInstanceOf(BusinessException.class)
                 .extracting(e -> ((BusinessException) e).getErrorCode())
                 .isEqualTo(INSUFFICIENT_BALANCE);
@@ -129,7 +129,7 @@ class WalletChargeCancelTest {
         Long unknownPaymentId = PAYMENT_ID + 1;
 
         assertThatThrownBy(() ->
-                walletChargeCancelPort.cancelCharge(new ChargeDto(memberId, CHARGE_AMOUNT, unknownPaymentId)))
+                walletPort.cancelCharge(new ChargeDto(memberId, CHARGE_AMOUNT, unknownPaymentId)))
                 .isInstanceOf(BusinessException.class)
                 .extracting(e -> ((BusinessException) e).getErrorCode())
                 .isEqualTo(TRANSACTION_NOT_FOUND);
@@ -142,7 +142,7 @@ class WalletChargeCancelTest {
     @DisplayName("요청 금액이 원장의 CHARGE 금액과 다르면 INVALID_AMOUNT 로 실패한다")
     void cancelCharge_amountMismatch_fails() {
         assertThatThrownBy(() ->
-                walletChargeCancelPort.cancelCharge(new ChargeDto(memberId, CHARGE_AMOUNT - 1, PAYMENT_ID)))
+                walletPort.cancelCharge(new ChargeDto(memberId, CHARGE_AMOUNT - 1, PAYMENT_ID)))
                 .isInstanceOf(BusinessException.class)
                 .extracting(e -> ((BusinessException) e).getErrorCode())
                 .isEqualTo(INVALID_AMOUNT);
@@ -155,10 +155,10 @@ class WalletChargeCancelTest {
     @DisplayName("취소 후 보상(revert)을 호출하면 잔액이 복구되고 원장에 REVERSAL (+) 이 기록된다")
     void revertCancelCharge_afterCancel_restoresBalance() {
         ChargeDto dto = new ChargeDto(memberId, CHARGE_AMOUNT, PAYMENT_ID);
-        walletChargeCancelPort.cancelCharge(dto);
+        walletPort.cancelCharge(dto);
 
         // when: PG 취소 실패를 가정하고 보상
-        walletChargeCancelPort.revertCancelCharge(dto);
+        walletPort.revertCancelCharge(dto);
 
         // then
         assertThat(balance()).isEqualTo(CHARGE_AMOUNT);
@@ -172,7 +172,7 @@ class WalletChargeCancelTest {
     @Test
     @DisplayName("취소된 적 없는 결제에 보상을 호출하면 아무 일도 하지 않는다")
     void revertCancelCharge_withoutCancel_doesNothing() {
-        walletChargeCancelPort.revertCancelCharge(new ChargeDto(memberId, CHARGE_AMOUNT, PAYMENT_ID));
+        walletPort.revertCancelCharge(new ChargeDto(memberId, CHARGE_AMOUNT, PAYMENT_ID));
 
         assertThat(balance()).isEqualTo(CHARGE_AMOUNT);
         assertThat(transactionsOfWallet()).hasSize(1);
@@ -182,10 +182,10 @@ class WalletChargeCancelTest {
     @DisplayName("보상을 두 번 호출해도 두 번째는 아무 일도 하지 않는다 (멱등)")
     void revertCancelCharge_isIdempotent() {
         ChargeDto dto = new ChargeDto(memberId, CHARGE_AMOUNT, PAYMENT_ID);
-        walletChargeCancelPort.cancelCharge(dto);
+        walletPort.cancelCharge(dto);
 
-        walletChargeCancelPort.revertCancelCharge(dto);
-        walletChargeCancelPort.revertCancelCharge(dto);
+        walletPort.revertCancelCharge(dto);
+        walletPort.revertCancelCharge(dto);
 
         assertThat(balance()).isEqualTo(CHARGE_AMOUNT);
         assertThat(transactionsOfWallet()).hasSize(3);

@@ -7,6 +7,5 @@ package com.jjinmak.back.boundedContext.wallet.domain.enums;
 
 public enum ReferenceType {
     PAYMENT,     // payment 컨텍스트의 Charge/Payment
-    ORDER,       // order 컨텍스트의 Order
-    HOLDING     // wallet 컨텍스트의 Holding
+    ORDER       // order 컨텍스트의 Order
 }
