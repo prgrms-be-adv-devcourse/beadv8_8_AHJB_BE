@@ -9,6 +9,9 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.time.LocalDateTime;
+
+import static com.jjinmak.back.boundedContext.order.domain.OrderState.*;
 import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_FORBIDDEN;
 import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_STATE_BAD_REQUEST;
 
@@ -38,6 +41,9 @@ public class Order extends BaseIdAndTime {
 
     @NotNull
     Long deliveryFee;
+
+    @Column(nullable = true)
+    LocalDateTime confirmExpiredAt;
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -84,5 +90,10 @@ public class Order extends BaseIdAndTime {
         if (!this.state.equals(state)){
             throw new BusinessException(ORDER_STATE_BAD_REQUEST);
         }
+    }
+
+    public void shipped(LocalDateTime shippedAt){
+        validateAndUpdateState(SHIPPING, SHIPPED);
+        this.confirmExpiredAt = shippedAt.plusDays(7);
     }
 }

@@ -27,6 +27,7 @@ public class OrderFacade {
     private final OrderRequestRefundUseCase orderRequestRefundUseCase;
     private final OrderRefundResultUseCase orderRefundResultUseCase;
     private final OrderDeliveryUseCase orderDeliveryUseCase;
+    private final OrderSchedulerUseCase orderSchedulerUseCase;
 
     @Transactional
     public OrderMember syncMember(MemberDto memberDto){
@@ -91,5 +92,15 @@ public class OrderFacade {
     @Transactional
     public void startDelivery(DeliveryCreatedEvent event){
         orderDeliveryUseCase.startDelivery(event);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> getExpiredOrderIds(){
+        return orderSchedulerUseCase.getExpiredOrderIds();
+    }
+
+    @Transactional
+    public void confirmPurchaseAuto(Long orderId){
+        orderSchedulerUseCase.confirmPurchaseAuto(orderId);
     }
 }
