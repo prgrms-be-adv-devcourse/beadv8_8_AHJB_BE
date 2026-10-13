@@ -1,6 +1,6 @@
 package com.jjinmak.back.shared.refund.dto;
 
-import com.jjinmak.back.boundedContext.refund.domain.RefundStatus;
+import com.jjinmak.back.shared.refund.domain.RefundStatus;
 
 import java.time.LocalDateTime;
 
@@ -9,6 +9,7 @@ public record RefundDto(
         Long orderId,
         RefundStatus status,
         Long amount,
-        LocalDateTime requestedAt
+        LocalDateTime requestedAt,
+        LocalDateTime processedAt
 ) {
 }

@@ -2,51 +2,37 @@ package com.jjinmak.back.boundedContext.refund.app;
 
 import com.jjinmak.back.boundedContext.refund.domain.Refund;
 import com.jjinmak.back.boundedContext.refund.domain.RefundErrorCode;
-import com.jjinmak.back.boundedContext.refund.domain.RefundOrder;
-import com.jjinmak.back.boundedContext.refund.domain.RefundReason;
-import com.jjinmak.back.boundedContext.refund.out.RefundOrderRepository;
 import com.jjinmak.back.boundedContext.refund.out.RefundRepository;
 import com.jjinmak.back.global.exception.BusinessException;
+import com.jjinmak.back.shared.order.event.OrderRefundRequestedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
 public class RefundCreateRefundUseCase {
 
-    private final RefundOrderRepository refundOrderRepository;
     private final RefundRepository refundRepository;
 
     /**
-     * 낙찰자의 환불 요청을 검증하고 환불을 생성한다.
-     * @param memberId - 요청한 회원 ID (로그인 회원)
-     * @param orderId - 환불할 주문 ID
-     * @param reason - 환불 사유
-     * @param detail - 사유 상세
+     * 주문의 환불 요청 이벤트를 받아 환불을 생성한다.
+     * 요청 가능 여부(본인 주문, 배송완료 상태)는 주문 도메인이 이미 검증했다.
+     * @param event - 주문 ID, 낙찰자 ID, 판매자 ID, 상품 ID, 낙찰가
      * @return Refund - 생성된 환불 (REQUESTED)
      */
-    public Refund createRefund(Long memberId, Long orderId, RefundReason reason, String detail) {
-        if (reason == RefundReason.OTHER && (detail == null || detail.isBlank())) {
-            throw new BusinessException(RefundErrorCode.DETAIL_REQUIRED);
-        }
-        RefundOrder refundOrder = refundOrderRepository.findById(orderId)
-                .orElseThrow(() -> new BusinessException(RefundErrorCode.ORDER_NOT_FOUND));
-
-        if (!refundOrder.isWinner(memberId)) {
-            throw new BusinessException(RefundErrorCode.NOT_ORDER_WINNER);
-        }
-
-        if (!refundOrder.isRefundable()) {
-            throw new BusinessException(RefundErrorCode.NOT_REFUNDABLE);
-        }
-
-        if (refundRepository.existsByRefundOrder(refundOrder)) {
+    public Refund createRefund(OrderRefundRequestedEvent event) {
+        if (refundRepository.existsByOrderId(event.orderId())) {
             throw new BusinessException(RefundErrorCode.ALREADY_REQUESTED);
         }
 
-        Refund refund = new Refund(refundOrder, reason, detail);
+        Refund refund = new Refund(
+                event.orderId(),
+                event.winnerId(),
+                event.sellerId(),
+                event.productId(),
+                event.winningPrice()
+        );
+
         return refundRepository.save(refund);
     }
 }
