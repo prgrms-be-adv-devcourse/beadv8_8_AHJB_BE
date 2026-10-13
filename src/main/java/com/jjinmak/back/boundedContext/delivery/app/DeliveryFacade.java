@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -19,6 +20,7 @@ public class DeliveryFacade {
     private final DeliveryUseCase deliveryUseCase;
     private final DeliverySyncMemberUseCase deliverySyncMemberUseCase;
     private final DeliveryTrackerUseCase deliveryTrackerUseCase;
+    private final DeliverySchedulerUseCase deliverySchedulerUseCase;
 
     @Transactional
     public void syncMember(MemberDto dto){
@@ -33,6 +35,15 @@ public class DeliveryFacade {
     @Transactional
     public DeliveryResponseDto updateDeliveryData(UUID sellerId, Long orderId, CarrierType carrier, String waybill){
         return deliveryUseCase.updateDeliveryData(sellerId, orderId, carrier, waybill);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> getUnshippedDeliveryIds(){
+        return deliverySchedulerUseCase.getUnshippedDeliveryIds();
+    }
+
+    public void updateWebhook(Long deliveryId){
+        deliverySchedulerUseCase.updateWebhook(deliveryId);
     }
 
     public DeliveryStatusDto getDeliveryStatus(UUID memberId, Long orderId){

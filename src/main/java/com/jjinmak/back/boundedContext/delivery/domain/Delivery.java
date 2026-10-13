@@ -37,17 +37,24 @@ public class Delivery extends BaseIdAndTime {
     @NotNull
     String waybill;
 
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    DeliveryStatusCode status;
+
     public Delivery(Long orderId, DeliveryMember winner, DeliveryMember seller, CarrierType carrier, String waybill){
         this.orderId = orderId;
         this.winner = winner;
         this.seller = seller;
         this.carrier = carrier;
         this.waybill = waybill;
+        this.status = DeliveryStatusCode.WAITING;
     }
 
     public void update(CarrierType carrier, String waybill){
         this.carrier = carrier;
         this.waybill = waybill;
+        this.status = DeliveryStatusCode.WAITING;
     }
 
     public void validateParticipant(DeliveryMember member){
@@ -59,5 +66,9 @@ public class Delivery extends BaseIdAndTime {
     public void validateSeller(DeliveryMember member){
         if (!this.seller.getId().equals(member.getId()))
             throw new BusinessException(DELIVERY_FORBIDDEN);
+    }
+
+    public void updateStatus(DeliveryStatusCode status){
+        this.status = status;
     }
 }

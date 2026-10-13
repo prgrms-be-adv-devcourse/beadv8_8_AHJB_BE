@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum DeliveryStatusCode {
     UNKNOWN("상태를 알 수 없음"),
+    WAITING("대기중"),
     INFORMATION_RECEIVED("운송장 정보 접수"),
     AT_PICKUP("집하 장소에 있음"),
     IN_TRANSIT("이동 중"),
