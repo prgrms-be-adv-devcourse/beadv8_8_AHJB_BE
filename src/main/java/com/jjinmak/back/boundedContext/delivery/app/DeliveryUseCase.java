@@ -1,16 +1,13 @@
 package com.jjinmak.back.boundedContext.delivery.app;
 
 import com.jjinmak.back.boundedContext.delivery.app.dto.DeliveryResponseDto;
-import com.jjinmak.back.boundedContext.delivery.app.dto.DeliveryStatusDto;
 import com.jjinmak.back.boundedContext.delivery.domain.Delivery;
 import com.jjinmak.back.boundedContext.delivery.domain.DeliveryMember;
 import com.jjinmak.back.boundedContext.delivery.out.DeliveryRepository;
-import com.jjinmak.back.boundedContext.delivery.out.DeliveryTracker;
-import com.jjinmak.back.boundedContext.delivery.out.dto.DeliveryStatusResponseDto;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
-import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.delivery.domain.CarrierType;
 import com.jjinmak.back.shared.delivery.event.DeliveryCreatedEvent;
+import com.jjinmak.back.boundedContext.delivery.app.event.WebhookRegisterEvent;
 import com.jjinmak.back.shared.order.event.OrderSendProductEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,7 +21,6 @@ public class DeliveryUseCase {
     private final DeliverySupport deliverySupport;
     private final DeliveryRepository deliveryRepository;
     private final EventPublisher eventPublisher;
-    private final DeliveryTracker deliveryTracker;
 
     public void createDelivery(OrderSendProductEvent event){
         Long orderId = event.orderId();
@@ -43,6 +39,10 @@ public class DeliveryUseCase {
         DeliveryCreatedEvent deliveryCreatedEvent = new DeliveryCreatedEvent(orderId);
 
         eventPublisher.publish(deliveryCreatedEvent);
+
+        WebhookRegisterEvent webhookRegisterEvent = new WebhookRegisterEvent(delivery.getId(), carrier, waybill);
+
+        eventPublisher.publish(webhookRegisterEvent);
     }
 
     public DeliveryResponseDto updateDeliveryData(UUID sellerId, Long orderId, CarrierType carrier, String waybill){
@@ -53,24 +53,10 @@ public class DeliveryUseCase {
 
         delivery.update(carrier, waybill);
 
+        WebhookRegisterEvent webhookRegisterEvent = new WebhookRegisterEvent(delivery.getId(), carrier, waybill);
+
+        eventPublisher.publish(webhookRegisterEvent);
+
         return new DeliveryResponseDto(delivery.getOrderId(), delivery.getCarrier(), delivery.getWaybill());
-    }
-
-    public DeliveryStatusDto getDeliveryStatus(UUID memberId, Long orderId){
-        Delivery delivery = deliverySupport.getDeliveryWithParticipant(orderId);
-        DeliveryMember member = deliverySupport.getMember(memberId);
-
-        delivery.validateParticipant(member);
-
-        DeliveryStatusResponseDto.LastEvent lastEvent = deliveryTracker
-                .trackLastStatus(delivery.getCarrier(), delivery.getWaybill())
-                .data().track().lastEvent();
-
-        return new DeliveryStatusDto(
-                orderId,
-                lastEvent.status().code(),
-                lastEvent.status().code().getMessage(),
-                lastEvent.time() == null ? null : lastEvent.time().toLocalDateTime()
-        );
     }
 }
