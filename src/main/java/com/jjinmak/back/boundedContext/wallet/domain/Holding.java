@@ -11,8 +11,7 @@ import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
-import static com.jjinmak.back.boundedContext.wallet.exception.WalletErrorCode.HOLDING_NOT_HELD;
-import static com.jjinmak.back.boundedContext.wallet.exception.WalletErrorCode.INVALID_FEE_AMOUNT;
+import static com.jjinmak.back.boundedContext.wallet.exception.WalletErrorCode.*;
 
 /**
  * 주문 1건당 1개. 결제 시 구매자 지갑에서 빠져나간 대금이
@@ -34,6 +33,9 @@ public class Holding extends BaseIdAndTime {
     @Column(nullable = false)
     private Long orderId;
 
+    @Column(nullable = false)
+    private Long paymentId;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(nullable = false)
     private Wallet buyerWallet;
@@ -46,9 +48,15 @@ public class Holding extends BaseIdAndTime {
     @Column(nullable = false)
     private long amount;
 
+    @Column(nullable = false)
+    private long winningPrice;
+
     /** 구매 확정 시 FEE 지갑으로 가는 금액. 정책 변경에 대비해 홀딩 시점 값으로 고정 */
     @Column(nullable = false)
     private long feeAmount;
+
+    @Column(nullable = false)
+    private long deliveryFee;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
@@ -59,23 +67,29 @@ public class Holding extends BaseIdAndTime {
 
     private LocalDateTime refundedAt;
 
-    private Holding(Long orderId, Wallet buyerWallet, Wallet sellerWallet, long amount, long feeAmount) {
-        if (amount <= 0) {
+    private Holding(Long orderId, Long paymentId, Wallet buyerWallet, Wallet sellerWallet, long winningPrice, long deliveryFee, long feeAmount) {
+        if (winningPrice <= 0 || deliveryFee < 0) {
             throw new BusinessException(INVALID_FEE_AMOUNT);
         }
-        if (feeAmount < 0 || feeAmount > amount) {
+        if (feeAmount < 0 || feeAmount > winningPrice) {
             throw new BusinessException(INVALID_FEE_AMOUNT);
+        }
+        if (buyerWallet.getId().equals(sellerWallet.getId())) {
+            throw new BusinessException(SAME_BUYER_AND_SELLER);
         }
         this.orderId = orderId;
+        this.paymentId = paymentId;
         this.buyerWallet = buyerWallet;
         this.sellerWallet = sellerWallet;
-        this.amount = amount;
+        this.winningPrice = winningPrice;
+        this.deliveryFee = deliveryFee;
         this.feeAmount = feeAmount;
+        this.amount = winningPrice + deliveryFee;
         this.status = HoldingStatus.HELD;
     }
 
-    public static Holding hold(Long orderId, Wallet buyerWallet, Wallet sellerWallet, long amount, long feeAmount) {
-        return new Holding(orderId, buyerWallet, sellerWallet, amount, feeAmount);
+    public static Holding hold(Long orderId, Long paymentId, Wallet buyerWallet, Wallet sellerWallet, long winningPrice, long deliveryFee, long feeAmount) {
+        return new Holding(orderId, paymentId, buyerWallet, sellerWallet, winningPrice, deliveryFee, feeAmount);
     }
 
     /** 판매자에게 실제로 정산되는 금액 */

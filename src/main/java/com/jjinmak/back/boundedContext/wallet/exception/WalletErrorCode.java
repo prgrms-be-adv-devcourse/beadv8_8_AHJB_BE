@@ -32,6 +32,8 @@ public enum WalletErrorCode implements ErrorCode {
 
     // ===== 홀딩 (Holding) =====
     HOLDING_NOT_FOUND("WALLET301", "존재하지 않는 홀딩입니다.", HttpStatus.NOT_FOUND),
+    HOLD_ITEMS_EMPTY("WALLET307", "홀딩할 주문 내역이 없습니다.", HttpStatus.BAD_REQUEST),
+    HOLD_AMOUNT_MISMATCH("WALLET308", "주문 금액 합이 결제 총액과 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
     HOLDING_ALREADY_EXISTS("WALLET302", "이미 홀딩이 존재하는 주문입니다.", HttpStatus.BAD_REQUEST),
     HOLDING_NOT_HELD("WALLET303", "HELD 상태의 홀딩만 처리할 수 있습니다.", HttpStatus.BAD_REQUEST),
     HOLDING_ALREADY_RELEASED("WALLET304", "이미 정산(구매 확정)된 홀딩입니다.", HttpStatus.BAD_REQUEST),

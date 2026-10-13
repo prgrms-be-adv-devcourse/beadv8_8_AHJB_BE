@@ -3,7 +3,6 @@ package com.jjinmak.back.boundedContext.wallet.in;
 
 import com.jjinmak.back.boundedContext.wallet.app.WalletFacade;
 import com.jjinmak.back.shared.member.event.MemberCreatedEvent;
-import com.jjinmak.back.shared.payment.event.PaymentChargeApprovedEvent;
 import com.jjinmak.back.shared.wallet.event.WalletMemberCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -31,9 +30,4 @@ public class WalletEventListener {
         walletFacade.createWallet(event.getMember());
     }
 
-    @TransactionalEventListener(phase = AFTER_COMMIT)
-    @Transactional(propagation = REQUIRES_NEW)
-    public void handle(PaymentChargeApprovedEvent event) {
-        walletFacade.charge(event.getChargeDto());
-    }
 }

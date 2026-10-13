@@ -3,6 +3,7 @@ package com.jjinmak.back.boundedContext.wallet.app;
 import com.jjinmak.back.boundedContext.wallet.domain.WalletMember;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import com.jjinmak.back.shared.payment.dto.ChargeDto;
+import com.jjinmak.back.shared.wallet.dto.HoldDto;
 import com.jjinmak.back.shared.wallet.dto.WalletMemberDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,8 @@ public class WalletFacade {
     private final WalletCreateUseCase walletCreateUseCase;
     private final WalletChargeUseCase walletChargeUseCase;
     private final WalletChargeCancelUseCase walletChargeCancelUseCase;
+    private final WalletCreateHoldingUseCase walletCreateHoldingUseCase;
+    private final WalletGetBalanceUseCase walletGetBalanceUseCase;
 
     @Transactional
     public WalletMember syncMember(MemberDto member) {
@@ -39,5 +42,15 @@ public class WalletFacade {
     @Transactional
     public void revertCancelCharge(ChargeDto dto) {
         walletChargeCancelUseCase.revertCancelCharge(dto);
+    }
+
+    @Transactional
+    public void hold(HoldDto dto) {
+        walletCreateHoldingUseCase.hold(dto);
+    }
+
+    @Transactional(readOnly = true)
+    public long getBalance(Long holderId) {
+        return walletGetBalanceUseCase.getBalance(holderId);
     }
 }
