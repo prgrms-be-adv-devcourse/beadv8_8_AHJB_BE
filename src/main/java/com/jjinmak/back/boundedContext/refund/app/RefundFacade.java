@@ -15,6 +15,7 @@ public class RefundFacade {
     private final RefundGetRefundUseCase refundGetRefundUseCase;
     private final RefundRejectRefundUseCase refundRejectRefundUseCase;
     private final RefundAcceptRefundUseCase refundAcceptRefundUseCase;
+    private final RefundGetRefundByOrderUseCase refundGetRefundByOrderUseCase;
 
     @Transactional
     public void createRefund(OrderRefundRequestedEvent event) {
@@ -34,6 +35,11 @@ public class RefundFacade {
     @Transactional
     public RefundDto acceptRefund(Long memberId, Long refundId) {
         return refundAcceptRefundUseCase.acceptRefund(memberId, refundId).dto();
+    }
+
+    @Transactional(readOnly = true)
+    public RefundDetailDto getRefundByOrder(Long memberId, Long orderId) {
+        return refundGetRefundByOrderUseCase.getRefundByOrder(memberId, orderId).detailDto();
     }
 
 }
