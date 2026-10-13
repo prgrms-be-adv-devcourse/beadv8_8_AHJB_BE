@@ -13,10 +13,7 @@ import com.jjinmak.back.shared.order.event.OrderCreatePaymentEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_BAD_REQUEST;
 
@@ -50,6 +47,8 @@ public class OrderPaymentUseCase {
 
         OrderGroup orderGroup = orderGroupRepository.save(new OrderGroup(event.totalPrice()));
 
+        List<OrderCreatePaymentEvent.OrderItem> orderItems = new ArrayList<>();
+
         for (CartItemDto cartItem : cartItems){
             UUID sellerId = cartItem.sellerId();
 
@@ -58,9 +57,16 @@ public class OrderPaymentUseCase {
             Order order = new Order(orderGroup, winner, seller, cartItem.productId(), cartItem.winningPrice(), cartItem.deliveryFee());
 
             orderGroup.add(orderRepository.save(order));
+
+            orderItems.add(new OrderCreatePaymentEvent.OrderItem(order.getId(), seller.getId(), order.getWinningPrice(), order.getDeliveryFee()));
         }
 
-        OrderCreatePaymentEvent paymentEvent = new OrderCreatePaymentEvent(orderGroup.getId(), winnerId, totalPrice);
+        OrderCreatePaymentEvent paymentEvent = new OrderCreatePaymentEvent(
+                orderGroup.getId(),
+                new OrderCreatePaymentEvent.Member(winner.getId(), winner.getUuid()),
+                orderItems,
+                totalPrice
+        );
 
         eventPublisher.publish(paymentEvent);
     }
