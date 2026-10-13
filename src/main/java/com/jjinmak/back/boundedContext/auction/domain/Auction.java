@@ -7,12 +7,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+
 import java.time.LocalDateTime;
 
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(indexes = @Index(name = "idx_auction_status_end_at", columnList = "status, end_at"))
 public class Auction extends BaseIdAndTime {
 
     @Column(nullable = false)
@@ -80,4 +82,52 @@ public class Auction extends BaseIdAndTime {
         return new Auction(productId, sellerId, startPrice, instantWinPrice,
                 shippingFee, now, endAt);
     }
+
+    // 입찰
+    public Long getCurrentPrice(){
+        if(bidCount==0){return startPrice;}
+        return highestBidPrice;
+    }
+    public Long getMinBidPrice(){
+        if(bidCount==0){return startPrice;}
+        return highestBidPrice + BidIncrement.unitOf(highestBidPrice);
+    }
+    public boolean isEnded(LocalDateTime now){
+        return !now.isBefore(endAt);
+    }
+
+    public void updateHighestBid(Long bidderId, Long price){
+        this.highestBidPrice=price;
+        this.highestBidderId=bidderId;
+        this.bidCount++;
+    }
+    public void extendEndAt(LocalDateTime newEndAt){
+        this.endAt=newEndAt;
+    }
+    //즉시낙찰
+    public void winInstantly(Long bidderId, LocalDateTime now){
+        updateHighestBid(bidderId,instantWinPrice);
+        win(bidderId,instantWinPrice,now);
+    }
+    //낙찰관련 메소드
+    public boolean hasBids(){return bidCount>0;}
+
+    public void win(Long winnerId,Long price,LocalDateTime now){
+        validateInProgress();
+        this.status=AuctionStatus.WON;
+        this.winnerId=winnerId;
+        this.winningPrice=price;
+        this.winAt=now;
+    }
+    public void fail(FailureReason reason){
+        validateInProgress();
+        this.status=AuctionStatus.FAILED;
+        this.failureReason = reason;
+    }
+    private void validateInProgress(){
+        if(status!=AuctionStatus.IN_PROGRESS){
+            throw new IllegalStateException("진행 중인 경매만 종료할 수 있습니다. status="+status);
+        }
+    }
+
 }

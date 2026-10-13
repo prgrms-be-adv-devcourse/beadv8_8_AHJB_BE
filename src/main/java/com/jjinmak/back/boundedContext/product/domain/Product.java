@@ -1,5 +1,6 @@
 package com.jjinmak.back.boundedContext.product.domain;
 
+import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -16,7 +17,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Product extends BaseIdAndTime {
 
-    // 등록 후 이 기간 동안은 판매자가 수정/삭제할 수 있고, 지나면 경매로 넘어간다.
+    // 등록 후 이 기간 동안은 판매자가 수정/삭제할 수 있고, 지나면 경매가 시작된다.
     public static final Duration EDITABLE_PERIOD = Duration.ofHours(1);
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -66,7 +67,11 @@ public class Product extends BaseIdAndTime {
     @Embedded
     private ProductAuctionTerms auctionTerms;
 
-    // 경매 컨텍스트로 경매 생성을 요청한 시각 (null이면 아직 수정 기간)
+    // 경매 시작 예정 시각 (등록 시각 + 수정 기간). 이 시각 전까지 수정/삭제할 수 있다.
+    @Column(nullable = false)
+    private LocalDateTime auctionScheduledAt;
+
+    // 경매 컨텍스트로 경매 생성을 요청한 시각 (null이면 아직 요청 전)
     private LocalDateTime auctionRequestedAt;
 
     private LocalDateTime deletedAt;
@@ -78,7 +83,7 @@ public class Product extends BaseIdAndTime {
     private Product(ProductMember seller, String name, ProductCategory category,
                     Manufacturer manufacturer, String manufacturerEtc, String description,
                     ShippingFeeType shippingFeeType, Long shippingFee, boolean bundleShipping,
-                    String policyVersion, LocalDateTime policyAgreedAt, ProductAuctionTerms auctionTerms) {
+                    String policyVersion, LocalDateTime now, ProductAuctionTerms auctionTerms) {
         this.seller = seller;
         this.name = name;
         this.category = category;
@@ -90,8 +95,9 @@ public class Product extends BaseIdAndTime {
         this.bundleShipping = bundleShipping;
         this.wishCount = 0;
         this.policyVersion = policyVersion;
-        this.policyAgreedAt = policyAgreedAt;
+        this.policyAgreedAt = now;
         this.auctionTerms = auctionTerms;
+        this.auctionScheduledAt = now.plus(EDITABLE_PERIOD);
     }
 
     public static Product create(ProductMember seller, String name, ProductCategory category,
@@ -106,15 +112,60 @@ public class Product extends BaseIdAndTime {
         );
     }
 
-    // 삭제되지 않았고, 아직 경매를 요청하지 않았고, 수정 기간이 지났으면 경매를 요청할 수 있다.
-
+    // 삭제되지 않았고, 아직 경매를 요청하지 않았고, 시작 예정 시각이 되었으면 경매를 요청할 수 있다.
     public boolean isAuctionRequestable(LocalDateTime now) {
         return deletedAt == null
                 && auctionRequestedAt == null
-                && !now.isBefore(getCreatedAt().plus(EDITABLE_PERIOD));
+                && !now.isBefore(auctionScheduledAt);
     }
 
     public void requestAuction(LocalDateTime now) {
         this.auctionRequestedAt = now;
+    }
+
+    // 본인 상품이고, 경매 요청 전이면서 시작 예정 시각 전일 때만 수정/삭제할 수 있다.
+    public void validateEditable(Long sellerId, LocalDateTime now) {
+        if (!seller.getId().equals(sellerId)) {
+            throw new BusinessException(ProductErrorCode.NOT_PRODUCT_OWNER);
+        }
+        if (auctionRequestedAt != null || !now.isBefore(auctionScheduledAt)) {
+            throw new BusinessException(ProductErrorCode.NOT_EDITABLE);
+        }
+    }
+
+    // 값이 있는 항목만 수정한다. (null이면 기존 값 유지)
+    public void update(String name, ProductCategory category,
+                       Manufacturer manufacturer, String manufacturerEtc, String description,
+                       ShippingFeeType shippingFeeType, Long customShippingFee, Boolean bundleShipping,
+                       ProductAuctionTerms auctionTerms) {
+        if (name != null) {
+            this.name = name;
+        }
+        if (category != null) {
+            this.category = category;
+        }
+        if (manufacturer != null || manufacturerEtc != null) {
+            Manufacturer targetManufacturer = manufacturer != null ? manufacturer : this.manufacturer;
+            String targetEtc = manufacturerEtc != null ? manufacturerEtc : this.manufacturerEtc;
+            this.manufacturer = targetManufacturer;
+            this.manufacturerEtc = targetManufacturer.resolveEtcName(targetEtc);
+        }
+        if (description != null) {
+            this.description = description;
+        }
+        if (shippingFeeType != null) {
+            this.shippingFeeType = shippingFeeType;
+            this.shippingFee = shippingFeeType.resolveFee(customShippingFee);
+        }
+        if (bundleShipping != null) {
+            this.bundleShipping = bundleShipping;
+        }
+        if (auctionTerms != null) {
+            this.auctionTerms = auctionTerms;
+        }
+    }
+
+    public void delete(LocalDateTime now) {
+        this.deletedAt = now;
     }
 }
