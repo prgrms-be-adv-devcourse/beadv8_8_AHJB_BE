@@ -50,6 +50,12 @@ public class Delivery extends BaseIdAndTime {
         this.waybill = waybill;
     }
 
+    public void validateParticipant(DeliveryMember member){
+        if (!this.winner.getId().equals(member.getId()) && !this.seller.getId().equals(member.getId())){
+            throw new BusinessException(DELIVERY_FORBIDDEN);
+        }
+    }
+
     public void validateSeller(DeliveryMember member){
         if (!this.seller.getId().equals(member.getId()))
             throw new BusinessException(DELIVERY_FORBIDDEN);
