@@ -18,9 +18,11 @@ public enum AuthErrorCode implements ErrorCode {
     ACCOUNT_BANNED("AUTH102", "차단된 계정입니다.", HttpStatus.FORBIDDEN),
     ACCOUNT_LOCKED("AUTH103", "로그인 시도 횟수를 초과했습니다.", HttpStatus.LOCKED),
     INVALID_REFRESH_TOKEN("AUTH104", "유효하지 않은 리프레시 토큰입니다.", HttpStatus.UNAUTHORIZED),
-    EXPIRED_TOKEN("AUTH105", "만료된 토큰입니다.", HttpStatus.UNAUTHORIZED),
-    INVALID_ACCESS_TOKEN("AUTH106", "유효하지 않은 액세스 토큰입니다.", HttpStatus.UNAUTHORIZED);
+    EXPIRED_REFRESH_TOKEN("AUTH105", "만료된 토큰입니다.", HttpStatus.UNAUTHORIZED),
+    INVALID_ACCESS_TOKEN("AUTH106", "유효하지 않은 액세스 토큰입니다.", HttpStatus.UNAUTHORIZED),
+    EXPIRED_ACCESS_TOKEN("AUTH107", "만료된 액세스 토큰입니다.", HttpStatus.UNAUTHORIZED)
 
+    ;
     private final String code;
     private final String message;
     private final HttpStatus status;
