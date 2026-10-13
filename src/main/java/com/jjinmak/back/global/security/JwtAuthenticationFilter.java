@@ -1,6 +1,6 @@
 package com.jjinmak.back.global.security;
 
-import com.jjinmak.back.global.exception.AuthErrorCode;
+import com.jjinmak.back.boundedContext.member.exception.AuthErrorCode;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,8 +41,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         switch (validationResult) {
             case VALID -> setAuthentication(token);
-            case EXPIRED -> request.setAttribute(EXCEPTION_ATTRIBUTE, AuthErrorCode.EXPIRED_TOKEN);
-            case INVALID -> request.setAttribute(EXCEPTION_ATTRIBUTE, AuthErrorCode.INVALID_TOKEN);
+            case EXPIRED -> request.setAttribute(EXCEPTION_ATTRIBUTE, AuthErrorCode.EXPIRED_ACCESS_TOKEN);
+            case INVALID -> request.setAttribute(EXCEPTION_ATTRIBUTE, AuthErrorCode.INVALID_ACCESS_TOKEN);
         }
 
 
