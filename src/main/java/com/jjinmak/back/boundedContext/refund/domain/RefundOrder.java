@@ -44,6 +44,10 @@ public class RefundOrder extends BaseManualIdAndTime {
         return winnerId.equals(memberId);
     }
 
+    public boolean isSeller(Long memberId) {
+        return sellerId.equals(memberId);
+    }
+
     public boolean isRefundable() {
         return confirmedAt == null;
     }

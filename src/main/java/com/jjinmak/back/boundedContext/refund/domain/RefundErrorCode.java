@@ -12,7 +12,9 @@ public enum RefundErrorCode implements ErrorCode {
     NOT_ORDER_WINNER("REFUND002", "본인 주문만 환불 요청 가능", HttpStatus.FORBIDDEN),
     NOT_REFUNDABLE("REFUND003", "구매확정된 주문은 환불 불가", HttpStatus.CONFLICT),
     ALREADY_REQUESTED("REFUND004", "이미 환불 요청된 주문", HttpStatus.CONFLICT),
-    DETAIL_REQUIRED("REFUND005", "기타 사유는 상세 내용 필수", HttpStatus.BAD_REQUEST)
+    DETAIL_REQUIRED("REFUND005", "기타 사유는 상세 내용 필수", HttpStatus.BAD_REQUEST),
+    REFUND_NOT_FOUND("REFUND006", "존재하지 않는 환불", HttpStatus.NOT_FOUND),
+    NOT_REFUND_PARTICIPANT("REFUND007", "환불 당사자만 조회 가능", HttpStatus.FORBIDDEN)
     ;
 
     private final String code;

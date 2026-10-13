@@ -2,6 +2,7 @@ package com.jjinmak.back.boundedContext.refund.domain;
 
 import com.jjinmak.back.global.jpa.entity.BaseEntity;
 import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
+import com.jjinmak.back.shared.refund.dto.RefundDetailDto;
 import com.jjinmak.back.shared.refund.dto.RefundDto;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -41,6 +42,11 @@ public class Refund extends BaseIdAndTime {
     @Column(length = 20)
     private RefundStatus status;
 
+    @Column(length = 500)
+    private String rejectReason;
+
+    private LocalDateTime processedAt;
+
     public Refund(RefundOrder refundOrder, RefundReason reason, String detail) {
         this.refundOrder = refundOrder;
         this.reason = reason;
@@ -51,5 +57,23 @@ public class Refund extends BaseIdAndTime {
 
     public RefundDto dto() {
         return new RefundDto(getId(), refundOrder.getId(), status, amount, getCreatedAt());
+    }
+
+    public boolean inParticipant(Long memberId) {
+        return refundOrder.isWinner(memberId) || refundOrder.isSeller(memberId);
+    }
+
+    public RefundDetailDto detailDto() {
+        return new RefundDetailDto(
+                getId(),
+                refundOrder.getId(),
+                reason,
+                detail,
+                amount,
+                status,
+                rejectReason,
+                getCreatedAt(),
+                processedAt
+        );
     }
 }
