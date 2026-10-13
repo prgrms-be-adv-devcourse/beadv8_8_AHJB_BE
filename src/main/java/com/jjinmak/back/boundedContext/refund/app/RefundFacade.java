@@ -13,14 +13,27 @@ public class RefundFacade {
 
     private final RefundCreateRefundUseCase refundCreateRefundUseCase;
     private final RefundGetRefundUseCase refundGetRefundUseCase;
+    private final RefundRejectRefundUseCase refundRejectRefundUseCase;
+    private final RefundAcceptRefundUseCase refundAcceptRefundUseCase;
 
     @Transactional
     public void createRefund(OrderRefundRequestedEvent event) {
         refundCreateRefundUseCase.createRefund(event);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public RefundDetailDto getRefund(Long memberId, Long refundId) {
         return refundGetRefundUseCase.getRefund(memberId, refundId).detailDto();
     }
+
+    @Transactional
+    public RefundDto rejectRefund(Long memberId, Long refundId) {
+        return refundRejectRefundUseCase.rejectRefund(memberId, refundId).dto();
+    }
+
+    @Transactional
+    public RefundDto acceptRefund(Long memberId, Long refundId) {
+        return refundAcceptRefundUseCase.acceptRefund(memberId, refundId).dto();
+    }
+
 }

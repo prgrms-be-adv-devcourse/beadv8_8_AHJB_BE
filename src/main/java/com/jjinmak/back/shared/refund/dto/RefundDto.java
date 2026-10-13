@@ -9,6 +9,7 @@ public record RefundDto(
         Long orderId,
         RefundStatus status,
         Long amount,
-        LocalDateTime requestedAt
+        LocalDateTime requestedAt,
+        LocalDateTime processedAt
 ) {
 }

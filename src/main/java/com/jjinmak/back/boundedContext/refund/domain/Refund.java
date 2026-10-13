@@ -1,5 +1,6 @@
 package com.jjinmak.back.boundedContext.refund.domain;
 
+import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.global.jpa.entity.BaseEntity;
 import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
 import com.jjinmak.back.shared.refund.dto.RefundDetailDto;
@@ -43,6 +44,9 @@ public class Refund extends BaseIdAndTime {
 
     private LocalDateTime processedAt;
 
+    @Version
+    private Long version;
+
     public Refund(Long orderId, Long winnerId, Long sellerId, Long productId, Long amount) {
         this.orderId = orderId;
         this.winnerId = winnerId;
@@ -53,11 +57,37 @@ public class Refund extends BaseIdAndTime {
     }
 
     public RefundDto dto() {
-        return new RefundDto(getId(), orderId, status, amount, getCreatedAt());
+        return new RefundDto(
+                getId(),
+                orderId,
+                status,
+                amount,
+                getCreatedAt(),
+                processedAt);
     }
 
     public boolean isParticipant(Long memberId) {
         return winnerId.equals(memberId) || sellerId.equals(memberId);
+    }
+
+    public boolean isSeller(Long memberId) {
+        return sellerId.equals(memberId);
+    }
+
+    public void accept() {
+        process(RefundStatus.COMPLETED);
+    }
+
+    public void reject() {
+        process(RefundStatus.REJECTED);
+    }
+
+    private void process(RefundStatus result) {
+        if (status != RefundStatus.REQUESTED) {
+            throw new BusinessException(RefundErrorCode.ALREADY_PROCESSED);
+        }
+        this.status = result;
+        this.processedAt = LocalDateTime.now();
     }
 
     public RefundDetailDto detailDto() {
