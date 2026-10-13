@@ -1,5 +1,6 @@
 package com.jjinmak.back.global.security;
 
+import com.jjinmak.back.boundedContext.member.exception.AuthErrorCode;
 import com.jjinmak.back.global.exception.*;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
