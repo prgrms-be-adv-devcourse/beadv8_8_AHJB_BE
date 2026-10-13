@@ -60,6 +60,7 @@ public class Refund extends BaseIdAndTime {
         return new RefundDto(
                 getId(),
                 orderId,
+                winnerId,
                 status,
                 amount,
                 getCreatedAt(),
