@@ -20,18 +20,17 @@ import java.time.LocalDateTime;
 public class Refund extends BaseIdAndTime {
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(unique = true)
-    private RefundOrder refundOrder;
+    @Column(unique = true)
+    private Long orderId;
 
     @NotNull
-    @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.VARCHAR)
-    @Column(length = 30)
-    private RefundReason reason;
+    private Long winnerId;
 
-    @Column(length = 500)
-    private String detail;
+    @NotNull
+    private Long sellerId;
+
+    @NotNull
+    private Long productId;
 
     @NotNull
     private Long amount;
@@ -42,36 +41,32 @@ public class Refund extends BaseIdAndTime {
     @Column(length = 20)
     private RefundStatus status;
 
-    @Column(length = 500)
-    private String rejectReason;
-
     private LocalDateTime processedAt;
 
-    public Refund(RefundOrder refundOrder, RefundReason reason, String detail) {
-        this.refundOrder = refundOrder;
-        this.reason = reason;
-        this.detail = detail;
-        this.amount = refundOrder.PaymentAmount();
+    public Refund(Long orderId, Long winnerId, Long sellerId, Long productId, Long amount) {
+        this.orderId = orderId;
+        this.winnerId = winnerId;
+        this.sellerId = sellerId;
+        this.productId = productId;
+        this.amount = amount;
         this.status = RefundStatus.REQUESTED;
     }
 
     public RefundDto dto() {
-        return new RefundDto(getId(), refundOrder.getId(), status, amount, getCreatedAt());
+        return new RefundDto(getId(), orderId, status, amount, getCreatedAt());
     }
 
-    public boolean inParticipant(Long memberId) {
-        return refundOrder.isWinner(memberId) || refundOrder.isSeller(memberId);
+    public boolean isParticipant(Long memberId) {
+        return winnerId.equals(memberId) || sellerId.equals(memberId);
     }
 
     public RefundDetailDto detailDto() {
         return new RefundDetailDto(
                 getId(),
-                refundOrder.getId(),
-                reason,
-                detail,
+                orderId,
+                productId,
                 amount,
                 status,
-                rejectReason,
                 getCreatedAt(),
                 processedAt
         );

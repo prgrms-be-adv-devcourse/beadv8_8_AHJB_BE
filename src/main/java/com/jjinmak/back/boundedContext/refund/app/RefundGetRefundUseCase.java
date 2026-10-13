@@ -23,7 +23,7 @@ public class RefundGetRefundUseCase {
         Refund refund = refundRepository.findById(refundId)
                 .orElseThrow(() -> new BusinessException(RefundErrorCode.REFUND_NOT_FOUND));
 
-        if (!refund.inParticipant(memberId)){
+        if (!refund.isParticipant(memberId)){
             throw new BusinessException(RefundErrorCode.NOT_REFUND_PARTICIPANT);
         }
 

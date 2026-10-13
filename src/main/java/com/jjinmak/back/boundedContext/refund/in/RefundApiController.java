@@ -1,15 +1,15 @@
 package com.jjinmak.back.boundedContext.refund.in;
 
 import com.jjinmak.back.boundedContext.refund.app.RefundFacade;
-import com.jjinmak.back.boundedContext.refund.in.dto.RefundCreateRequestDto;
 import com.jjinmak.back.global.rsData.RsData;
 import com.jjinmak.back.shared.refund.dto.RefundDetailDto;
-import com.jjinmak.back.shared.refund.dto.RefundDto;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
@@ -20,25 +20,10 @@ public class RefundApiController {
 
     private final Long memberDev = 1L;
 
-    @PostMapping
-    public ResponseEntity<RsData<RefundDto>> createRefund(@Valid @RequestBody RefundCreateRequestDto request) {
-        RefundDto response = refundFacade.createRefund(
-                memberDev,
-                request.orderId(),
-                request.reason(),
-                request.detail()
-        );
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(new RsData<>(response));
-    }
-
     @GetMapping("/{refundId}")
     public ResponseEntity<RsData<RefundDetailDto>> getRefund(@PathVariable Long refundId) {
         RefundDetailDto response = refundFacade.getRefund(memberDev, refundId);
 
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(new RsData<>(response));
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }
 }
