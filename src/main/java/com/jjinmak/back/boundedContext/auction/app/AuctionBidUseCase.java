@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 public class AuctionBidUseCase {
     private final AuctionRepository auctionRepository;
     private final BidRepository bidRepository;
+    private final AuctionEventPublisher auctionEventPublisher;
 
     public AuctionBidResponseDto bid(Long auctionId, Long bidderId, Long bidPrice){
         LocalDateTime now = LocalDateTime.now();
@@ -31,6 +32,7 @@ public class AuctionBidUseCase {
         if(auction.getInstantWinPrice()!=null && bidPrice>= auction.getInstantWinPrice()){
             auction.winInstantly(bidderId,now);
             Bid bid = bidRepository.save(new Bid(auction.getId(),bidderId, auction.getInstantWinPrice(), now));
+            auctionEventPublisher.publishWon(auction);
             return new AuctionBidResponseDto(
                     bid.getId(),
                     bid.getBidPrice(),

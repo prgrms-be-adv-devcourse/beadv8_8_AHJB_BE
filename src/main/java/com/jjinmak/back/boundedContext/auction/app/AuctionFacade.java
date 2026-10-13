@@ -1,5 +1,6 @@
 package com.jjinmak.back.boundedContext.auction.app;
 
+import com.jjinmak.back.boundedContext.auction.domain.AuctionCloseResult;
 import com.jjinmak.back.boundedContext.auction.domain.AuctionMember;
 import com.jjinmak.back.boundedContext.auction.dto.AuctionBidHistoryResponseDto;
 import com.jjinmak.back.boundedContext.auction.dto.AuctionBidResponseDto;
@@ -10,6 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class AuctionFacade {
@@ -18,6 +22,8 @@ public class AuctionFacade {
     private final AuctionBidUseCase auctionBidUseCase;
     private final AuctionInstantWinUseCase auctionInstantWinUseCase;
     private final AuctionBidHistoryUseCase auctionBidHistoryUseCase;
+    private final AuctionCloseUseCase auctionCloseUseCase;
+
     @Transactional
     public AuctionMember syncMember(MemberDto dto){
         return auctionSyncMemberUseCase.syncMember(dto);
@@ -42,4 +48,13 @@ public class AuctionFacade {
     public AuctionBidHistoryResponseDto bidHistory(Long auctionId,Long memberId,int page,int size){
         return auctionBidHistoryUseCase.bidHistory(auctionId,memberId,page,size);
     }
+    @Transactional(readOnly = true)
+    public List<Long> findCloseTargetIds(LocalDateTime now,int batchSize){
+        return auctionCloseUseCase.findCloseTargetIds(now,batchSize);
+    }
+    @Transactional
+    public AuctionCloseResult closeAuction(Long auctionId,LocalDateTime now){
+        return auctionCloseUseCase.closeAuction(auctionId,now);
+    }
+
 }
