@@ -5,6 +5,7 @@ import com.jjinmak.back.boundedContext.product.domain.ProductMember;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductCreateRequestDto;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductUpdateRequestDto;
 import com.jjinmak.back.shared.member.dto.MemberDto;
+import com.jjinmak.back.shared.product.dto.ProductSummaryDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ public class ProductFacade {
     private final ProductUpdateUseCase productUpdateUseCase;
     private final ProductDeleteUseCase productDeleteUseCase;
     private final ProductRequestAuctionUseCase productRequestAuctionUseCase;
+    private final ProductReadSummaryUseCase productReadSummaryUseCase;
 
     @Transactional
     public ProductMember syncMember(MemberDto memberDto){
@@ -51,5 +53,10 @@ public class ProductFacade {
     @Transactional
     public void requestAuction(Long productId, LocalDateTime now){
         productRequestAuctionUseCase.requestAuction(productId, now);
+    }
+
+    @Transactional(readOnly = true)
+    public ProductSummaryDto getProductSummary(Long productId){
+        return productReadSummaryUseCase.getProductSummary(productId);
     }
 }
