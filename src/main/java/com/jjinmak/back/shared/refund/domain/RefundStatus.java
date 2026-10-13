@@ -1,4 +1,4 @@
-package com.jjinmak.back.boundedContext.refund.domain;
+package com.jjinmak.back.shared.refund.domain;
 
 public enum RefundStatus {
     REQUESTED,
