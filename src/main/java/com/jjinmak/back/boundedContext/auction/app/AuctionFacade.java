@@ -2,10 +2,7 @@ package com.jjinmak.back.boundedContext.auction.app;
 
 import com.jjinmak.back.boundedContext.auction.domain.AuctionCloseResult;
 import com.jjinmak.back.boundedContext.auction.domain.AuctionMember;
-import com.jjinmak.back.boundedContext.auction.dto.AuctionBidHistoryResponseDto;
-import com.jjinmak.back.boundedContext.auction.dto.AuctionBidResponseDto;
-import com.jjinmak.back.boundedContext.auction.dto.AuctionCreateDto;
-import com.jjinmak.back.boundedContext.auction.dto.AuctionInstantWinResponseDto;
+import com.jjinmak.back.boundedContext.auction.dto.*;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +20,7 @@ public class AuctionFacade {
     private final AuctionInstantWinUseCase auctionInstantWinUseCase;
     private final AuctionBidHistoryUseCase auctionBidHistoryUseCase;
     private final AuctionCloseUseCase auctionCloseUseCase;
+    private final AuctionDetailUseCase auctionDetailUseCase;
 
     @Transactional
     public AuctionMember syncMember(MemberDto dto){
@@ -55,6 +53,10 @@ public class AuctionFacade {
     @Transactional
     public AuctionCloseResult closeAuction(Long auctionId,LocalDateTime now){
         return auctionCloseUseCase.closeAuction(auctionId,now);
+    }
+    @Transactional
+    public AuctionDetailResponseDto detail(Long auctionId,Long memberId){
+        return auctionDetailUseCase.detail(auctionId,memberId,LocalDateTime.now());
     }
 
 }
