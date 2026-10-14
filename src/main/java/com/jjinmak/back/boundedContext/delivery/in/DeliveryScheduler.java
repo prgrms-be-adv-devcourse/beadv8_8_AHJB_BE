@@ -1,6 +1,7 @@
 package com.jjinmak.back.boundedContext.delivery.in;
 
 import com.jjinmak.back.boundedContext.delivery.app.DeliveryFacade;
+import com.jjinmak.back.boundedContext.delivery.app.dto.WebhookTargetDto;
 import com.jjinmak.back.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,15 +19,15 @@ public class DeliveryScheduler {
 
     @Scheduled(fixedDelay = 86_400_000)
     public void updateWebhook(){
-        List<Long> deliveryIds = deliveryFacade.getUnshippedDeliveryIds();
+        List<WebhookTargetDto> deliveries = deliveryFacade.getUnshippedDelivery();
 
-        for (Long id : deliveryIds){
+        for (WebhookTargetDto delivery : deliveries){
             try {
-                deliveryFacade.updateWebhook(id);
+                deliveryFacade.updateWebhook(delivery);
             } catch (BusinessException e){
-                log.error("Webhook 재등록에 실패했습니다.\ndeliveryId: %d\nerrorCode: %s".formatted(id, e.getErrorCode()));
+                log.error("Webhook 재등록에 실패했습니다.\ndeliveryId: %d\nerrorCode: %s".formatted(delivery.deliveryId(), e.getErrorCode()));
             } catch (Exception e){
-                log. error("알수 없는 오류로 재등록에 실패했습니다.\ndeliveryId: %d".formatted(id), e);
+                log. error("알수 없는 오류로 재등록에 실패했습니다.\ndeliveryId: %d".formatted(delivery.deliveryId()), e);
             }
         }
     }

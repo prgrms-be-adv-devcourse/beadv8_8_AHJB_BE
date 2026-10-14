@@ -1,4 +1,4 @@
-package com.jjinmak.back.boundedContext.delivery.domain;
+package com.jjinmak.back.shared.delivery.domain;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

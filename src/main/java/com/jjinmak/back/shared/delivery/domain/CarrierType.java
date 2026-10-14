@@ -1,7 +1,12 @@
 package com.jjinmak.back.shared.delivery.domain;
 
+import com.jjinmak.back.global.exception.BusinessException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Arrays;
+
+import static com.jjinmak.back.global.exception.CommonErrorCode.BAD_REQUEST;
 
 @Getter
 @RequiredArgsConstructor
@@ -36,4 +41,11 @@ public enum CarrierType {
 
     private final String korean;
     private final String carrierCode;
+
+    public static CarrierType fromCode(String code){
+        return Arrays.stream(CarrierType.values())
+                .filter(carrier -> carrier.getCarrierCode().equals(code))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(BAD_REQUEST));
+    }
 }
