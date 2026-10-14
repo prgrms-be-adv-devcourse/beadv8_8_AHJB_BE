@@ -3,6 +3,7 @@ package com.jjinmak.back.boundedContext.settlement.domain;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
 import com.jjinmak.back.shared.settlement.domain.SettlementStatus;
+import com.jjinmak.back.shared.settlement.dto.SettlementDto;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
@@ -103,5 +104,15 @@ public class Settlement extends BaseIdAndTime {
         }
         this.status = SettlementStatus.COMPLETED;
         this.completedAt = LocalDateTime.now();
+    }
+
+    public SettlementDto dto() {
+        return new SettlementDto(
+                getId(),
+                orderId,
+                sellerId,
+                settlementAmount,
+                feeAmount
+        );
     }
 }
