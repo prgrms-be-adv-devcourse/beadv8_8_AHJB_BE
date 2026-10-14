@@ -45,7 +45,7 @@ public class DeliveryUseCase {
         eventPublisher.publish(webhookRegisterEvent);
     }
 
-    public DeliveryResponseDto updateDeliveryData(UUID sellerId, Long orderId, CarrierType carrier, String waybill){
+    public DeliveryResponseDto updateDeliveryData(Long sellerId, Long orderId, CarrierType carrier, String waybill){
         Delivery delivery = deliverySupport.getDeliveryWithParticipant(orderId);
         DeliveryMember seller = deliverySupport.getMember(sellerId);
 
