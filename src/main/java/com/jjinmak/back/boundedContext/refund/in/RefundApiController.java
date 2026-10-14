@@ -48,4 +48,14 @@ public class RefundApiController {
 
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }
+
+    @GetMapping
+    public ResponseEntity<RsData<RefundDetailDto>> getRefundByOrder(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @RequestParam Long orderId
+    ) {
+        RefundDetailDto response = refundFacade.getRefundByOrder(principal.memberId(), orderId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
 }

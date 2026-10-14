@@ -9,6 +9,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 
 @Entity
@@ -88,9 +89,12 @@ public class Auction extends BaseIdAndTime {
         if(bidCount==0){return startPrice;}
         return highestBidPrice;
     }
+    public long getBidUnit(){
+        return BidIncrement.unitOf(getCurrentPrice());
+    }
     public Long getMinBidPrice(){
-        if(bidCount==0){return startPrice;}
-        return highestBidPrice + BidIncrement.unitOf(highestBidPrice);
+        if(!hasBids()){return startPrice;}
+        return getCurrentPrice()+getBidUnit();
     }
     public boolean isEnded(LocalDateTime now){
         return !now.isBefore(endAt);
@@ -128,6 +132,16 @@ public class Auction extends BaseIdAndTime {
         if(status!=AuctionStatus.IN_PROGRESS){
             throw new IllegalStateException("진행 중인 경매만 종료할 수 있습니다. status="+status);
         }
+    }
+    //상태
+    public boolean isInProgress(){
+        return status == AuctionStatus.IN_PROGRESS;
+    }
+    public boolean isSeller(Long memberId){
+        return Objects.equals(sellerId, memberId);
+    }
+    public boolean isHighestBidder(Long memberId){
+        return Objects.equals(highestBidderId, memberId);
     }
 
 }
