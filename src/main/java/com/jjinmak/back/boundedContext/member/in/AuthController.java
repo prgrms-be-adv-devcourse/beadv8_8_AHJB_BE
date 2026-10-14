@@ -89,4 +89,16 @@ public class AuthController {
 
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
+
+    @Operation(
+            summary = "토큰 재발급",
+            description = "RefreshToken을 재발급합니다."
+    )
+    @PostMapping("/reissue")
+    public ResponseEntity<RsData<MemberLoginResponseDto>> reissue(
+            @Valid @RequestBody ReissueRequestDto request
+    ){
+        MemberLoginResponseDto result = authFacade.reissue(request.refreshToken());
+        return ResponseEntity.ok(new RsData<>(result));
+    }
 }
