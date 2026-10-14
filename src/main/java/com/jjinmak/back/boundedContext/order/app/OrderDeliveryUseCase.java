@@ -55,11 +55,13 @@ public class OrderDeliveryUseCase {
         Long orderId = event.orderId();
         DeliveryStatusCode afterStatus = event.afterStatus();
 
+        if (!ORDER_SHIPPED.contains(afterStatus))
+            return;
+
         Order order = orderSupport.getOrder(orderId);
 
-        if (!ORDER_SHIPPED.contains(afterStatus) || order.getState() != SHIPPING) {
+        if (order.getState() != SHIPPING)
             return;
-        }
 
         order.shipped(event.updatedAt());
     }
