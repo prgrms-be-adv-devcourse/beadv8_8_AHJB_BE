@@ -1,5 +1,8 @@
 package com.jjinmak.back.boundedContext.member.domain;
 
+import com.jjinmak.back.boundedContext.member.exception.MemberErrorCode;
+import com.jjinmak.back.global.exception.BusinessException;
+import com.jjinmak.back.global.exception.CommonErrorCode;
 import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -108,6 +111,19 @@ public class Member extends BaseIdAndTime {
 
     public boolean isSuspended(){return status == AccountStatus.SUSPENDED; }
 
+    public void registerAsSeller(){
+        if(isSeller){
+            throw new BusinessException(MemberErrorCode.ALREADY_REGISTERED_SELLER);
+        }
+
+        switch (status) {
+            case SUSPENDED -> throw new BusinessException(CommonErrorCode.SUSPENDED_ACCOUNT);
+            case BANNED -> throw new BusinessException(CommonErrorCode.BANNED_ACCOUNT);
+            default -> { }
+        }
+
+        this.isSeller = true;
+    }
 
     public List<String> getAuthorities(){
         List<String> authorities = new ArrayList<>();

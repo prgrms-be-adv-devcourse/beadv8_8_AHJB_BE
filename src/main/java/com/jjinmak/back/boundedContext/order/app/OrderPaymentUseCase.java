@@ -54,7 +54,7 @@ public class OrderPaymentUseCase {
 
             OrderMember seller = orderSupport.getMember(sellerId);
 
-            Order order = new Order(orderGroup, winner, seller, cartItem.productId(), cartItem.winningPrice(), cartItem.deliveryFee());
+            Order order = new Order(orderGroup, winner, seller, cartItem.auctionId(), cartItem.productId(), cartItem.winningPrice(), cartItem.deliveryFee());
 
             orderGroup.add(orderRepository.save(order));
 

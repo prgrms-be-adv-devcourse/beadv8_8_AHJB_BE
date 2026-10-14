@@ -1,6 +1,7 @@
 package com.jjinmak.back.boundedContext.cart.in;
 
 import com.jjinmak.back.boundedContext.cart.app.CartFacade;
+import com.jjinmak.back.shared.auction.event.AuctionWonEvent;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import com.jjinmak.back.shared.member.event.MemberCreatedEvent;
 import com.jjinmak.back.shared.order.event.OrderPaymentSucceedEvent;
@@ -29,8 +30,14 @@ public class CartEventListener {
     @TransactionalEventListener(phase = AFTER_COMMIT)
     @Transactional(propagation = REQUIRES_NEW)
     public void handle(OrderPaymentSucceedEvent event){
-        Long productId = event.productId();
+        Long auctionId = event.auctionId();
 
-        cartFacade.paymentSucceed(productId);
+        cartFacade.paymentSucceed(auctionId);
+    }
+
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    @Transactional(propagation = REQUIRES_NEW)
+    public void handle(AuctionWonEvent event){
+        cartFacade.createCartItem(event);
     }
 }

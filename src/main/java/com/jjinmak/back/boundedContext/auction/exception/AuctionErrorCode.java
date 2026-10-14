@@ -16,8 +16,9 @@ public enum AuctionErrorCode implements ErrorCode {
     BID_PRICE_TOO_LOW("AUCTION006", "입찰가가 최소 입찰가보다 낮습니다.", HttpStatus.BAD_REQUEST),
     INVALID_BID_UNIT("AUCTION007", "입찰가가 입찰 단위에 맞지 않습니다.", HttpStatus.BAD_REQUEST),
     BID_CONFLICT("AUCTION008", "다른 입찰이 먼저 처리되었습니다. 다시 입찰해 주세요.", HttpStatus.CONFLICT),
-    INSTANT_WIN_NOT_AVAILABLE("AUCTION009", "즉시낙찰이 설정되지 않은 경매입니다.", HttpStatus.BAD_REQUEST);
-
+    INSTANT_WIN_NOT_AVAILABLE("AUCTION009", "즉시낙찰이 설정되지 않은 경매입니다.", HttpStatus.BAD_REQUEST),
+    INVALID_STATUS_TRANSITION("AUCTION010", "현재 경매 상태에서는 처리할 수 없습니다.", HttpStatus.CONFLICT),
+    INVALID_PRICE("AUCTION011", "가격이 올바르지 않습니다.", HttpStatus.BAD_REQUEST);
     private final String code;
     private final String message;
     private final HttpStatus status;

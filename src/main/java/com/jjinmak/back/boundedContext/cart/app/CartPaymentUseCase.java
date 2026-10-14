@@ -30,8 +30,8 @@ public class CartPaymentUseCase {
      * @param winnerId   - 조회의 주체가 되는 낙찰자
      * @param productIds - 결제를 시도하는 상품의 id 리스트
      */
-    public void payment(UUID winnerId, List<Long> productIds){
-        CartMember winner = cartMemberRepository.findByUuid(winnerId)
+    public void payment(Long winnerId, List<Long> productIds){
+        CartMember winner = cartMemberRepository.findById(winnerId)
                 .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
 
         Set<Long> productIdSet = new HashSet<>(productIds);

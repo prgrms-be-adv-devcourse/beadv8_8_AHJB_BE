@@ -20,7 +20,7 @@ public class OrderConfirmPurchaseUseCase {
     private final OrderSupport orderSupport;
     private final EventPublisher eventPublisher;
 
-    public void confirmPurchase(UUID memberId, Long orderId){
+    public void confirmPurchase(Long memberId, Long orderId){
 
         OrderMember winner = orderSupport.getMember(memberId);
 
@@ -32,7 +32,7 @@ public class OrderConfirmPurchaseUseCase {
 
         OrderConfirmPurchaseEvent event = new OrderConfirmPurchaseEvent(
                 orderId, winner.getId(), order.getSeller().getId(),
-                order.getProductId(), order.getWinningPrice(), order.getDeliveryFee(),
+                order.getAuctionId(), order.getProductId(), order.getWinningPrice(), order.getDeliveryFee(),
                 LocalDateTime.now()
         );
 

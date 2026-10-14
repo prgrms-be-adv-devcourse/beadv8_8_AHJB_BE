@@ -7,6 +7,7 @@ public record CartItemDto(
         Long id,
         UUID winnerId,
         UUID sellerId,
+        Long auctionId,
         Long productId,
         Long winningPrice,
         Long deliveryFee,

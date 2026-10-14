@@ -31,7 +31,7 @@ public class CartDefaultPaymentUseCase {
 
         cartItemRepository.delete(item);
 
-        CartPaymentDefaultEvent event = new CartPaymentDefaultEvent(item.getProductId(), item.getWinner().getId(), item.getSeller().getId(), item.getWinningPrice(), item.getDeliveryFee());
+        CartPaymentDefaultEvent event = new CartPaymentDefaultEvent(item.getAuctionId(), item.getProductId(), item.getWinner().getId(), item.getSeller().getId(), item.getWinningPrice(), item.getDeliveryFee());
 
         eventPublisher.publish(event);
     }

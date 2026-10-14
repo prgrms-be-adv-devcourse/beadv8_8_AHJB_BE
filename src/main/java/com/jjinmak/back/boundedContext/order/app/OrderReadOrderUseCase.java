@@ -28,7 +28,7 @@ public class OrderReadOrderUseCase {
     private final OrderSupport orderSupport;
     private final OrderRepository orderRepository;
 
-    public List<OrderDto> readWinnerOrders(UUID winnerId){
+    public List<OrderDto> readWinnerOrders(Long winnerId){
 
         OrderMember winner = orderSupport.getMember(winnerId);
 
@@ -36,14 +36,14 @@ public class OrderReadOrderUseCase {
 
         return orders.stream().map(
                 (order) -> new OrderDto(
-                        order.getId(), winnerId, order.getSeller().getUuid(),
+                        order.getId(), winner.getUuid(), order.getSeller().getUuid(),
                         order.getProductId(), order.getWinningPrice(), order.getDeliveryFee(),
                         order.getState(), order.getCreatedAt(), order.getUpdatedAt()
                 )
         ).toList();
     }
 
-    public List<OrderDto> readSellerOrders(UUID sellerId){
+    public List<OrderDto> readSellerOrders(Long sellerId){
 
         OrderMember seller = orderSupport.getMember(sellerId);
 
@@ -51,14 +51,14 @@ public class OrderReadOrderUseCase {
 
         return orders.stream().map(
                 (order) -> new OrderDto(
-                        order.getId(), order.getWinner().getUuid(), sellerId,
+                        order.getId(), order.getWinner().getUuid(), seller.getUuid(),
                         order.getProductId(), order.getWinningPrice(), order.getDeliveryFee(),
                         order.getState(), order.getCreatedAt(), order.getUpdatedAt()
                 )
         ).toList();
     }
 
-    public OrderDto readOrder(UUID memberId, Long orderId){
+    public OrderDto readOrder(Long memberId, Long orderId){
 
         OrderMember member = orderSupport.getMember(memberId);
 
