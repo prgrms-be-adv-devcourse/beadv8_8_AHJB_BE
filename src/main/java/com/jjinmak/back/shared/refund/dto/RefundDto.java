@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 public record RefundDto(
         Long refundId,
         Long orderId,
+        Long winnerId,
         RefundStatus status,
         Long amount,
         LocalDateTime requestedAt,
