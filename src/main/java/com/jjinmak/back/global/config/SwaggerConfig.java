@@ -62,6 +62,9 @@ public class SwaggerConfig {
                
                 경매 API
                 - 팀 안현잘부 팀원 박신형
+
+                정산/환불
+                - 팀 안현잘부 팀원 조민형
                """)
                 .version("1.0.0");
     }
