@@ -3,6 +3,7 @@ package com.jjinmak.back.boundedContext.auction.in;
 import com.jjinmak.back.boundedContext.auction.app.AuctionFacade;
 import com.jjinmak.back.boundedContext.auction.dto.AuctionBidHistoryResponseDto;
 import com.jjinmak.back.boundedContext.auction.dto.AuctionBidResponseDto;
+import com.jjinmak.back.boundedContext.auction.dto.AuctionDetailResponseDto;
 import com.jjinmak.back.boundedContext.auction.dto.AuctionInstantWinResponseDto;
 import com.jjinmak.back.boundedContext.auction.exception.AuctionErrorCode;
 import com.jjinmak.back.boundedContext.auction.in.dto.AuctionBidRequestDto;
@@ -65,5 +66,11 @@ public class AuctionApiController {
         AuctionBidHistoryResponseDto response = auctionFacade.bidHistory(auctionId,principal.memberId(),page,size);
         return  ResponseEntity.ok(new RsData<>(true,"입찰 내역 조회에 성공했습니다.",response));
 
+    }
+
+    @GetMapping("/{auctionId}")
+    public ResponseEntity<RsData<AuctionDetailResponseDto>> detail(@PathVariable Long auctionId,@AuthenticationPrincipal AuthPrincipal principal){
+        AuctionDetailResponseDto response = auctionFacade.detail(auctionId,principal.memberId());
+        return ResponseEntity.ok(new RsData<>(true,"경매 상세 조회에 성공했습니다.",response));
     }
 }
