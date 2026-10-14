@@ -27,7 +27,7 @@ public class OrderDeliveryUseCase {
     private final OrderSupport orderSupport;
     private final EventPublisher eventPublisher;
 
-    public void requestDelivery(UUID sellerId, Long orderId, CarrierType carrier, String waybill){
+    public void requestDelivery(Long sellerId, Long orderId, CarrierType carrier, String waybill){
         OrderMember seller = orderSupport.getMember(sellerId);
 
         Order order = orderSupport.getOrderWithParticipants(orderId);

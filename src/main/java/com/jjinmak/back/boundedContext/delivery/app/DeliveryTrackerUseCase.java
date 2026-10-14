@@ -30,7 +30,7 @@ public class DeliveryTrackerUseCase {
     private final DeliveryTracker deliveryTracker;
     private final DeliveryRepository deliveryRepository;
 
-    public DeliveryStatusDto trackLastStatus(UUID memberId, Long orderId){
+    public DeliveryStatusDto trackLastStatus(Long memberId, Long orderId){
         Delivery delivery = deliverySupport.getDeliveryWithParticipant(orderId);
         DeliveryMember member = deliverySupport.getMember(memberId);
 
