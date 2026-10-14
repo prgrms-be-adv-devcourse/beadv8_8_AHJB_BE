@@ -13,6 +13,7 @@ public class AuthFacade {
 
     private final MemberAuthenticateUseCase memberAuthenticateUseCase;
     private final MemberTokenIssueUseCase memberTokenIssueUseCase;
+    private final MemberReissueTokenUseCase memberReissueTokenUseCase;
 
     public MemberLoginResponseDto login(String email, String password){
 
@@ -22,4 +23,10 @@ public class AuthFacade {
         return new MemberLoginResponseDto(pair.accessToken(), pair.refreshToken(), member.getNickname(), member.isSuspended());
     }
 
+    public MemberLoginResponseDto reissue(String refreshToken){
+        Member member = memberReissueTokenUseCase.reissue(refreshToken);
+        TokenPair pair = memberTokenIssueUseCase.issue(member);
+
+        return new MemberLoginResponseDto(pair.accessToken(), pair.refreshToken(), member.getNickname(), member.isSuspended());
+    }
 }
