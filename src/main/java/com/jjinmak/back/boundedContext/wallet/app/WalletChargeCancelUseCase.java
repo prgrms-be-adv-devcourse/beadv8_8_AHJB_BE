@@ -19,8 +19,9 @@ import static com.jjinmak.back.boundedContext.wallet.exception.WalletErrorCode.*
 @RequiredArgsConstructor
 public class WalletChargeCancelUseCase {
 
-    public final WalletSupport walletSupport;
-    public final WalletTransactionRepository walletTransactionRepository;
+    private final WalletSupport walletSupport;
+    private final LedgerRecorder ledgerRecorder;
+    private final WalletTransactionRepository walletTransactionRepository;
 
 
     /**
@@ -42,17 +43,7 @@ public class WalletChargeCancelUseCase {
         Wallet wallet = walletSupport.findWalletByHolderId(dto.holderId())
                 .orElseThrow(() -> new BusinessException(WALLET_NOT_FOUND));
 
-        wallet.withdrawal(dto.amount());
-        walletTransactionRepository.save(
-                WalletTransaction.of(
-                        wallet,
-                        CHARGE_CANCEL,
-                        -dto.amount(),
-                        UUID.randomUUID().toString(),
-                        PAYMENT,
-                        dto.paymentId()
-                )
-        );
+        ledgerRecorder.withdraw(wallet, CHARGE_CANCEL, dto.amount(), PAYMENT, dto.paymentId());
     }
 
 
@@ -74,16 +65,7 @@ public class WalletChargeCancelUseCase {
         Wallet wallet = walletSupport.findWalletByHolderId(dto.holderId())
                 .orElseThrow(() -> new BusinessException(WALLET_NOT_FOUND));
 
-        wallet.deposit(dto.amount());
-        walletTransactionRepository.save(
-                WalletTransaction.of(
-                        wallet,
-                        REVERSAL,
-                        dto.amount(),                      // 재입금이므로 +
-                        UUID.randomUUID().toString(),
-                        PAYMENT,
-                        dto.paymentId())
-        );
+        ledgerRecorder.deposit(wallet, REVERSAL, dto.amount(), PAYMENT, dto.paymentId());
     }
 
 
