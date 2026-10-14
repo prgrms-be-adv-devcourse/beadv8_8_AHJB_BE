@@ -3,6 +3,7 @@ package com.jjinmak.back.boundedContext.cart.app;
 import com.jjinmak.back.boundedContext.cart.domain.CartItem;
 import com.jjinmak.back.boundedContext.cart.domain.CartMember;
 import com.jjinmak.back.shared.auction.dto.AuctionDto;
+import com.jjinmak.back.shared.auction.event.AuctionWonEvent;
 import com.jjinmak.back.shared.cart.dto.CartItemDto;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import lombok.RequiredArgsConstructor;
@@ -29,8 +30,8 @@ public class CartFacade {
     }
 
     @Transactional
-    public CartItem createCartItem(AuctionDto auctionDto){
-        return cartCreateCartItemUseCase.createCartItem(auctionDto);
+    public CartItem createCartItem(AuctionWonEvent event){
+        return cartCreateCartItemUseCase.createCartItem(event);
     }
 
     @Transactional(readOnly = true)
@@ -44,8 +45,8 @@ public class CartFacade {
     }
 
     @Transactional
-    public void paymentSucceed(Long productId){
-        cartPaymentSucceedUseCase.paymentSucceed(productId);
+    public void paymentSucceed(Long auctionId){
+        cartPaymentSucceedUseCase.paymentSucceed(auctionId);
     }
 
     @Transactional(readOnly = true)

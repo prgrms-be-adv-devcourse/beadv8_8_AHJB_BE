@@ -34,6 +34,9 @@ public class Order extends BaseIdAndTime {
     OrderMember seller;
 
     @NotNull
+    Long auctionId;
+
+    @NotNull
     Long productId;
 
     @NotNull
@@ -51,10 +54,11 @@ public class Order extends BaseIdAndTime {
     @Column(length = 30)
     OrderState state;
 
-    public Order(OrderGroup group, OrderMember winner, OrderMember seller, Long productId, Long winningPrice, Long deliveryFee){
+    public Order(OrderGroup group, OrderMember winner, OrderMember seller, Long auctionId, Long productId, Long winningPrice, Long deliveryFee){
         this.group = group;
         this.winner = winner;
         this.seller = seller;
+        this.auctionId = auctionId;
         this.productId = productId;
         this.winningPrice = winningPrice;
         this.deliveryFee = deliveryFee;
