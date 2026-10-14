@@ -23,7 +23,7 @@ public class WalletPortAdapter implements WalletPort {
 
     @Override
     public void charge(ChargeDto dto) {
-        walletFacade.charge(dto);
+        withRetry(() -> walletFacade.charge(dto));
     }
 
     @Override
