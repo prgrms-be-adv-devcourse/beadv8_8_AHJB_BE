@@ -43,7 +43,7 @@ public class WalletRefundOrderUseCase {
         Wallet escrow = finder.escrowForUpdate();
         long amount = holding.getAmount();
 
-        holding.refund(amount);
+        holding.refund(requestedAmount);
         escrow.withdrawal(amount);
         buyer.deposit(amount);
 
