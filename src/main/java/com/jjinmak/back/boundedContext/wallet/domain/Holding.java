@@ -103,15 +103,24 @@ public class Holding extends BaseIdAndTime {
         this.releasedAt = LocalDateTime.now();
     }
 
-    public void refund() {
+    public void refund(long requestedAmount) {
         requireHeld();
+        if (this.amount != requestedAmount) {            // 전액 환불만 허용 — 도메인 규칙
+            throw new BusinessException(REFUND_AMOUNT_MISMATCH);
+        }
         this.status = HoldingStatus.REFUNDED;
         this.refundedAt = LocalDateTime.now();
     }
 
     private void requireHeld() {
-        if (this.status != HoldingStatus.HELD) {
-            throw new BusinessException(HOLDING_NOT_HELD);
+        switch (this.status) {
+            case HELD -> {}
+            case RELEASED -> throw new BusinessException(HOLDING_ALREADY_RELEASED);
+            case REFUNDED -> throw new BusinessException(HOLDING_ALREADY_REFUNDED);
         }
+    }
+
+    public boolean isRefunded() {
+        return this.status == HoldingStatus.REFUNDED;
     }
 }
