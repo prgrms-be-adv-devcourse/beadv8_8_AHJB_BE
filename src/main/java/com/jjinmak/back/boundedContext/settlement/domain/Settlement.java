@@ -4,6 +4,7 @@ import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
 import com.jjinmak.back.shared.settlement.domain.SettlementStatus;
 import com.jjinmak.back.shared.settlement.dto.SettlementDto;
+import com.jjinmak.back.shared.settlement.dto.SettlementItemDto;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
@@ -113,6 +114,16 @@ public class Settlement extends BaseIdAndTime {
                 sellerId,
                 settlementAmount,
                 feeAmount
+        );
+    }
+
+    public SettlementItemDto itemDto() {
+        return new SettlementItemDto(
+                getId(),
+                productName,
+                settlementAmount,
+                status,
+                payoutDate
         );
     }
 }
