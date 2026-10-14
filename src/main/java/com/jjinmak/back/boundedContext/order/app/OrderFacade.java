@@ -41,22 +41,22 @@ public class OrderFacade {
     }
 
     @Transactional(readOnly = true)
-    public List<OrderDto> readWinnerOrders(UUID winnerId){
+    public List<OrderDto> readWinnerOrders(Long winnerId){
         return orderReadOrderUseCase.readWinnerOrders(winnerId);
     }
 
     @Transactional(readOnly = true)
-    public List<OrderDto> readSellerOrders(UUID sellerId){
+    public List<OrderDto> readSellerOrders(Long sellerId){
         return orderReadOrderUseCase.readSellerOrders(sellerId);
     }
 
     @Transactional(readOnly = true)
-    public OrderDto readOrder(UUID memberId, Long orderId){
+    public OrderDto readOrder(Long memberId, Long orderId){
         return orderReadOrderUseCase.readOrder(memberId, orderId);
     }
 
     @Transactional
-    public void confirmPurchase(UUID memberId, Long orderId){
+    public void confirmPurchase(Long memberId, Long orderId){
         orderConfirmPurchaseUseCase.confirmPurchase(memberId, orderId);
     }
 
@@ -71,7 +71,7 @@ public class OrderFacade {
     }
 
     @Transactional
-    public void requestRefund(UUID memberId, Long orderId){
+    public void requestRefund(Long memberId, Long orderId){
         orderRequestRefundUseCase.requestRefund(memberId, orderId);
     }
 
@@ -86,7 +86,7 @@ public class OrderFacade {
     }
 
     @Transactional(readOnly = true)
-    public void requestDelivery(UUID sellerId, Long orderId, CarrierType carrier, String waybill){
+    public void requestDelivery(Long sellerId, Long orderId, CarrierType carrier, String waybill){
         orderDeliveryUseCase.requestDelivery(sellerId, orderId, carrier, waybill);
     }
 
