@@ -1,5 +1,7 @@
 package com.jjinmak.back.boundedContext.auction.domain;
 
+import com.jjinmak.back.boundedContext.auction.exception.AuctionErrorCode;
+import com.jjinmak.back.global.exception.BusinessException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -21,6 +23,6 @@ public enum BidIncrement {
                 return increment.unit;
             }
         }
-        throw new IllegalArgumentException("가격은 0원 이상이어야 합니다."+currentPrice);
+        throw new BusinessException(AuctionErrorCode.INVALID_PRICE);
     }
 }

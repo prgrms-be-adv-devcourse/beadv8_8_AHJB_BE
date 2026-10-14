@@ -5,6 +5,7 @@ import com.jjinmak.back.boundedContext.auction.domain.AuctionStatus;
 import com.jjinmak.back.boundedContext.auction.domain.Bid;
 import com.jjinmak.back.boundedContext.auction.dto.AuctionInstantWinResponseDto;
 import com.jjinmak.back.boundedContext.auction.exception.AuctionErrorCode;
+import com.jjinmak.back.boundedContext.auction.out.AuctionEventPublisher;
 import com.jjinmak.back.boundedContext.auction.out.AuctionRepository;
 import com.jjinmak.back.boundedContext.auction.out.BidRepository;
 import com.jjinmak.back.global.exception.BusinessException;

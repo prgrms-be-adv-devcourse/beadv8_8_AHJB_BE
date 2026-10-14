@@ -6,6 +6,7 @@ import com.jjinmak.back.boundedContext.auction.domain.Bid;
 import com.jjinmak.back.boundedContext.auction.domain.BidIncrement;
 import com.jjinmak.back.boundedContext.auction.dto.AuctionBidResponseDto;
 import com.jjinmak.back.boundedContext.auction.exception.AuctionErrorCode;
+import com.jjinmak.back.boundedContext.auction.out.AuctionEventPublisher;
 import com.jjinmak.back.boundedContext.auction.out.AuctionRepository;
 import com.jjinmak.back.boundedContext.auction.out.BidRepository;
 import com.jjinmak.back.global.exception.BusinessException;
@@ -57,6 +58,7 @@ public class AuctionBidUseCase {
         }
         // 입찰 저장
         Bid bid = bidRepository.save(new Bid(auction.getId(),bidderId,bidPrice,now));
+        auctionEventPublisher.publishBidUpdated(auction);
         return new AuctionBidResponseDto(
                 bid.getId(),
                 bidPrice,
