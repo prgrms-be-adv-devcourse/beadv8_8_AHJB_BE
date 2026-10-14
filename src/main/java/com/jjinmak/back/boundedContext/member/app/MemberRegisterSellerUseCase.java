@@ -2,7 +2,7 @@ package com.jjinmak.back.boundedContext.member.app;
 
 import com.jjinmak.back.boundedContext.member.domain.Member;
 import com.jjinmak.back.boundedContext.member.domain.Seller;
-import com.jjinmak.back.boundedContext.member.exception.AuthErrorCode;
+import com.jjinmak.back.boundedContext.member.exception.MemberErrorCode;
 import com.jjinmak.back.boundedContext.member.in.dto.RegisterSellerRequestDto;
 import com.jjinmak.back.boundedContext.member.out.MemberRepository;
 import com.jjinmak.back.boundedContext.member.out.SellerRepository;
@@ -22,7 +22,7 @@ public class MemberRegisterSellerUseCase {
     public void registerSeller(Long memberId, RegisterSellerRequestDto request){
 
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(()->new BusinessException(AuthErrorCode.MEMBER_NOT_FOUND));
+                .orElseThrow(()->new BusinessException(MemberErrorCode.MEMBER_NOT_FOUND));
 
         member.registerAsSeller();
 

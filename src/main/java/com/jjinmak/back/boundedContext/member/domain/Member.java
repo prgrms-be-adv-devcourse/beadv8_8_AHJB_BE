@@ -1,6 +1,5 @@
 package com.jjinmak.back.boundedContext.member.domain;
 
-import com.jjinmak.back.boundedContext.member.exception.AuthErrorCode;
 import com.jjinmak.back.boundedContext.member.exception.MemberErrorCode;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.global.exception.CommonErrorCode;
@@ -11,7 +10,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import javax.naming.AuthenticationException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
