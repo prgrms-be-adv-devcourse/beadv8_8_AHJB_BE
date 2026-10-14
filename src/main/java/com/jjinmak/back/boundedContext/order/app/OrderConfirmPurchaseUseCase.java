@@ -32,7 +32,7 @@ public class OrderConfirmPurchaseUseCase {
 
         OrderConfirmPurchaseEvent event = new OrderConfirmPurchaseEvent(
                 orderId, winner.getId(), order.getSeller().getId(),
-                order.getProductId(), order.getWinningPrice(), order.getDeliveryFee(),
+                order.getAuctionId(), order.getProductId(), order.getWinningPrice(), order.getDeliveryFee(),
                 LocalDateTime.now()
         );
 

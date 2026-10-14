@@ -37,7 +37,7 @@ public class OrderPaymentResultUseCase {
         LocalDateTime paidAt = LocalDateTime.now();
 
         for (Order order : orders){
-            OrderPaymentSucceedEvent event = new OrderPaymentSucceedEvent(order.getId(), order.getProductId(), paidAt);
+            OrderPaymentSucceedEvent event = new OrderPaymentSucceedEvent(order.getId(), order.getAuctionId(), order.getProductId(), paidAt);
             eventPublisher.publish(event);
         }
     }
