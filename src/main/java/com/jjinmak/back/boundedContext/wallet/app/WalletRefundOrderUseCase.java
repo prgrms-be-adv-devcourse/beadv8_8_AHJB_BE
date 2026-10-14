@@ -37,18 +37,13 @@ public class WalletRefundOrderUseCase {
         Holding holding = holdingRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new BusinessException(HOLDING_NOT_FOUND));
 
-        if (holding.getStatus() == HoldingStatus.REFUNDED) return;
-        if (holding.getStatus() == HoldingStatus.RELEASED) {
-            throw new BusinessException(HOLDING_ALREADY_RELEASED);
-        }
-        if (holding.getAmount() != requestedAmount) {
-            throw new BusinessException(REFUND_AMOUNT_MISMATCH);
-        }
+        if (holding.isRefunded()) return;
 
         Wallet buyer = holding.getBuyerWallet();
         Wallet escrow = finder.escrowForUpdate();
         long amount = holding.getAmount();
 
+        holding.refund(amount);
         escrow.withdrawal(amount);
         buyer.deposit(amount);
 
@@ -60,8 +55,6 @@ public class WalletRefundOrderUseCase {
         walletTransactionRepository.save(
                 WalletTransaction.of(buyer, REFUND_RECEIVE, amount, groupId, ORDER, orderId)
         );
-
-        holding.refund();
 
         eventPublisher.publish(new WalletRefundedEvent(
                 refundId, orderId, holding.getPaymentId(), amount, holding.getRefundedAt()));
