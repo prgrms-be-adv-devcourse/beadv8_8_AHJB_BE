@@ -8,5 +8,6 @@ public enum OrderState {
     SHIPPED,
     CONFIRMED,
     REFUND_REQUESTED,
-    REFUNDED
+    REFUNDED,
+    DELIVERY_ERROR
 }

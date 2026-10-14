@@ -31,8 +31,7 @@ public class OrderRequestRefundUseCase {
 
         OrderRefundRequestedEvent event = new OrderRefundRequestedEvent(
                 orderId, member.getId(), order.getSeller().getId(),
-                order.getProductId(), order.getWinningPrice(),
-                order.getDeliveryFee()
+                order.getProductId(), order.getWinningPrice(), order.getDeliveryFee()
         );
 
         eventPublisher.publish(event);

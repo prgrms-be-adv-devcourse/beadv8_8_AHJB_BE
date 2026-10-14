@@ -4,18 +4,25 @@ import com.jjinmak.back.boundedContext.order.domain.Order;
 import com.jjinmak.back.boundedContext.order.domain.OrderMember;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.shared.delivery.domain.CarrierType;
+import com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode;
 import com.jjinmak.back.shared.delivery.event.DeliveryCreatedEvent;
+import com.jjinmak.back.shared.delivery.event.DeliveryStatusUpdatedEvent;
 import com.jjinmak.back.shared.order.event.OrderSendProductEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.*;
+import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.*;
 
 @Service
 @RequiredArgsConstructor
 public class OrderDeliveryUseCase {
+
+    private final Set<DeliveryStatusCode> ORDER_SHIPPED = EnumSet.of(DELIVERED, AVAILABLE_FOR_PICKUP);
 
     private final OrderSupport orderSupport;
     private final EventPublisher eventPublisher;
@@ -42,5 +49,20 @@ public class OrderDeliveryUseCase {
         Order order = orderSupport.getOrder(orderId);
 
         order.validateAndUpdateState(PAID, SHIPPING);
+    }
+
+    public void updateDeliveryStatus(DeliveryStatusUpdatedEvent event){
+        Long orderId = event.orderId();
+        DeliveryStatusCode afterStatus = event.afterStatus();
+
+        if (!ORDER_SHIPPED.contains(afterStatus))
+            return;
+
+        Order order = orderSupport.getOrder(orderId);
+
+        if (order.getState() != SHIPPING)
+            return;
+
+        order.shipped(event.updatedAt());
     }
 }

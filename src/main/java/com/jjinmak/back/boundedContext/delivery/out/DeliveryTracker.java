@@ -79,8 +79,8 @@ public class DeliveryTracker {
         return response;
     }
 
-    public void registerWebhook(Long deliveryId, CarrierType carrier, String waybill, int expirationDays){
-        String webhookCallback = webhookCallbackUrl + '/' + deliveryId + '/' + waybill;
+    public void registerWebhook(Long deliveryId, Long orderId, CarrierType carrier, String waybill, int expirationDays){
+        String webhookCallback = webhookCallbackUrl + '/' + orderId + "/delivery/" + deliveryId;
         WebhookRegisterRequestDto requestDto = new WebhookRegisterRequestDto(
                 WEBHOOK_QUERY,
                 new WebhookRegisterRequestDto.Variables(new WebhookRegisterRequestDto.Input(carrier.getCarrierCode(), waybill, webhookCallback, OffsetDateTime.now().plusDays(expirationDays)))

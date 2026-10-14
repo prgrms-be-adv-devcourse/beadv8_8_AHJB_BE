@@ -41,6 +41,10 @@ public class RefreshToken extends BaseIdAndTime {
         return new RefreshToken(memberId, refreshToken, expiredAt);
     }
 
+    public boolean isExpired(){
+        return expiredAt.isBefore(LocalDateTime.now());
+    }
+
     public void revoke(){
         revoked = true;
     }

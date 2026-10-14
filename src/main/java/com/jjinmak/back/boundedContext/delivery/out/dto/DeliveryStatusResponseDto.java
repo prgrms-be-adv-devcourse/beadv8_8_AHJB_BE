@@ -1,7 +1,7 @@
 package com.jjinmak.back.boundedContext.delivery.out.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.jjinmak.back.boundedContext.delivery.domain.DeliveryStatusCode;
+import com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode;
 
 import java.time.OffsetDateTime;
 import java.util.List;

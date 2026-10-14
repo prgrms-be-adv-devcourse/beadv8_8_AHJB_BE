@@ -6,6 +6,7 @@ import com.jjinmak.back.boundedContext.order.domain.OrderMember;
 import com.jjinmak.back.shared.cart.event.CartCreateOrderEvent;
 import com.jjinmak.back.shared.delivery.domain.CarrierType;
 import com.jjinmak.back.shared.delivery.event.DeliveryCreatedEvent;
+import com.jjinmak.back.shared.delivery.event.DeliveryStatusUpdatedEvent;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import com.jjinmak.back.shared.refund.dto.RefundDto;
 import lombok.RequiredArgsConstructor;
@@ -107,5 +108,10 @@ public class OrderFacade {
     @Transactional
     public void deleteOverWaitingOrders(){
         orderSchedulerUseCase.deleteOverWaitingOrders();
+    }
+
+    @Transactional
+    public void updateDeliveryStatus(DeliveryStatusUpdatedEvent event){
+        orderDeliveryUseCase.updateDeliveryStatus(event);
     }
 }

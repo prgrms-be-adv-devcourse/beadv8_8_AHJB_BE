@@ -47,7 +47,10 @@ public enum WalletErrorCode implements ErrorCode {
     TRANSACTION_GROUP_NOT_BALANCED("WALLET404", "거래 그룹의 금액 합이 0이 아닙니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // ===== 동시성 =====
-    WALLET_CONCURRENT_MODIFICATION("WALLET501", "지갑이 동시에 수정되었습니다. 다시 시도해 주세요.", HttpStatus.CONFLICT)
+    WALLET_CONCURRENT_MODIFICATION("WALLET501", "지갑이 동시에 수정되었습니다. 다시 시도해 주세요.", HttpStatus.CONFLICT),
+
+    // ===== 환불 =====
+    REFUND_AMOUNT_MISMATCH("WALLET309", "환불 요청 금액이 홀딩 금액과 일치하지 않습니다.", HttpStatus.BAD_REQUEST)
     ;
 
     private final String code;

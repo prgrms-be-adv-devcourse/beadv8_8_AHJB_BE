@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
+import static com.jjinmak.back.boundedContext.wallet.domain.enums.ReferenceType.PAYMENT;
+import static com.jjinmak.back.boundedContext.wallet.domain.enums.WalletTransactionType.CHARGE;
 import static com.jjinmak.back.boundedContext.wallet.exception.WalletErrorCode.INVALID_AMOUNT;
 import static com.jjinmak.back.boundedContext.wallet.exception.WalletErrorCode.WALLET_NOT_FOUND;
 
@@ -21,26 +23,17 @@ import static com.jjinmak.back.boundedContext.wallet.exception.WalletErrorCode.W
 @RequiredArgsConstructor
 public class WalletChargeUseCase {
 
-    public final WalletSupport walletSupport;
-    private final WalletTransactionRepository walletTransactionRepository;
+    private final WalletSupport walletSupport;
+    private final LedgerRecorder ledgerRecorder;
 
     public void charge(ChargeDto chargeDto) {
         Wallet customerWallet = walletSupport.findWalletByHolderId(chargeDto.holderId())
                 .orElseThrow(() -> new BusinessException(WALLET_NOT_FOUND));
 
-        if (chargeDto.amount() > 0) {
-            customerWallet.deposit(chargeDto.amount());
-            walletTransactionRepository.save(
-                    WalletTransaction.of(
-                            customerWallet,
-                        WalletTransactionType.CHARGE,
-                        chargeDto.amount(),
-                        UUID.randomUUID().toString(),
-                        ReferenceType.PAYMENT,
-                        chargeDto.paymentId())
-            );
-        } else {
+        if (chargeDto.amount() <= 0) {
             throw new BusinessException(INVALID_AMOUNT);
         }
+
+        ledgerRecorder.deposit(customerWallet, CHARGE, chargeDto.amount(), PAYMENT, chargeDto.paymentId());
     }
 }
