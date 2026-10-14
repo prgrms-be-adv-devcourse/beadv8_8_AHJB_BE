@@ -3,6 +3,7 @@ package com.jjinmak.back.boundedContext.wallet.in;
 
 import com.jjinmak.back.boundedContext.wallet.app.WalletFacade;
 import com.jjinmak.back.shared.member.event.MemberCreatedEvent;
+import com.jjinmak.back.shared.order.event.OrderConfirmPurchaseEvent;
 import com.jjinmak.back.shared.refund.dto.RefundDto;
 import com.jjinmak.back.shared.refund.event.RefundAcceptedEvent;
 import com.jjinmak.back.shared.wallet.event.WalletMemberCreatedEvent;
@@ -36,5 +37,11 @@ public class WalletEventListener {
     @Transactional(propagation = REQUIRES_NEW)
     public void handle(RefundAcceptedEvent event) {
         walletFacade.refund(event.refund().refundId(), event.refund().orderId(), event.refund().amount());
+    }
+
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    @Transactional(propagation = REQUIRES_NEW)
+    public void handle(OrderConfirmPurchaseEvent event) {
+        walletFacade.confirmHolding(event.orderId());
     }
 }
