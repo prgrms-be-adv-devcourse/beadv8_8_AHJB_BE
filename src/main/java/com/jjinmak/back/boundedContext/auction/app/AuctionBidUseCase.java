@@ -58,6 +58,7 @@ public class AuctionBidUseCase {
         }
         // 입찰 저장
         Bid bid = bidRepository.save(new Bid(auction.getId(),bidderId,bidPrice,now));
+        auctionEventPublisher.publishBidUpdated(auction);
         return new AuctionBidResponseDto(
                 bid.getId(),
                 bidPrice,
