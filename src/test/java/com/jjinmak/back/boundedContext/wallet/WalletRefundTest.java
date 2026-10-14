@@ -177,7 +177,7 @@ class WalletRefundTest {
     @Test
     @DisplayName("RefundAcceptedEvent 를 받으면 리스너를 통해 환불이 수행된다")
     void refundAcceptedEvent_triggersRefund() {
-        RefundDto dto = new RefundDto(refundId, orderAId, RefundStatus.ACCEPTED, ORDER_A_AMOUNT,
+        RefundDto dto = new RefundDto(refundId, orderAId, buyerId, RefundStatus.ACCEPTED, ORDER_A_AMOUNT,
                 LocalDateTime.now().minusHours(1), LocalDateTime.now());
 
         // 리스너가 AFTER_COMMIT 이라 실제로 커밋되는 트랜잭션 안에서 발행해야 한다
