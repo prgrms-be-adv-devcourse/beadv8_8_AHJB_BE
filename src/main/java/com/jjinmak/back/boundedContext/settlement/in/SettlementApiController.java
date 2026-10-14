@@ -4,15 +4,13 @@ import com.jjinmak.back.boundedContext.settlement.app.SettlementFacade;
 import com.jjinmak.back.global.rsData.RsData;
 import com.jjinmak.back.global.security.AuthPrincipal;
 import com.jjinmak.back.shared.settlement.domain.SettlementStatus;
+import com.jjinmak.back.shared.settlement.dto.SettlementDetailDto;
 import com.jjinmak.back.shared.settlement.dto.SettlementListDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -29,6 +27,16 @@ public class SettlementApiController {
             @RequestParam(defaultValue = "20") int size
     ) {
         SettlementListDto response = settlementFacade.getSettlements(principal.memberId(), status, page, size);
+
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
+
+    @GetMapping("/{settlementId}")
+    public ResponseEntity<RsData<SettlementDetailDto>> getSettlement(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @PathVariable Long settlementId
+    ) {
+        SettlementDetailDto response = settlementFacade.getSettlement(principal.memberId(), settlementId);
 
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }

@@ -4,6 +4,7 @@ import com.jjinmak.back.boundedContext.settlement.domain.Settlement;
 import com.jjinmak.back.boundedContext.settlement.domain.SettlementPayoutResult;
 import com.jjinmak.back.shared.order.event.OrderConfirmPurchaseEvent;
 import com.jjinmak.back.shared.settlement.domain.SettlementStatus;
+import com.jjinmak.back.shared.settlement.dto.SettlementDetailDto;
 import com.jjinmak.back.shared.settlement.dto.SettlementListDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ public class SettlementFacade {
     private final SettlementCreateSettlementUseCase settlementCreateSettlementUseCase;
     private final SettlementCompleteSettlementUseCase settlementCompleteSettlementUseCase;
     private final SettlementGetSettlementsUseCase settlementGetSettlementsUseCase;
+    private final SettlementGetSettlementUseCase settlementGetSettlementUseCase;
 
     @Transactional
     public void createSettlement(OrderConfirmPurchaseEvent event) {
@@ -41,5 +43,10 @@ public class SettlementFacade {
                 settlementGetSettlementsUseCase.getSettlements(memberId, status, page, size)
                         .map(Settlement::itemDto)
         );
+    }
+
+    @Transactional(readOnly = true)
+    public SettlementDetailDto getSettlement(Long memberId, Long settlementId) {
+        return settlementGetSettlementUseCase.getSettlement(memberId, settlementId).detailDto();
     }
 }
