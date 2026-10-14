@@ -1,12 +1,10 @@
 package com.jjinmak.back.boundedContext.member.in;
 
 import com.jjinmak.back.boundedContext.member.app.AuthFacade;
+import com.jjinmak.back.boundedContext.member.app.MemberLogoutUseCase;
 import com.jjinmak.back.boundedContext.member.app.MemberReadUseCase;
 import com.jjinmak.back.boundedContext.member.app.MemberSignUpUseCase;
-import com.jjinmak.back.boundedContext.member.in.dto.AvailabilityResponseDto;
-import com.jjinmak.back.boundedContext.member.in.dto.LoginRequestDto;
-import com.jjinmak.back.boundedContext.member.in.dto.MemberLoginResponseDto;
-import com.jjinmak.back.boundedContext.member.in.dto.MemberSignUpRequestDto;
+import com.jjinmak.back.boundedContext.member.in.dto.*;
 import com.jjinmak.back.global.rsData.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -28,6 +26,7 @@ public class AuthController {
 
     private final MemberSignUpUseCase memberSignUpUseCase;
     private final MemberReadUseCase memberReadUseCase;
+    private final MemberLogoutUseCase memberLogoutUseCase;
     private final AuthFacade authFacade;
 
     @Operation(
@@ -76,5 +75,18 @@ public class AuthController {
         boolean available = memberReadUseCase.isNicknameAvailable(nickname);
 
         return ResponseEntity.ok(new RsData<>(new AvailabilityResponseDto(available)));
+    }
+
+    @Operation(
+            summary = "로그아웃",
+            description = "전달받은 RefreshToken을 revoke 처리합니다"
+    )
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @Valid @RequestBody LogoutRequestDto request
+    ){
+        memberLogoutUseCase.revokeRefreshToken(request.refreshToken());
+
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }
