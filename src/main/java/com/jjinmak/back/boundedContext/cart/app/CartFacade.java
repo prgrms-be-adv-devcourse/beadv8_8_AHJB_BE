@@ -34,12 +34,12 @@ public class CartFacade {
     }
 
     @Transactional(readOnly = true)
-    public List<CartItemDto> readWinnerItems(UUID winnerId){
+    public List<CartItemDto> readWinnerItems(Long winnerId){
         return cartReadItemUseCase.readWinnerItems(winnerId);
     }
 
     @Transactional
-    public void paymentCartItems(UUID winnerId, List<Long> productIds){
+    public void paymentCartItems(Long winnerId, List<Long> productIds){
         cartPaymentUseCase.payment(winnerId, productIds);
     }
 
