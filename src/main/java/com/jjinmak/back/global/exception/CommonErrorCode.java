@@ -15,7 +15,8 @@ public enum CommonErrorCode implements ErrorCode{
 
     SUSPENDED_ACCOUNT("COMMON101", "정지 상태로 이용 불가", HttpStatus.FORBIDDEN),
     BANNED_ACCOUNT("COMMON102", "차단 상태로 이용 불가", HttpStatus.FORBIDDEN),
-    USER_NOT_FOUND("COMMON103", "존재하지 않는 회원", HttpStatus.NOT_FOUND)
+    USER_NOT_FOUND("COMMON103", "존재하지 않는 회원", HttpStatus.NOT_FOUND),
+    CONFLICT("COMMON005", "동시에 수정되어 처리하지 못했습니다. 다시 시도해 주세요.", HttpStatus.CONFLICT)
     ;
     private final String code;
     private final String message;
