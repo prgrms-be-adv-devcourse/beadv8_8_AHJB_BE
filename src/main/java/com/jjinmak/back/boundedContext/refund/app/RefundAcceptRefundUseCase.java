@@ -18,7 +18,7 @@ public class RefundAcceptRefundUseCase {
     private final EventPublisher eventPublisher;
 
     /**
-     * 판매자가 환불 요청을 수락한다. 수락 이벤트로 주문(지갑 환불)·정산·유저 도메인에 알린다.
+     * 판매자가 환불 요청을 수락한다. 수락 이벤트로 주문(지갑 환불)·유저(환불 패널티) 도메인에 알린다.
      * 수락·거절이 동시에 들어오면 먼저 저장된 쪽만 성공한다 (낙관적 락).
      *
      * @param memberId - 수락하는 회원 ID (판매자여야 함)
