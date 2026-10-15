@@ -22,6 +22,8 @@ public enum AuthErrorCode implements ErrorCode {
     INVALID_ACCESS_TOKEN("AUTH106", "유효하지 않은 액세스 토큰입니다.", HttpStatus.UNAUTHORIZED),
     EXPIRED_ACCESS_TOKEN("AUTH107", "만료된 액세스 토큰입니다.", HttpStatus.UNAUTHORIZED),
 
+    SANCTION_NOT_FOUND("AUTH108", "제재 내역을 찾을 수 없습니다", HttpStatus.NOT_FOUND)
+
     ;
     private final String code;
     private final String message;
