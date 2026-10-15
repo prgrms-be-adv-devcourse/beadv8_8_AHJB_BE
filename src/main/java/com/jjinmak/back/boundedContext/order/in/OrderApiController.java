@@ -31,9 +31,13 @@ public class OrderApiController {
                     + "(결제 완료, 배송 중, 배송 완료, 구매 확정, 환불 요청, 환불 완료 상태)"
     )
     @GetMapping("/winner")
-    public ResponseEntity<RsData<List<OrderDto>>> readWinnerOrders(@AuthenticationPrincipal AuthPrincipal principal){
+    public ResponseEntity<RsData<List<OrderDto>>> readWinnerOrders(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ){
 
-        List<OrderDto> response = orderFacade.readWinnerOrders(principal.memberId());
+        List<OrderDto> response = orderFacade.readWinnerOrders(principal.memberId(), page, size);
 
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }
@@ -44,8 +48,12 @@ public class OrderApiController {
                     + "(결제 완료, 배송 중, 배송 완료, 구매 확정, 환불 요청, 환불 완료 상태)"
     )
     @GetMapping("/seller")
-    public ResponseEntity<RsData<List<OrderDto>>> readSellerOrders(@AuthenticationPrincipal AuthPrincipal principal){
-        List<OrderDto> response = orderFacade.readSellerOrders(principal.memberId());
+    public ResponseEntity<RsData<List<OrderDto>>> readSellerOrders(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ){
+        List<OrderDto> response = orderFacade.readSellerOrders(principal.memberId(), page, size);
 
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }

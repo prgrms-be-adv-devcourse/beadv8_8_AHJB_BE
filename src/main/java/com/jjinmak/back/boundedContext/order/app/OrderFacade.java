@@ -41,13 +41,13 @@ public class OrderFacade {
     }
 
     @Transactional(readOnly = true)
-    public List<OrderDto> readWinnerOrders(Long winnerId){
-        return orderReadOrderUseCase.readWinnerOrders(winnerId);
+    public List<OrderDto> readWinnerOrders(Long winnerId, int page, int size){
+        return orderReadOrderUseCase.readWinnerOrders(winnerId, page, size);
     }
 
     @Transactional(readOnly = true)
-    public List<OrderDto> readSellerOrders(Long sellerId){
-        return orderReadOrderUseCase.readSellerOrders(sellerId);
+    public List<OrderDto> readSellerOrders(Long sellerId, int page, int size){
+        return orderReadOrderUseCase.readSellerOrders(sellerId, page, size);
     }
 
     @Transactional(readOnly = true)
