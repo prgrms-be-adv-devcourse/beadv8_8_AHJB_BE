@@ -44,6 +44,9 @@ public class Member extends BaseIdAndTime {
 
     private LocalDate birthDate;
 
+    @Column(nullable = false)
+    private boolean locked;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AccountStatus status;
@@ -65,6 +68,7 @@ public class Member extends BaseIdAndTime {
         this.username = username;
         this.phone = phone;
         this.birthDate = birthDate;
+        this.locked=false;
         this.status = AccountStatus.ACTIVE;
         this.isSeller = false;
         this.loginFailCount = 0;
@@ -78,7 +82,7 @@ public class Member extends BaseIdAndTime {
     public void increaseLoginFailCount(){
         loginFailCount++;
         if(loginFailCount>=MAX_LOGIN_FAIL_COUNT){
-            status = AccountStatus.LOCKED;
+            locked=true;
             lockedUntil = LocalDateTime.now().plusMinutes(LOCK_DURATION_MINUTES);
         }
     }
@@ -86,30 +90,44 @@ public class Member extends BaseIdAndTime {
     public void resetLoginFailCount(){
         loginFailCount = 0;
         lockedUntil = null;
-        status = AccountStatus.ACTIVE;
+        locked=false;
+    }
+
+    public void unlockIfExpired() {
+        if (locked && lockedUntil.isBefore(LocalDateTime.now())) {
+            locked = false;
+            loginFailCount = 0;
+            lockedUntil = null;
+        }
     }
 
     public boolean validPassword(PasswordEncoder passwordEncoder, String password){
         return passwordEncoder.matches(password, this.password);
     }
 
-    public void unlockIfExpired() {
-        if (status == AccountStatus.LOCKED && lockedUntil.isBefore(LocalDateTime.now())) {
-            status = AccountStatus.ACTIVE;
-            loginFailCount = 0;
-            lockedUntil = null;
-        }
-    }
+
 
     public boolean isBanned(){
         return status == AccountStatus.BANNED;
     }
 
+    public void active(){
+        status = AccountStatus.ACTIVE;
+    }
+
     public boolean isLocked(){
-        return status == AccountStatus.LOCKED;
+        return locked;
     }
 
     public boolean isSuspended(){return status == AccountStatus.SUSPENDED; }
+
+    public void suspendMember(){
+        status = AccountStatus.SUSPENDED;
+    }
+
+    public void banMember(){
+        status = AccountStatus.BANNED;
+    }
 
     public void registerAsSeller(){
         if(isSeller){
@@ -125,20 +143,20 @@ public class Member extends BaseIdAndTime {
         this.isSeller = true;
     }
 
-    public List<String> getAuthorities(){
+    public List<String> getAuthorities() {
         List<String> authorities = new ArrayList<>();
-
         authorities.add(Authority.ROLE_BUYER);
 
-        if(isSeller()){
+        if (isSeller) {
             authorities.add(Authority.ROLE_SELLER);
         }
-        if(!isSuspended()){
+        if (!isSuspended()) {
             authorities.add(Authority.PERM_TRADE);
-            if(isSeller()){
-                authorities.add(Authority.PERM_SELL);
-            }
         }
+        if (isSeller && !isSuspended()) {
+            authorities.add(Authority.PERM_SELL);
+        }
+
         return authorities;
     }
 }
