@@ -1,6 +1,6 @@
 package com.jjinmak.back.boundedContext.delivery.app.dto;
 
-import com.jjinmak.back.boundedContext.delivery.domain.DeliveryStatusCode;
+import com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode;
 
 import java.time.LocalDateTime;
 

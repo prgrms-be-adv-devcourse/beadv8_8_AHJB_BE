@@ -38,6 +38,8 @@ public enum WalletErrorCode implements ErrorCode {
     HOLDING_NOT_HELD("WALLET303", "HELD 상태의 홀딩만 처리할 수 있습니다.", HttpStatus.BAD_REQUEST),
     HOLDING_ALREADY_RELEASED("WALLET304", "이미 정산(구매 확정)된 홀딩입니다.", HttpStatus.BAD_REQUEST),
     HOLDING_ALREADY_REFUNDED("WALLET305", "이미 환불된 홀딩입니다.", HttpStatus.BAD_REQUEST),
+    HOLDING_ALREADY_CONFIRMED("WALLET310", "이미 구매 확정된 홀딩입니다.", HttpStatus.BAD_REQUEST),
+    HOLDING_NOT_CONFIRMED("WALLET311", "구매 확정되지 않은 홀딩은 정산할 수 없습니다.", HttpStatus.BAD_REQUEST),
     SAME_BUYER_AND_SELLER("WALLET306", "구매자와 판매자 지갑이 같을 수 없습니다.", HttpStatus.BAD_REQUEST),
 
     // ===== 원장 (WalletTransaction) =====
@@ -47,7 +49,10 @@ public enum WalletErrorCode implements ErrorCode {
     TRANSACTION_GROUP_NOT_BALANCED("WALLET404", "거래 그룹의 금액 합이 0이 아닙니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // ===== 동시성 =====
-    WALLET_CONCURRENT_MODIFICATION("WALLET501", "지갑이 동시에 수정되었습니다. 다시 시도해 주세요.", HttpStatus.CONFLICT)
+    WALLET_CONCURRENT_MODIFICATION("WALLET501", "지갑이 동시에 수정되었습니다. 다시 시도해 주세요.", HttpStatus.CONFLICT),
+
+    // ===== 환불 =====
+    REFUND_AMOUNT_MISMATCH("WALLET309", "환불 요청 금액이 홀딩 금액과 일치하지 않습니다.", HttpStatus.BAD_REQUEST)
     ;
 
     private final String code;

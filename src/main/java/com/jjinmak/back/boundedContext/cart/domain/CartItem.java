@@ -23,6 +23,10 @@ public class CartItem extends BaseIdAndTime {
     private CartMember seller;
 
     @NotNull
+    @Column(unique = true)
+    private Long auctionId;
+
+    @NotNull
     private Long productId;
 
     private Long winningPrice;
@@ -35,9 +39,10 @@ public class CartItem extends BaseIdAndTime {
     @NotNull
     private LocalDateTime paymentDueAt;
 
-    public CartItem(CartMember winner, CartMember seller, Long productId, Long winningPrice, Long deliveryFee, LocalDateTime winAt){
+    public CartItem(CartMember winner, CartMember seller, Long auctionId, Long productId, Long winningPrice, Long deliveryFee, LocalDateTime winAt){
         this.winner = winner;
         this.seller = seller;
+        this.auctionId = auctionId;
         this.productId = productId;
         this.winningPrice = winningPrice;
         this.deliveryFee = deliveryFee;
@@ -48,7 +53,7 @@ public class CartItem extends BaseIdAndTime {
     public CartItemDto dto(){
         return new CartItemDto(
                 this.getId(), winner.getUuid(), seller.getUuid(),
-                productId, winningPrice, deliveryFee,
+                auctionId, productId, winningPrice, deliveryFee,
                 winAt, paymentDueAt
         );
     }

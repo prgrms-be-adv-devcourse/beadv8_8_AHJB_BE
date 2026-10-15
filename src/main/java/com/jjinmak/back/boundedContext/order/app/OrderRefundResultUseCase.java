@@ -5,6 +5,7 @@ import com.jjinmak.back.boundedContext.order.out.OrderRepository;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.order.event.OrderConfirmPurchaseEvent;
+import com.jjinmak.back.shared.order.event.OrderRefundAcceptedEvent;
 import com.jjinmak.back.shared.refund.dto.RefundDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,7 +31,7 @@ public class OrderRefundResultUseCase {
 
         order.validateAndUpdateState(REFUND_REQUESTED, REFUNDED);
 
-        // TODO: 환불 처리됨 이벤트를 발행해야 하나?
+        eventPublisher.publish(new OrderRefundAcceptedEvent(orderId, order.getAuctionId()));
     }
 
     public void rejectRefund(RefundDto refund){
@@ -42,7 +43,7 @@ public class OrderRefundResultUseCase {
 
         OrderConfirmPurchaseEvent event = new OrderConfirmPurchaseEvent(
                 orderId, order.getWinner().getId(), order.getSeller().getId(),
-                order.getProductId(), order.getWinningPrice(), order.getDeliveryFee(),
+                order.getAuctionId(), order.getProductId(), order.getWinningPrice(), order.getDeliveryFee(),
                 LocalDateTime.now()
         );
 

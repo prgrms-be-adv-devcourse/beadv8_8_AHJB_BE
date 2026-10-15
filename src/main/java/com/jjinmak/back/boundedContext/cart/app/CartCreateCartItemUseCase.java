@@ -6,6 +6,7 @@ import com.jjinmak.back.boundedContext.cart.out.CartItemRepository;
 import com.jjinmak.back.boundedContext.cart.out.CartMemberRepository;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.auction.dto.AuctionDto;
+import com.jjinmak.back.shared.auction.event.AuctionWonEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,12 +23,12 @@ public class CartCreateCartItemUseCase {
 
     /**
      * 경매 완료 이벤트를 수신하고, 해당 상품을 CartItem으로 등록한다.
-     * @param auctionDto - 낙찰자Id, 판매자Id, 낙찰가, 배송비, 낙찰 시각
+     * @param event - 낙찰자Id, 판매자Id, 낙찰가, 배송비, 낙찰 시각
      * @return CartItem - 생성된 CartItem
      */
-    public CartItem createCartItem(AuctionDto auctionDto){
-        Long winnerId = auctionDto.winnerId();
-        Long sellerId = auctionDto.sellerId();
+    public CartItem createCartItem(AuctionWonEvent event){
+        Long winnerId = event.winnerId();
+        Long sellerId = event.sellerId();
 
         CartMember winner = cartMemberRepository.findById(winnerId)
                 .orElseThrow(()->new BusinessException(USER_NOT_FOUND));
@@ -35,13 +36,14 @@ public class CartCreateCartItemUseCase {
         CartMember seller = cartMemberRepository.findById(sellerId)
                 .orElseThrow(()->new BusinessException(USER_NOT_FOUND));
 
-        Long productId = auctionDto.productId();
-        Long winningPrice = auctionDto.winningPrice();
-        Long deliveryFee = auctionDto.shippingFee();
+        Long auctionId = event.auctionId();
+        Long productId = event.productId();
+        Long winningPrice = event.winningPrice();
+        Long deliveryFee = event.shippingFee();
 
-        LocalDateTime winAt = auctionDto.winAt();
+        LocalDateTime winAt = event.winAt();
 
-        CartItem item = new CartItem(winner, seller, productId, winningPrice, deliveryFee, winAt);
+        CartItem item = new CartItem(winner, seller, auctionId, productId, winningPrice, deliveryFee, winAt);
 
         return cartItemRepository.save(item);
     }

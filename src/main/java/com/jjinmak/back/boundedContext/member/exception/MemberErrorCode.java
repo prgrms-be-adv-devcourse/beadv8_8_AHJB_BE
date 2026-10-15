@@ -13,7 +13,8 @@ public enum MemberErrorCode implements ErrorCode {
     DUPLICATE_NICKNAME("MEMBER002", "이미 사용중인 닉네임입니다.", HttpStatus.CONFLICT),
     ALREADY_REGISTERED_SELLER("MEMBER003", "이미 판매자로 등록되어있습니다", HttpStatus.CONFLICT),
     EXIST_PROGRESSING_TRADE("MEMBER004", "진행중인 거래가 존재합니다.", HttpStatus.CONFLICT),
-    DEPOSIT_BALANCE_EXISTS("MEMBER005", "예치금 잔액이 존재합니다.", HttpStatus.CONFLICT)
+    DEPOSIT_BALANCE_EXISTS("MEMBER005", "예치금 잔액이 존재합니다.", HttpStatus.CONFLICT),
+    MEMBER_NOT_FOUND("MEMBER006", "사용자를 찾을 수 없습니다", HttpStatus.NOT_FOUND)
     ;
 
 

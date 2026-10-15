@@ -5,6 +5,7 @@ public record OrderRefundRequestedEvent(
         Long winnerId,
         Long sellerId,
         Long productId,
-        Long winningPrice
+        Long winningPrice,
+        Long deliveryFee
 ) {
 }

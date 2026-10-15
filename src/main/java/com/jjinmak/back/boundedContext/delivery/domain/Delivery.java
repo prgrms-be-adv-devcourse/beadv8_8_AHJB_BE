@@ -3,6 +3,7 @@ package com.jjinmak.back.boundedContext.delivery.domain;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
 import com.jjinmak.back.shared.delivery.domain.CarrierType;
+import com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;

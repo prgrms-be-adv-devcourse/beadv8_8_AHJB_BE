@@ -1,10 +1,12 @@
 package com.jjinmak.back.boundedContext.delivery.in;
 
 import com.jjinmak.back.boundedContext.delivery.app.DeliveryFacade;
+import com.jjinmak.back.boundedContext.delivery.app.event.CallbackRequestedEvent;
 import com.jjinmak.back.boundedContext.delivery.app.event.WebhookRegisterEvent;
 import com.jjinmak.back.shared.member.event.MemberCreatedEvent;
 import com.jjinmak.back.shared.order.event.OrderSendProductEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -34,5 +36,11 @@ public class DeliveryEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(WebhookRegisterEvent event){
         deliveryFacade.registerWebhook(event);
+    }
+
+    @Async
+    @EventListener
+    public void handle(CallbackRequestedEvent event){
+        deliveryFacade.getDeliveryStatus(event.deliveryId());
     }
 }

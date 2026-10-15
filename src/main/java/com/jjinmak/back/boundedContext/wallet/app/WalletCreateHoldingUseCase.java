@@ -3,9 +3,7 @@ package com.jjinmak.back.boundedContext.wallet.app;
 import com.jjinmak.back.boundedContext.wallet.domain.Holding;
 import com.jjinmak.back.boundedContext.wallet.domain.HoldingPolicy;
 import com.jjinmak.back.boundedContext.wallet.domain.Wallet;
-import com.jjinmak.back.boundedContext.wallet.domain.WalletTransaction;
 import com.jjinmak.back.boundedContext.wallet.out.HoldingRepository;
-import com.jjinmak.back.boundedContext.wallet.out.WalletTransactionRepository;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.wallet.dto.HoldDto;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 import static com.jjinmak.back.boundedContext.wallet.domain.enums.ReferenceType.ORDER;
-import static com.jjinmak.back.boundedContext.wallet.domain.enums.ReferenceType.PAYMENT;
 import static com.jjinmak.back.boundedContext.wallet.domain.enums.WalletTransactionType.HOLD_PAY;
 import static com.jjinmak.back.boundedContext.wallet.domain.enums.WalletTransactionType.HOLD_RECEIVE;
 import static com.jjinmak.back.boundedContext.wallet.exception.WalletErrorCode.*;
@@ -26,11 +23,11 @@ import static com.jjinmak.back.boundedContext.wallet.exception.WalletErrorCode.*
 @Transactional(propagation = Propagation.MANDATORY)
 public class WalletCreateHoldingUseCase {
 
-    public final WalletSupport walletSupport;
-    public final SystemWalletFinder finder;
-    public final HoldingPolicy holdingPolicy;
-    public final WalletTransactionRepository walletTransactionRepository;
-    public final HoldingRepository holdingRepository;
+    private final WalletSupport walletSupport;
+    private final SystemWalletFinder finder;
+    private final HoldingPolicy holdingPolicy;
+    private final LedgerRecorder ledgerRecorder;
+    private final HoldingRepository holdingRepository;
 
     public void hold(HoldDto dto) {
         if (alreadyHeld(dto.paymentId())) return;
@@ -48,17 +45,9 @@ public class WalletCreateHoldingUseCase {
 
         for (HoldDto.Item item : dto.items()) {
             Holding holding = toHolding(dto.paymentId(), buyer, item);
-            long amount = holding.getAmount();
 
-            // 상품별 돈 이동
-            buyer.withdrawal(amount);
-            escrow.deposit(amount);
-
-            // 상품별 원장 기록
-            walletTransactionRepository.save(
-                    WalletTransaction.of(buyer,  HOLD_PAY,     -amount, groupId, ORDER, item.orderId()));
-            walletTransactionRepository.save(
-                    WalletTransaction.of(escrow, HOLD_RECEIVE,  amount, groupId, ORDER, item.orderId()));
+            ledgerRecorder.transfer(buyer, HOLD_PAY, escrow, HOLD_RECEIVE,
+                    holding.getAmount(), groupId, ORDER, item.orderId());
 
             holdingRepository.save(holding);
         }
