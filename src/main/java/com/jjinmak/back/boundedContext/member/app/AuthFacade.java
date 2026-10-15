@@ -14,11 +14,18 @@ public class AuthFacade {
     private final MemberAuthenticateUseCase memberAuthenticateUseCase;
     private final MemberTokenIssueUseCase memberTokenIssueUseCase;
     private final MemberReissueTokenUseCase memberReissueTokenUseCase;
+    private final MemberSanctionReleaseUseCase memberSanctionReleaseUseCase;
 
     public MemberLoginResponseDto login(String email, String password){
 
         Member member = memberAuthenticateUseCase.authenticate(email, password);
+
+        if(member.isSuspended()){
+            memberSanctionReleaseUseCase.releaseIfExpired(member);
+        }
+
         TokenPair pair = memberTokenIssueUseCase.issue(member);
+
 
         return new MemberLoginResponseDto(pair.accessToken(), pair.refreshToken(), member.getNickname(), member.isSuspended());
     }
