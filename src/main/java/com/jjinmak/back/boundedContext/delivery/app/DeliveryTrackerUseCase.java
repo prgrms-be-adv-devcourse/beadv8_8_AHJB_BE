@@ -13,11 +13,17 @@ import com.jjinmak.back.shared.delivery.domain.CarrierType;
 import com.jjinmak.back.boundedContext.delivery.app.event.WebhookRegisterEvent;
 import com.jjinmak.back.shared.delivery.event.DeliveryStatusUpdatedEvent;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
+import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.UNKNOWN;
+import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.WRONG;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DeliveryTrackerUseCase {
@@ -43,7 +49,7 @@ public class DeliveryTrackerUseCase {
                 orderId,
                 lastEvent.status().code(),
                 lastEvent.status().code().getMessage(),
-                lastEvent.time() == null ? null : lastEvent.time().toLocalDateTime()
+                lastEvent.time() == null ? null : lastEvent.time().atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime()
         );
     }
 
@@ -89,7 +95,16 @@ public class DeliveryTrackerUseCase {
         if (beforeCode.equals(afterCode))
             return;
 
-        LocalDateTime updatedAt = lastEvent.time() == null ? LocalDateTime.now() : lastEvent.time().toLocalDateTime();
+        if (afterCode.equals(WRONG)){
+            log.warn("Delivery Tracker 조회 결과 미식별 상태 코드를 응답받았습니다.\ndeliveryId: %d".formatted(delivery.getId()));
+            return;
+        }
+        else if (afterCode.equals(UNKNOWN)){
+            log.warn("Delivery Tracker 조회 결과 \"상태를 알 수 없음\"을 응답받았습니다.\ndeliveryId: %d".formatted(delivery.getId()));
+            return;
+        }
+
+        LocalDateTime updatedAt = lastEvent.time() == null ? LocalDateTime.now() : lastEvent.time().atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
 
         transactionTemplate.executeWithoutResult(status -> {
             int updated = deliveryRepository.updateStatus(delivery.getId(), delivery.getCarrier(), delivery.getWaybill(), beforeCode, afterCode);
