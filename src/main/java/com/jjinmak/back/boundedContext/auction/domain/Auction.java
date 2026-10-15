@@ -1,6 +1,5 @@
 package com.jjinmak.back.boundedContext.auction.domain;
 
-import com.jjinmak.back.boundedContext.auction.exception.AuctionErrorCode;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.*;
@@ -12,6 +11,9 @@ import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
+
+import static com.jjinmak.back.boundedContext.auction.domain.AuctionStatus.*;
+import static com.jjinmak.back.boundedContext.auction.exception.AuctionErrorCode.*;
 
 
 @Entity
@@ -119,25 +121,33 @@ public class Auction extends BaseIdAndTime {
     public boolean hasBids(){return bidCount>0;}
 
     public void win(Long winnerId,Long price,LocalDateTime now){
-        validateInProgress();
-        this.status=AuctionStatus.WON;
+        validateStatus(IN_PROGRESS);
+        this.status= WON;
         this.winnerId=winnerId;
         this.winningPrice=price;
         this.winAt=now;
     }
     public void fail(FailureReason reason){
-        validateInProgress();
-        this.status=AuctionStatus.FAILED;
+        validateStatus(reason.getFrom());
+        this.status=FAILED;
         this.failureReason = reason;
     }
-    private void validateInProgress(){
-        if(status!=AuctionStatus.IN_PROGRESS){
-            throw new BusinessException(AuctionErrorCode.INVALID_STATUS_TRANSITION);
+    public void pay(){
+        validateStatus(WON);
+        this.status = PAID;
+    }
+    public void complete(){
+        validateStatus(PAID);
+        this.status = COMPLETED;
+    }
+    private void validateStatus(AuctionStatus expected) {
+        if (this.status != expected) {
+            throw new BusinessException(INVALID_STATUS_TRANSITION);
         }
     }
     //상태
     public boolean isInProgress(){
-        return status == AuctionStatus.IN_PROGRESS;
+        return status == IN_PROGRESS;
     }
     public boolean isSeller(Long memberId){
         return Objects.equals(sellerId, memberId);
@@ -145,5 +155,5 @@ public class Auction extends BaseIdAndTime {
     public boolean isHighestBidder(Long memberId){
         return Objects.equals(highestBidderId, memberId);
     }
-
+    public boolean isStatus(AuctionStatus status){return this.status==status;}
 }
