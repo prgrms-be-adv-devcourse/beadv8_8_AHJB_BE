@@ -44,7 +44,7 @@ public class CartApiController {
             description = "여러 상품을 묶어 한 번에 결제를 시도합니다."
     )
     @PostMapping("/payment")
-    public ResponseEntity<Void> paymentCartItems(
+    public ResponseEntity<RsData<Void>> paymentCartItems(
             @AuthenticationPrincipal AuthPrincipal principal,
             @Valid @RequestBody CartPaymentRequestDto request
     ){
@@ -52,6 +52,6 @@ public class CartApiController {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .build();
+                .body(new RsData<>(null));
     }
 }
