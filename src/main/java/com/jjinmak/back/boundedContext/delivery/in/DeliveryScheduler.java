@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+import static com.jjinmak.back.boundedContext.delivery.exception.DeliveryErrorCode.DELIVERY_NON_REGISTERED_WAYBILL;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -29,7 +31,10 @@ public class DeliveryScheduler {
             try {
                 latestStatus = deliveryFacade.getDeliveryStatus(delivery.deliveryId());
             } catch (BusinessException e){
-                log.error("배송 상태 동기화에 실패했습니다.\ndeliveryId: %d\nerrorCode: %s".formatted(delivery.deliveryId(), e.getErrorCode()));
+                if (e.getErrorCode().equals(DELIVERY_NON_REGISTERED_WAYBILL))
+                    log.warn("택배사에 등록되지 않은 운송장입니다.\ndeliveryId: %d".formatted(delivery.deliveryId()));
+                else
+                    log.error("배송 상태 동기화에 실패했습니다.\ndeliveryId: %d\nerrorCode: %s".formatted(delivery.deliveryId(), e.getErrorCode()));
             } catch (Exception e){
                 log.error("알수 없는 오류로 배송 상태 동기화에 실패했습니다.\ndeliveryId: %d".formatted(delivery.deliveryId()), e);
             }

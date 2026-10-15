@@ -14,6 +14,7 @@ import org.springframework.web.client.RestClientException;
 import java.time.OffsetDateTime;
 
 import static com.jjinmak.back.boundedContext.delivery.exception.DeliveryErrorCode.*;
+import static com.jjinmak.back.boundedContext.delivery.out.dto.DeliveryTrackerExtension.NOT_FOUND;
 import static com.jjinmak.back.boundedContext.delivery.out.dto.DeliveryTrackerExtension.PASS;
 
 @Slf4j
@@ -110,7 +111,7 @@ public class DeliveryTracker {
                 ? PASS : error.extensions().code();
 
         switch (code) {
-            case NOT_FOUND -> throw new BusinessException(DELIVERY_TRACKING_NOT_FOUND);
+            case NOT_FOUND -> throw new BusinessException(DELIVERY_NON_REGISTERED_WAYBILL);
             case BAD_REQUEST -> throw new BusinessException(DELIVERY_TRACKING_INVALID_WAYBILL);
             default -> {
                 log.error("배송 조회 API 오류: code=%s, message=%s".formatted(code, error.message()));
