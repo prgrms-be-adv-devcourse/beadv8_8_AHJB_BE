@@ -137,7 +137,7 @@ class WalletConfirmHoldingTest {
     @DisplayName("OrderConfirmPurchaseEvent 를 받으면 리스너를 통해 확정이 수행된다")
     void orderConfirmPurchaseEvent_triggersConfirm() {
         OrderConfirmPurchaseEvent event = new OrderConfirmPurchaseEvent(
-                orderAId, buyerId, sellerId, randomId(), 10_000L, 2_000L, LocalDateTime.now());
+                orderAId, buyerId, sellerId, randomId(), randomId(), 10_000L, 2_000L, LocalDateTime.now());
 
         // 리스너가 AFTER_COMMIT 이라 실제로 커밋되는 트랜잭션 안에서 발행해야 한다
         transactionTemplate.executeWithoutResult(status -> eventPublisher.publish(event));
