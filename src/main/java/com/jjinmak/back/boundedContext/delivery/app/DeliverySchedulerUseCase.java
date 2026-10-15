@@ -32,7 +32,10 @@ public class DeliverySchedulerUseCase {
                 .toList();
     }
 
-    public void updateWebhook(WebhookTargetDto delivery){
+    public void updateWebhook(WebhookTargetDto delivery, DeliveryStatusCode latestStatus){
+        if (latestStatus != null && !unshipped.contains(latestStatus)){
+            return;
+        }
         deliveryTracker.registerWebhook(delivery.deliveryId(), delivery.orderId(), delivery.carrier(), delivery.waybill(), 2);
     }
 }

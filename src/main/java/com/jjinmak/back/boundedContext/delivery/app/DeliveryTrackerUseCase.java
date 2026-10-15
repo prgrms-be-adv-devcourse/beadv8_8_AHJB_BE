@@ -48,12 +48,14 @@ public class DeliveryTrackerUseCase {
         );
     }
 
-    public void trackLastStatus(Long deliveryId){
+    public DeliveryStatusCode trackLastStatus(Long deliveryId){
         Delivery delivery = deliverySupport.getDeliveryById(deliveryId);
 
         DeliveryStatusResponseDto.LastEvent lastEvent = track(delivery);
 
         applyStatus(delivery, lastEvent);
+
+        return lastEvent.status().code();
     }
 
     private DeliveryStatusResponseDto.LastEvent track(Delivery delivery){
