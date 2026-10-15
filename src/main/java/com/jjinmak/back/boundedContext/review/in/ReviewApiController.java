@@ -3,10 +3,13 @@ package com.jjinmak.back.boundedContext.review.in;
 import com.jjinmak.back.boundedContext.review.app.ReviewFacade;
 import com.jjinmak.back.boundedContext.review.in.dto.*;
 import com.jjinmak.back.global.rsData.RsData;
+import com.jjinmak.back.global.security.AuthPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,21 +21,22 @@ public class ReviewApiController {
 
     private final ReviewFacade reviewFacade;
 
-    // TODO: 인증 방식이 정해진 후에, 접속 유저 정보 가져오기
-    private final Long memberDev = 1L;
-
+    // 조회는 로그인만 하면 가능하다.
     @GetMapping("/reviewable-orders")
-    public ResponseEntity<RsData<List<ReviewableOrderDto>>> readReviewableOrders(){
-        List<ReviewableOrderDto> response = reviewFacade.readReviewableOrders(memberDev);
+    public ResponseEntity<RsData<List<ReviewableOrderDto>>> readReviewableOrders(@AuthenticationPrincipal AuthPrincipal principal){
+        List<ReviewableOrderDto> response = reviewFacade.readReviewableOrders(principal.memberId());
 
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(new RsData<>(response));
     }
 
+    // 후기 작성/수정/삭제는 정지되지 않은 회원만 가능하다. (PERM_TRADE)
+    @PreAuthorize("hasAuthority('PERM_TRADE')")
     @PostMapping
-    public ResponseEntity<RsData<ReviewDto>> createReview(@Valid @RequestBody ReviewCreateRequestDto request){
-        ReviewDto response = reviewFacade.createReview(memberDev, request);
+    public ResponseEntity<RsData<ReviewDto>> createReview(@AuthenticationPrincipal AuthPrincipal principal,
+                                                          @Valid @RequestBody ReviewCreateRequestDto request){
+        ReviewDto response = reviewFacade.createReview(principal.memberId(), request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -40,9 +44,10 @@ public class ReviewApiController {
     }
 
     @GetMapping("/received")
-    public ResponseEntity<RsData<ReviewListResponseDto>> readReceivedReviews(@RequestParam(defaultValue = "0") int page,
+    public ResponseEntity<RsData<ReviewListResponseDto>> readReceivedReviews(@AuthenticationPrincipal AuthPrincipal principal,
+                                                                            @RequestParam(defaultValue = "0") int page,
                                                                             @RequestParam(defaultValue = "10") int size){
-        ReviewListResponseDto response = reviewFacade.readReceivedReviews(memberDev, page, size);
+        ReviewListResponseDto response = reviewFacade.readReceivedReviews(principal.memberId(), page, size);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -50,28 +55,33 @@ public class ReviewApiController {
     }
 
     @GetMapping("/written")
-    public ResponseEntity<RsData<ReviewListResponseDto>> readWrittenReviews(@RequestParam(defaultValue = "0") int page,
+    public ResponseEntity<RsData<ReviewListResponseDto>> readWrittenReviews(@AuthenticationPrincipal AuthPrincipal principal,
+                                                                           @RequestParam(defaultValue = "0") int page,
                                                                            @RequestParam(defaultValue = "10") int size){
-        ReviewListResponseDto response = reviewFacade.readWrittenReviews(memberDev, page, size);
+        ReviewListResponseDto response = reviewFacade.readWrittenReviews(principal.memberId(), page, size);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(new RsData<>(response));
     }
 
+    @PreAuthorize("hasAuthority('PERM_TRADE')")
     @PatchMapping("/{reviewId}")
-    public ResponseEntity<Void> updateReview(@PathVariable Long reviewId,
+    public ResponseEntity<Void> updateReview(@AuthenticationPrincipal AuthPrincipal principal,
+                                             @PathVariable Long reviewId,
                                              @Valid @RequestBody ReviewUpdateRequestDto request){
-        reviewFacade.updateReview(memberDev, reviewId, request);
+        reviewFacade.updateReview(principal.memberId(), reviewId, request);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .build();
     }
 
+    @PreAuthorize("hasAuthority('PERM_TRADE')")
     @DeleteMapping("/{reviewId}")
-    public ResponseEntity<Void> deleteReview(@PathVariable Long reviewId){
-        reviewFacade.deleteReview(memberDev, reviewId);
+    public ResponseEntity<Void> deleteReview(@AuthenticationPrincipal AuthPrincipal principal,
+                                             @PathVariable Long reviewId){
+        reviewFacade.deleteReview(principal.memberId(), reviewId);
 
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
