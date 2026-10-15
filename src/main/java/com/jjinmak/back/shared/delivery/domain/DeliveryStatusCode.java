@@ -1,7 +1,10 @@
 package com.jjinmak.back.shared.delivery.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Arrays;
 
 @Getter
 @RequiredArgsConstructor
@@ -15,8 +18,17 @@ public enum DeliveryStatusCode {
     ATTEMPT_FAIL("배송 시도 실패"),
     DELIVERED("배송 완료"),
     AVAILABLE_FOR_PICKUP("지정 장소에서 수령 가능"),
-    EXCEPTION("확인이 필요한 문제 발생")
+    EXCEPTION("확인이 필요한 문제 발생"),
+    WRONG("미식별 코드")
     ;
 
     private final String message;
+
+    @JsonCreator
+    public static DeliveryStatusCode from(String code){
+        return Arrays.stream(values())
+                .filter(c -> c.name().equals(code))
+                .findFirst()
+                .orElse(WRONG);
+    }
 }

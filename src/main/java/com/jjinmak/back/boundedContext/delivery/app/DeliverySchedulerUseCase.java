@@ -21,7 +21,7 @@ public class DeliverySchedulerUseCase {
     private final DeliveryTracker deliveryTracker;
     private final DeliveryRepository deliveryRepository;
     private final Set<DeliveryStatusCode> unshipped = EnumSet.of(
-            UNKNOWN, WAITING, INFORMATION_RECEIVED, AT_PICKUP, IN_TRANSIT, OUT_FOR_DELIVERY, ATTEMPT_FAIL, EXCEPTION
+            UNKNOWN, WAITING, INFORMATION_RECEIVED, AT_PICKUP, IN_TRANSIT, OUT_FOR_DELIVERY, ATTEMPT_FAIL, EXCEPTION, WRONG
     );
 
     public List<WebhookTargetDto> getUnshippedDelivery(){
