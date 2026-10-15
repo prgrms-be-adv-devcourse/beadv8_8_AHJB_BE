@@ -1,5 +1,7 @@
 package com.jjinmak.back.boundedContext.auction.domain;
 
+import com.jjinmak.back.boundedContext.auction.exception.AuctionErrorCode;
+import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -130,7 +132,7 @@ public class Auction extends BaseIdAndTime {
     }
     private void validateInProgress(){
         if(status!=AuctionStatus.IN_PROGRESS){
-            throw new IllegalStateException("진행 중인 경매만 종료할 수 있습니다. status="+status);
+            throw new BusinessException(AuctionErrorCode.INVALID_STATUS_TRANSITION);
         }
     }
     //상태

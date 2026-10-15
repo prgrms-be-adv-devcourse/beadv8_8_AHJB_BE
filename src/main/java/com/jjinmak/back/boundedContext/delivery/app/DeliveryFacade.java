@@ -34,7 +34,7 @@ public class DeliveryFacade {
     }
 
     @Transactional
-    public DeliveryResponseDto updateDeliveryData(UUID sellerId, Long orderId, CarrierType carrier, String waybill){
+    public DeliveryResponseDto updateDeliveryData(Long sellerId, Long orderId, CarrierType carrier, String waybill){
         return deliveryUseCase.updateDeliveryData(sellerId, orderId, carrier, waybill);
     }
 
@@ -47,7 +47,7 @@ public class DeliveryFacade {
         deliverySchedulerUseCase.updateWebhook(delivery);
     }
 
-    public DeliveryStatusDto getDeliveryStatus(UUID memberId, Long orderId){
+    public DeliveryStatusDto getDeliveryStatus(Long memberId, Long orderId){
         return deliveryTrackerUseCase.trackLastStatus(memberId, orderId);
     }
 

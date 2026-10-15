@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.cglib.core.Local;
 
 import java.time.LocalDateTime;
 
@@ -67,6 +68,8 @@ public class Holding extends BaseIdAndTime {
 
     private LocalDateTime refundedAt;
 
+    private LocalDateTime confirmedAt;
+
     private Holding(Long orderId, Long paymentId, Wallet buyerWallet, Wallet sellerWallet, long winningPrice, long deliveryFee, long feeAmount) {
         if (winningPrice <= 0 || deliveryFee < 0) {
             throw new BusinessException(INVALID_FEE_AMOUNT);
@@ -97,8 +100,14 @@ public class Holding extends BaseIdAndTime {
         return amount - feeAmount;
     }
 
-    public void release() {
+    public void confirm() {
         requireHeld();
+        this.status = HoldingStatus.CONFIRMED;
+        this.confirmedAt = LocalDateTime.now();
+    }
+
+    public void release() {
+        requireConfirmed();
         this.status = HoldingStatus.RELEASED;
         this.releasedAt = LocalDateTime.now();
     }
@@ -115,6 +124,16 @@ public class Holding extends BaseIdAndTime {
     private void requireHeld() {
         switch (this.status) {
             case HELD -> {}
+            case CONFIRMED -> throw new BusinessException(HOLDING_ALREADY_CONFIRMED);
+            case RELEASED -> throw new BusinessException(HOLDING_ALREADY_RELEASED);
+            case REFUNDED -> throw new BusinessException(HOLDING_ALREADY_REFUNDED);
+        }
+    }
+
+    private void requireConfirmed() {
+        switch (this.status) {
+            case CONFIRMED -> {}
+            case HELD -> throw new BusinessException(HOLDING_NOT_CONFIRMED);
             case RELEASED -> throw new BusinessException(HOLDING_ALREADY_RELEASED);
             case REFUNDED -> throw new BusinessException(HOLDING_ALREADY_REFUNDED);
         }
@@ -122,5 +141,17 @@ public class Holding extends BaseIdAndTime {
 
     public boolean isRefunded() {
         return this.status == HoldingStatus.REFUNDED;
+    }
+
+    public boolean isConfirmed() {
+        return this.status == HoldingStatus.CONFIRMED;
+    }
+
+    public boolean isReleased() {
+        return this.status == HoldingStatus.RELEASED;
+    }
+
+    public boolean hasFee() {
+        return this.feeAmount > 0;
     }
 }

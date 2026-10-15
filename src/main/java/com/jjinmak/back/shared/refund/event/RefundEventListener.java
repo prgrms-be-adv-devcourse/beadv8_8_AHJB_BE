@@ -1,7 +1,8 @@
-package com.jjinmak.back.boundedContext.refund.in;
+package com.jjinmak.back.shared.refund.event;
 
 import com.jjinmak.back.boundedContext.refund.app.RefundFacade;
 import com.jjinmak.back.shared.order.event.OrderRefundRequestedEvent;
+import com.jjinmak.back.shared.wallet.event.WalletRefundedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -15,5 +16,10 @@ public class RefundEventListener {
     @EventListener
     public void handle(OrderRefundRequestedEvent event) {
         refundFacade.createRefund(event);
+    }
+
+    @EventListener
+    public void handle(WalletRefundedEvent event) {
+        refundFacade.completeRefund(event);
     }
 }

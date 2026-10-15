@@ -18,7 +18,7 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
     @Query("select ci from CartItem ci join fetch ci.seller where ci.winner = :winner and ci.productId in :productIds")
     List<CartItem> findAllByWinnerAndProductIdIn(CartMember winner, Collection<Long> productIds);
 
-    Optional<CartItem> findByProductId(Long productId);
+    Optional<CartItem> findByAuctionId(Long auctionId);
 
     @Query("select ci from CartItem ci join fetch ci.winner join fetch ci.seller where ci.id = :id")
     Optional<CartItem> findByIdWithParticipant(Long id);

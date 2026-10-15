@@ -19,6 +19,8 @@ public class WalletFacade {
     private final WalletCreateHoldingUseCase walletCreateHoldingUseCase;
     private final WalletGetBalanceUseCase walletGetBalanceUseCase;
     private final WalletRefundOrderUseCase walletRefundOrderUseCase;
+    private final WalletConfirmHoldingUseCase walletConfirmHoldingUseCase;
+    private final WalletReleaseHoldingUseCase walletReleaseHoldingUseCase;
 
     @Transactional
     public WalletMember syncMember(MemberDto member) {
@@ -58,5 +60,15 @@ public class WalletFacade {
     @Transactional(readOnly = true)
     public long getBalance(Long holderId) {
         return walletGetBalanceUseCase.getBalance(holderId);
+    }
+
+    @Transactional
+    public void confirmHolding(Long orderId) {
+        walletConfirmHoldingUseCase.confirm(orderId);
+    }
+
+    @Transactional
+    public void releaseHolding(Long orderId) {
+        walletReleaseHoldingUseCase.release(orderId);
     }
 }

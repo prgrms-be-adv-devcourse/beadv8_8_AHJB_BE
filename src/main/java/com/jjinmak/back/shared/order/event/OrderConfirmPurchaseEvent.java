@@ -6,6 +6,7 @@ public record OrderConfirmPurchaseEvent(
         Long orderId,
         Long winnerId,
         Long sellerId,
+        Long auctionId,
         Long productId,
         Long winningPrice,
         Long deliveryFee,

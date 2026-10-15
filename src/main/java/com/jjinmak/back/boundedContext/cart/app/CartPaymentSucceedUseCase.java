@@ -14,8 +14,8 @@ public class CartPaymentSucceedUseCase {
 
     private final CartItemRepository cartItemRepository;
 
-    public void paymentSucceed(Long productId){
-        CartItem item = cartItemRepository.findByProductId(productId)
+    public void paymentSucceed(Long auctionId){
+        CartItem item = cartItemRepository.findByAuctionId(auctionId)
                 .orElseThrow(() -> new BusinessException(CART_ITEM_NOT_FOUND));
 
         cartItemRepository.delete(item);

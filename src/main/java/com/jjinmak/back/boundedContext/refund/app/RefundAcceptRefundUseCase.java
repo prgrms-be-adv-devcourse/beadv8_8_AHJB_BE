@@ -18,12 +18,13 @@ public class RefundAcceptRefundUseCase {
     private final EventPublisher eventPublisher;
 
     /**
-     * 판매자가 환불 요청을 수락한다. 수락 이벤트로 주문(지갑 환불)·유저(환불 패널티) 도메인에 알린다.
+     * 판매자가 환불 요청을 수락한다 (ACCEPTED). 수락 이벤트로 지갑에 환불을 요청하고,
+     * 지갑 환불이 끝나면 WalletRefundedEvent를 받아 COMPLETED가 된다.
      * 수락·거절이 동시에 들어오면 먼저 저장된 쪽만 성공한다 (낙관적 락).
      *
      * @param memberId - 수락하는 회원 ID (판매자여야 함)
      * @param refundId - 환불 ID
-     * @return Refund - 수락된 환불 (COMPLETED)
+     * @return Refund - 수락된 환불 (ACCEPTED)
      */
     public Refund acceptRefund(Long memberId, Long refundId) {
         Refund refund = refundRepository.findById(refundId)

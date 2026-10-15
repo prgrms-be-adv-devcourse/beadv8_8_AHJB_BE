@@ -39,7 +39,7 @@ public class OrderSchedulerUseCase {
 
         OrderConfirmPurchaseEvent event = new OrderConfirmPurchaseEvent(
                 orderId, order.getWinner().getId(), order.getSeller().getId(),
-                order.getProductId(), order.getWinningPrice(), order.getDeliveryFee(),
+                order.getAuctionId(), order.getProductId(), order.getWinningPrice(), order.getDeliveryFee(),
                 LocalDateTime.now()
         );
 

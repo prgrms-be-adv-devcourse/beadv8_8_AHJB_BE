@@ -21,8 +21,8 @@ public class CartReadItemUseCase {
     private final CartMemberRepository cartMemberRepository;
     private final CartItemRepository cartItemRepository;
 
-    public List<CartItemDto> readWinnerItems(UUID winnerId){
-        CartMember winner = cartMemberRepository.findByUuid(winnerId)
+    public List<CartItemDto> readWinnerItems(Long winnerId){
+        CartMember winner = cartMemberRepository.findById(winnerId)
                 .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
 
         List<CartItem> items = cartItemRepository.findAllByWinnerOrderByWinAt(winner);

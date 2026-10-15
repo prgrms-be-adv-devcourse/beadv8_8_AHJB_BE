@@ -19,7 +19,7 @@ public class OrderRequestRefundUseCase {
     private final OrderSupport orderSupport;
     private final EventPublisher eventPublisher;
 
-    public void requestRefund(UUID memberId, Long orderId){
+    public void requestRefund(Long memberId, Long orderId){
 
         OrderMember member = orderSupport.getMember(memberId);
 

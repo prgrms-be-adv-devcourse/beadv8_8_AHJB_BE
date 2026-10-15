@@ -76,11 +76,18 @@ public class Refund extends BaseIdAndTime {
     }
 
     public void accept() {
-        process(RefundStatus.COMPLETED);
+        process(RefundStatus.ACCEPTED);
     }
 
     public void reject() {
         process(RefundStatus.REJECTED);
+    }
+
+    public void complete() {
+        if (status != RefundStatus.ACCEPTED) {
+            throw new BusinessException(RefundErrorCode.NOT_ACCEPTED);
+        }
+        this.status = RefundStatus.COMPLETED;
     }
 
     private void process(RefundStatus result) {
