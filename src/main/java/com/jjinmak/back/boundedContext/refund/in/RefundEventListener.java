@@ -1,4 +1,4 @@
-package com.jjinmak.back.shared.refund.event;
+package com.jjinmak.back.boundedContext.refund.in;
 
 import com.jjinmak.back.boundedContext.refund.app.RefundFacade;
 import com.jjinmak.back.shared.order.event.OrderRefundRequestedEvent;

@@ -2,7 +2,7 @@ package com.jjinmak.back.boundedContext.refund.app;
 
 import com.jjinmak.back.boundedContext.refund.domain.Refund;
 import com.jjinmak.back.boundedContext.refund.domain.RefundErrorCode;
-import com.jjinmak.back.boundedContext.refund.in.RefundCompletedEvent;
+import com.jjinmak.back.shared.refund.event.RefundCompletedEvent;
 import com.jjinmak.back.boundedContext.refund.out.RefundRepository;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.global.exception.BusinessException;

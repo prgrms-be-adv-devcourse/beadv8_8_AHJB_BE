@@ -1,4 +1,4 @@
-package com.jjinmak.back.boundedContext.refund.in;
+package com.jjinmak.back.shared.refund.event;
 
 import com.jjinmak.back.shared.refund.dto.RefundDto;
 
