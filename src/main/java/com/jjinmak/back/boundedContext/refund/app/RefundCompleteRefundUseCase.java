@@ -6,7 +6,7 @@ import com.jjinmak.back.shared.refund.event.RefundCompletedEvent;
 import com.jjinmak.back.boundedContext.refund.out.RefundRepository;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.global.exception.BusinessException;
-import com.jjinmak.back.shared.wallet.event.WalletRefundedEvent;
+import com.jjinmak.back.shared.payment.event.WalletRefundedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

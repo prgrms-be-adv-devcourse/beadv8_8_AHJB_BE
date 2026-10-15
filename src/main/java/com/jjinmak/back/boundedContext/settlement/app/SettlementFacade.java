@@ -6,7 +6,7 @@ import com.jjinmak.back.shared.order.event.OrderConfirmPurchaseEvent;
 import com.jjinmak.back.shared.settlement.domain.SettlementStatus;
 import com.jjinmak.back.shared.settlement.dto.SettlementDetailDto;
 import com.jjinmak.back.shared.settlement.dto.SettlementListDto;
-import com.jjinmak.back.shared.wallet.event.WalletReleasedEvent;
+import com.jjinmak.back.shared.payment.event.WalletReleasedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +42,14 @@ public class SettlementFacade {
     @Transactional
     public void completeSettlement(WalletReleasedEvent event) {
         settlementCompleteSettlementUseCase.completeSettlement(event);
+    }
+
+    @Transactional(readOnly = true)
+    public SettlementListDto getSettlements(Long memberId, SettlementStatus status, int page, int size) {
+        return SettlementListDto.from(
+                settlementGetSettlementsUseCase.getSettlements(memberId, status, page, size)
+                        .map(Settlement::itemDto)
+        );
     }
 
     @Transactional(readOnly = true)

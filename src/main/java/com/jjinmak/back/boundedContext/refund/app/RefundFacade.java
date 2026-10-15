@@ -3,7 +3,7 @@ package com.jjinmak.back.boundedContext.refund.app;
 import com.jjinmak.back.shared.order.event.OrderRefundRequestedEvent;
 import com.jjinmak.back.shared.refund.dto.RefundDetailDto;
 import com.jjinmak.back.shared.refund.dto.RefundDto;
-import com.jjinmak.back.shared.wallet.event.WalletRefundedEvent;
+import com.jjinmak.back.shared.payment.event.WalletRefundedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

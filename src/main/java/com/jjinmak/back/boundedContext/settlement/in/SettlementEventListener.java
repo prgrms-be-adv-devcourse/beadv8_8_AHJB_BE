@@ -2,7 +2,7 @@ package com.jjinmak.back.boundedContext.settlement.in;
 
 import com.jjinmak.back.boundedContext.settlement.app.SettlementFacade;
 import com.jjinmak.back.shared.order.event.OrderConfirmPurchaseEvent;
-import com.jjinmak.back.shared.wallet.event.WalletReleasedEvent;
+import com.jjinmak.back.shared.payment.event.WalletReleasedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;

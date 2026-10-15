@@ -2,7 +2,7 @@ package com.jjinmak.back.boundedContext.refund.in;
 
 import com.jjinmak.back.boundedContext.refund.app.RefundFacade;
 import com.jjinmak.back.shared.order.event.OrderRefundRequestedEvent;
-import com.jjinmak.back.shared.wallet.event.WalletRefundedEvent;
+import com.jjinmak.back.shared.payment.event.WalletRefundedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;

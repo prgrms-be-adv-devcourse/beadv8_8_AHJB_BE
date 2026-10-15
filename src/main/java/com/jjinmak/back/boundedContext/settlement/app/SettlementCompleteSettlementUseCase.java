@@ -8,7 +8,7 @@ import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.settlement.domain.SettlementStatus;
 import com.jjinmak.back.shared.settlement.event.SettlementRequestedEvent;
-import com.jjinmak.back.shared.wallet.event.WalletReleasedEvent;
+import com.jjinmak.back.shared.payment.event.WalletReleasedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
