@@ -1,4 +1,4 @@
-package com.jjinmak.back.boundedContext.delivery.out;
+package com.jjinmak.back.boundedContext.delivery.out.deliveryTracker;
 
 import com.jjinmak.back.boundedContext.delivery.out.dto.*;
 import com.jjinmak.back.global.exception.BusinessException;
@@ -22,12 +22,6 @@ import static com.jjinmak.back.boundedContext.delivery.out.dto.DeliveryTrackerEx
 public class DeliveryTracker {
 
     private final RestClient deliveryTrackerRestClient;
-
-    @Value("${DELIVERY_TRACKER_CLIENT_ID:asdf}")
-    private String clientId;
-
-    @Value("${DELIVERY_TRACKER_CLIENT_SECRET:qwer}")
-    private String clientSecret;
 
     // TODO: Webhook을 받을 콜백 주소
     private final String webhookCallbackUrl = "";
@@ -60,7 +54,6 @@ public class DeliveryTracker {
         try{
             response = deliveryTrackerRestClient.post()
                     .uri("")
-                    .header(HttpHeaders.AUTHORIZATION, "TRACKQL-API-KEY %s:%s".formatted(clientId, clientSecret))
                     .body(requestDto)
                     .exchange((request, res) -> res.bodyTo(DeliveryStatusResponseDto.class));
         } catch (RestClientException e){
@@ -91,7 +84,6 @@ public class DeliveryTracker {
         try {
             response = deliveryTrackerRestClient.post()
                     .uri("")
-                    .header(HttpHeaders.AUTHORIZATION, "TRACKQL-API-KEY %s:%s".formatted(clientId, clientSecret))
                     .body(requestDto)
                     .exchange((request, res) -> res.bodyTo(WebhookRegisterResponseDto.class));
         } catch (RestClientException e){

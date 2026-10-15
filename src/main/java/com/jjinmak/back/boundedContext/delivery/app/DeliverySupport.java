@@ -2,8 +2,8 @@ package com.jjinmak.back.boundedContext.delivery.app;
 
 import com.jjinmak.back.boundedContext.delivery.domain.Delivery;
 import com.jjinmak.back.boundedContext.delivery.domain.DeliveryMember;
-import com.jjinmak.back.boundedContext.delivery.out.DeliveryMemberRepository;
-import com.jjinmak.back.boundedContext.delivery.out.DeliveryRepository;
+import com.jjinmak.back.boundedContext.delivery.out.repository.DeliveryMemberRepository;
+import com.jjinmak.back.boundedContext.delivery.out.repository.DeliveryRepository;
 import com.jjinmak.back.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

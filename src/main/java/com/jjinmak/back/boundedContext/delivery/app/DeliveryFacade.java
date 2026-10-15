@@ -5,6 +5,7 @@ import com.jjinmak.back.boundedContext.delivery.app.dto.DeliveryStatusDto;
 import com.jjinmak.back.boundedContext.delivery.app.dto.WebhookTargetDto;
 import com.jjinmak.back.shared.delivery.domain.CarrierType;
 import com.jjinmak.back.boundedContext.delivery.app.event.WebhookRegisterEvent;
+import com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import com.jjinmak.back.shared.order.event.OrderSendProductEvent;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -43,16 +43,16 @@ public class DeliveryFacade {
         return deliverySchedulerUseCase.getUnshippedDelivery();
     }
 
-    public void updateWebhook(WebhookTargetDto delivery){
-        deliverySchedulerUseCase.updateWebhook(delivery);
+    public void updateWebhook(WebhookTargetDto delivery, DeliveryStatusCode latestStatus){
+        deliverySchedulerUseCase.updateWebhook(delivery, latestStatus);
     }
 
     public DeliveryStatusDto getDeliveryStatus(Long memberId, Long orderId){
         return deliveryTrackerUseCase.trackLastStatus(memberId, orderId);
     }
 
-    public void getDeliveryStatus(Long deliveryId){
-        deliveryTrackerUseCase.trackLastStatus(deliveryId);
+    public DeliveryStatusCode getDeliveryStatus(Long deliveryId){
+        return deliveryTrackerUseCase.trackLastStatus(deliveryId);
     }
 
     public void registerWebhook(WebhookRegisterEvent event){

@@ -5,8 +5,8 @@ import com.jjinmak.back.boundedContext.delivery.app.event.CallbackRequestedEvent
 import com.jjinmak.back.boundedContext.delivery.domain.Delivery;
 import com.jjinmak.back.boundedContext.delivery.domain.DeliveryMember;
 import com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode;
-import com.jjinmak.back.boundedContext.delivery.out.DeliveryRepository;
-import com.jjinmak.back.boundedContext.delivery.out.DeliveryTracker;
+import com.jjinmak.back.boundedContext.delivery.out.repository.DeliveryRepository;
+import com.jjinmak.back.boundedContext.delivery.out.deliveryTracker.DeliveryTracker;
 import com.jjinmak.back.boundedContext.delivery.out.dto.DeliveryStatusResponseDto;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.shared.delivery.domain.CarrierType;
@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -48,12 +47,14 @@ public class DeliveryTrackerUseCase {
         );
     }
 
-    public void trackLastStatus(Long deliveryId){
+    public DeliveryStatusCode trackLastStatus(Long deliveryId){
         Delivery delivery = deliverySupport.getDeliveryById(deliveryId);
 
         DeliveryStatusResponseDto.LastEvent lastEvent = track(delivery);
 
         applyStatus(delivery, lastEvent);
+
+        return lastEvent.status().code();
     }
 
     private DeliveryStatusResponseDto.LastEvent track(Delivery delivery){

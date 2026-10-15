@@ -1,4 +1,4 @@
-package com.jjinmak.back.boundedContext.delivery.out;
+package com.jjinmak.back.boundedContext.delivery.out.repository;
 
 import com.jjinmak.back.boundedContext.delivery.domain.Delivery;
 import com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode;
