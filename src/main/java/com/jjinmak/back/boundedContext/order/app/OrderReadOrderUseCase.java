@@ -7,12 +7,14 @@ import com.jjinmak.back.boundedContext.order.domain.OrderState;
 import com.jjinmak.back.boundedContext.order.out.OrderRepository;
 import com.jjinmak.back.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.*;
 import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_NOT_FOUND;
@@ -28,11 +30,11 @@ public class OrderReadOrderUseCase {
     private final OrderSupport orderSupport;
     private final OrderRepository orderRepository;
 
-    public List<OrderDto> readWinnerOrders(Long winnerId){
+    public List<OrderDto> readWinnerOrders(Long winnerId, int page, int size){
 
         OrderMember winner = orderSupport.getMember(winnerId);
 
-        List<Order> orders = orderRepository.findAllByWinnerAndStateIn(winner, READ_STATES);
+        Page<Order> orders = orderRepository.findAllByWinnerAndStateIn(winner, READ_STATES, PageRequest.of(Math.max(page, 0), Math.clamp(size, 10, 50)));
 
         return orders.stream().map(
                 (order) -> new OrderDto(
@@ -43,11 +45,11 @@ public class OrderReadOrderUseCase {
         ).toList();
     }
 
-    public List<OrderDto> readSellerOrders(Long sellerId){
+    public List<OrderDto> readSellerOrders(Long sellerId, int page, int size){
 
         OrderMember seller = orderSupport.getMember(sellerId);
 
-        List<Order> orders = orderRepository.findAllBySellerAndStateIn(seller,READ_STATES);
+        Page<Order> orders = orderRepository.findAllBySellerAndStateIn(seller,READ_STATES, PageRequest.of(Math.max(page, 0), Math.clamp(size, 10, 50)));
 
         return orders.stream().map(
                 (order) -> new OrderDto(
