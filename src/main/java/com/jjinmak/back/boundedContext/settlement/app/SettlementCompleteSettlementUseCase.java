@@ -1,13 +1,15 @@
 package com.jjinmak.back.boundedContext.settlement.app;
 
 import com.jjinmak.back.boundedContext.settlement.domain.Settlement;
+import com.jjinmak.back.boundedContext.settlement.domain.SettlementErrorCode;
 import com.jjinmak.back.boundedContext.settlement.domain.SettlementPayoutResult;
 import com.jjinmak.back.boundedContext.settlement.out.SettlementRepository;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
+import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.settlement.domain.SettlementStatus;
-import com.jjinmak.back.shared.settlement.event.SettlementCompletedEvent;
+import com.jjinmak.back.shared.settlement.event.SettlementRequestedEvent;
+import com.jjinmak.back.shared.wallet.event.WalletReleasedEvent;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -18,39 +20,22 @@ import java.util.List;
 public class SettlementCompleteSettlementUseCase {
 
     private final SettlementRepository settlementRepository;
-    private final EventPublisher eventPublisher;
 
     /**
-     * 지급일이 된(지급일 ≤ 기준일) PENDING 정산서 id를 조회한다.
-     * @param today - 배치 기준일
-     * @return List<Long> - 지급 대상 정산서 id
-     */
-    public List<Long> findPayoutTargetIds(LocalDate today) {
-        return settlementRepository.findPayoutTargetIds(SettlementStatus.PENDING, today);
-    }
-
-    /**
-     * 정산서 1건을 정산 완료로 바꾸고 정산 완료 이벤트를 발행한다.
-     * 지갑이 같은 트랜잭션에서 이벤트를 받아 지급하므로, 지급이 실패하면 정산서도 롤백되어 PENDING으로 남는다.
-     * 이미 처리됐거나 지급일 전이면 건너뛴다 (배치를 다시 실행해도 안전).
+     * 지갑의 지급 완료 이벤트를 받아 정산서를 정산 완료(COMPLETED)로 바꾼다.
+     * 지갑 지급과 같은 트랜잭션에서 실행되므로, 여기서 실패하면 지급도 롤백된다.
+     * 지갑은 이미 지급한 주문이 다시 요청되면 완료 이벤트만 다시 보내므로, 이미 완료된 정산서는 건너뛴다.
      *
-     * @param settlementId - 정산서 ID
-     * @param today        - 배치 기준일
-     * @return SettlementPayoutResult - COMPLETED(완료) / SKIPPED(건너뜀)
+     * @param event - 주문 ID, 판매자 ID, 홀딩 총액, 수수료, 정산 금액, 지급 시각
      */
-    public SettlementPayoutResult completeSettlement(Long settlementId, LocalDate today) {
-        Settlement settlement = settlementRepository.findById(settlementId).orElse(null);
+    public void completeSettlement(WalletReleasedEvent event) {
+        Settlement settlement = settlementRepository.findByOrderId(event.orderId())
+                .orElseThrow(() -> new BusinessException(SettlementErrorCode.SETTLEMENT_NOT_FOUND));
 
-        if (settlement == null || !settlement.isPayable(today)) {
-            return SettlementPayoutResult.SKIPPED;
+        if (settlement.isCompleted()) {
+            return;
         }
 
-        settlement.complete();
-        settlementRepository.flush();
-
-        eventPublisher.publish(new SettlementCompletedEvent(settlement.dto()));
-
-        return SettlementPayoutResult.COMPLETED;
+        settlement.complete(event.releasedAt());
     }
-
 }

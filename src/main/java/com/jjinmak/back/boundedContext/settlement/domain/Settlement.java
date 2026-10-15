@@ -100,12 +100,16 @@ public class Settlement extends BaseIdAndTime {
         return status == SettlementStatus.PENDING && !payoutDate.isAfter(today);
     }
 
-    public void complete() {
+    public boolean isCompleted() {
+        return status == SettlementStatus.COMPLETED;
+    }
+
+    public void complete(LocalDateTime completedAt) {
         if (status != SettlementStatus.PENDING) {
             throw new BusinessException(SettlementErrorCode.ALREADY_COMPLETED);
         }
         this.status = SettlementStatus.COMPLETED;
-        this.completedAt = LocalDateTime.now();
+        this.completedAt = completedAt;
     }
 
     public SettlementDto dto() {

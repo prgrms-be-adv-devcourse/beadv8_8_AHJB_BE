@@ -6,6 +6,7 @@ import com.jjinmak.back.shared.order.event.OrderConfirmPurchaseEvent;
 import com.jjinmak.back.shared.settlement.domain.SettlementStatus;
 import com.jjinmak.back.shared.settlement.dto.SettlementDetailDto;
 import com.jjinmak.back.shared.settlement.dto.SettlementListDto;
+import com.jjinmak.back.shared.wallet.event.WalletReleasedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,7 @@ import java.util.List;
 public class SettlementFacade {
 
     private final SettlementCreateSettlementUseCase settlementCreateSettlementUseCase;
+    private final SettlementRequestPayoutUseCase settlementRequestPayoutUseCase;
     private final SettlementCompleteSettlementUseCase settlementCompleteSettlementUseCase;
     private final SettlementGetSettlementsUseCase settlementGetSettlementsUseCase;
     private final SettlementGetSettlementUseCase settlementGetSettlementUseCase;
@@ -29,20 +31,17 @@ public class SettlementFacade {
 
     @Transactional(readOnly = true)
     public List<Long> findPayoutTargetIds(LocalDate today) {
-        return settlementCompleteSettlementUseCase.findPayoutTargetIds(today);
+        return settlementRequestPayoutUseCase.findPayoutTargetIds(today);
     }
 
     @Transactional
-    public SettlementPayoutResult completeSettlement(Long settlementId, LocalDate today) {
-        return settlementCompleteSettlementUseCase.completeSettlement(settlementId, today);
+    public SettlementPayoutResult requestPayout(Long settlementId, LocalDate today) {
+        return settlementRequestPayoutUseCase.requestPayout(settlementId, today);
     }
 
-    @Transactional(readOnly = true)
-    public SettlementListDto getSettlements(Long memberId, SettlementStatus status, int page, int size) {
-        return SettlementListDto.from(
-                settlementGetSettlementsUseCase.getSettlements(memberId, status, page, size)
-                        .map(Settlement::itemDto)
-        );
+    @Transactional
+    public void completeSettlement(WalletReleasedEvent event) {
+        settlementCompleteSettlementUseCase.completeSettlement(event);
     }
 
     @Transactional(readOnly = true)
