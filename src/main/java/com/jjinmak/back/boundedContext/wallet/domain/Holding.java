@@ -107,7 +107,7 @@ public class Holding extends BaseIdAndTime {
     }
 
     public void release() {
-        requireHeld();
+        requireConfirmed();
         this.status = HoldingStatus.RELEASED;
         this.releasedAt = LocalDateTime.now();
     }
@@ -130,11 +130,28 @@ public class Holding extends BaseIdAndTime {
         }
     }
 
+    private void requireConfirmed() {
+        switch (this.status) {
+            case CONFIRMED -> {}
+            case HELD -> throw new BusinessException(HOLDING_NOT_CONFIRMED);
+            case RELEASED -> throw new BusinessException(HOLDING_ALREADY_RELEASED);
+            case REFUNDED -> throw new BusinessException(HOLDING_ALREADY_REFUNDED);
+        }
+    }
+
     public boolean isRefunded() {
         return this.status == HoldingStatus.REFUNDED;
     }
 
     public boolean isConfirmed() {
         return this.status == HoldingStatus.CONFIRMED;
+    }
+
+    public boolean isReleased() {
+        return this.status == HoldingStatus.RELEASED;
+    }
+
+    public boolean hasFee() {
+        return this.feeAmount > 0;
     }
 }

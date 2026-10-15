@@ -39,6 +39,7 @@ public enum WalletErrorCode implements ErrorCode {
     HOLDING_ALREADY_RELEASED("WALLET304", "이미 정산(구매 확정)된 홀딩입니다.", HttpStatus.BAD_REQUEST),
     HOLDING_ALREADY_REFUNDED("WALLET305", "이미 환불된 홀딩입니다.", HttpStatus.BAD_REQUEST),
     HOLDING_ALREADY_CONFIRMED("WALLET310", "이미 구매 확정된 홀딩입니다.", HttpStatus.BAD_REQUEST),
+    HOLDING_NOT_CONFIRMED("WALLET311", "구매 확정되지 않은 홀딩은 정산할 수 없습니다.", HttpStatus.BAD_REQUEST),
     SAME_BUYER_AND_SELLER("WALLET306", "구매자와 판매자 지갑이 같을 수 없습니다.", HttpStatus.BAD_REQUEST),
 
     // ===== 원장 (WalletTransaction) =====
