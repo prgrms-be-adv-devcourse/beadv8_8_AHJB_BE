@@ -2,7 +2,11 @@ package com.jjinmak.back.boundedContext.auction.in;
 
 import com.jjinmak.back.boundedContext.auction.app.AuctionFacade;
 import com.jjinmak.back.boundedContext.auction.dto.AuctionCreateDto;
+import com.jjinmak.back.shared.cart.event.CartPaymentDefaultEvent;
 import com.jjinmak.back.shared.member.event.MemberCreatedEvent;
+import com.jjinmak.back.shared.order.event.OrderConfirmPurchaseEvent;
+import com.jjinmak.back.shared.order.event.OrderPaymentSucceedEvent;
+import com.jjinmak.back.shared.order.event.OrderRefundAcceptedEvent;
 import com.jjinmak.back.shared.product.event.ProductRegisteredEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -41,6 +45,23 @@ public class AuctionEventListener {
         auctionFacade.syncMember(event.member());
     }
 
+    //낙찰 이후 거래 결과
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    @Transactional(propagation = REQUIRES_NEW)
+    public void handleOrderPaymentSucceed(OrderPaymentSucceedEvent event) {auctionFacade.applyPaymentSucceeded(event.auctionId());}
+
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    @Transactional(propagation = REQUIRES_NEW)
+    public void handleCartPaymentDefault(CartPaymentDefaultEvent event) {auctionFacade.applyPaymentDefaulted(event.auctionId());}
+
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    @Transactional(propagation = REQUIRES_NEW)
+    public void handleOrderConfirmPurchase(OrderConfirmPurchaseEvent event) {auctionFacade.applyPurchaseConfirmed(event.auctionId());}
+
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    @Transactional(propagation = REQUIRES_NEW)
+    public void handleOrderRefundAccepted(OrderRefundAcceptedEvent event) {auctionFacade.applyRefundAccepted(event.auctionId());}
+
     // 종료 시각 직접 지정 or 기간선택(1,3,7)
     private LocalDateTime resolveEndAt(ProductRegisteredEvent event, LocalDateTime now) {
         if (event.customEndAt() != null) {
@@ -48,4 +69,6 @@ public class AuctionEventListener {
         }
         return now.plusDays(event.duration());
     }
+
+
 }
