@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+import static com.jjinmak.back.boundedContext.delivery.config.DeliveryAsyncConfig.DELIVERY_TASK_EXECUTOR;
 import static com.jjinmak.back.boundedContext.delivery.exception.DeliveryErrorCode.DELIVERY_NON_REGISTERED_WAYBILL;
 
 @Slf4j
@@ -21,7 +22,7 @@ public class DeliveryScheduler {
 
     private final DeliveryFacade deliveryFacade;
 
-    @Async
+    @Async(DELIVERY_TASK_EXECUTOR)
     @Scheduled(fixedDelay = 86_400_000)
     public void updateWebhook(){
         List<WebhookTargetDto> deliveries = deliveryFacade.getUnshippedDelivery();

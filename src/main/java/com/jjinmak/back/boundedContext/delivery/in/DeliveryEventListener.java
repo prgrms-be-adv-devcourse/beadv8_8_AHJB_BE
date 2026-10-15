@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import static com.jjinmak.back.boundedContext.delivery.config.DeliveryAsyncConfig.DELIVERY_TASK_EXECUTOR;
+
 @Component
 @RequiredArgsConstructor
 public class DeliveryEventListener {
@@ -32,13 +34,13 @@ public class DeliveryEventListener {
         deliveryFacade.createDelivery(event);
     }
 
-    @Async
+    @Async(DELIVERY_TASK_EXECUTOR)
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(WebhookRegisterEvent event){
         deliveryFacade.registerWebhook(event);
     }
 
-    @Async
+    @Async(DELIVERY_TASK_EXECUTOR)
     @EventListener
     public void handle(CallbackRequestedEvent event){
         deliveryFacade.getDeliveryStatus(event.deliveryId());
