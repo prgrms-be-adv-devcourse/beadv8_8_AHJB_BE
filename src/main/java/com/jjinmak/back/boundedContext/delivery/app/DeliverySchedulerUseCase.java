@@ -3,8 +3,8 @@ package com.jjinmak.back.boundedContext.delivery.app;
 import com.jjinmak.back.boundedContext.delivery.app.dto.WebhookTargetDto;
 import com.jjinmak.back.boundedContext.delivery.domain.Delivery;
 import com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode;
-import com.jjinmak.back.boundedContext.delivery.out.DeliveryRepository;
-import com.jjinmak.back.boundedContext.delivery.out.DeliveryTracker;
+import com.jjinmak.back.boundedContext.delivery.out.repository.DeliveryRepository;
+import com.jjinmak.back.boundedContext.delivery.out.deliveryTracker.DeliveryTracker;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

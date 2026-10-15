@@ -1,4 +1,4 @@
-package com.jjinmak.back.boundedContext.delivery.out;
+package com.jjinmak.back.boundedContext.delivery.out.repository;
 
 import com.jjinmak.back.boundedContext.delivery.domain.DeliveryMember;
 import org.springframework.data.jpa.repository.JpaRepository;

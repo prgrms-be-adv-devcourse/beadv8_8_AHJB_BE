@@ -7,3 +7,14 @@ spring:
 jwt:
   access-token-expiration: 900000
   refresh-token-expiration: 1209600000
+
+delivery-tracker:
+  base-url: https://apis.tracker.delivery/graphql
+  rate-limit:
+    mode: local
+    capacity: 10
+    refill-tokens: 10
+    refill-period: 1s
+    max-wait: 10s
+  client-id: ${DELIVERY_TRACKER_CLIENT_ID}
+  client-secret: ${DELIVERY_TRACKER_CLIENT_SECRET}

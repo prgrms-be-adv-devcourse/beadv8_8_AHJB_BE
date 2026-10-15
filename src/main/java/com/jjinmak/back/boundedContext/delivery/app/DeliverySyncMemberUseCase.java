@@ -1,7 +1,7 @@
 package com.jjinmak.back.boundedContext.delivery.app;
 
 import com.jjinmak.back.boundedContext.delivery.domain.DeliveryMember;
-import com.jjinmak.back.boundedContext.delivery.out.DeliveryMemberRepository;
+import com.jjinmak.back.boundedContext.delivery.out.repository.DeliveryMemberRepository;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
