@@ -1,6 +1,7 @@
 package com.jjinmak.back.boundedContext.payment.app;
 
-
+import com.jjinmak.back.boundedContext.payment.app.LedgerRecorder;
+import com.jjinmak.back.boundedContext.payment.app.SystemWalletFinder;
 import com.jjinmak.back.boundedContext.payment.domain.Holding;
 import com.jjinmak.back.boundedContext.payment.domain.Wallet;
 import com.jjinmak.back.boundedContext.payment.out.HoldingRepository;
@@ -17,6 +18,7 @@ import java.util.UUID;
 import static com.jjinmak.back.boundedContext.payment.domain.enums.ReferenceType.ORDER;
 import static com.jjinmak.back.boundedContext.payment.domain.enums.WalletTransactionType.*;
 import static com.jjinmak.back.boundedContext.payment.exception.WalletErrorCode.HOLDING_NOT_FOUND;
+
 
 /**
  * 정산: 구매 확정된 홀딩 1건의 대금을 ESCROW 에서 판매자 지갑(정산액)과 FEE 지갑(수수료)으로 옮긴다.
