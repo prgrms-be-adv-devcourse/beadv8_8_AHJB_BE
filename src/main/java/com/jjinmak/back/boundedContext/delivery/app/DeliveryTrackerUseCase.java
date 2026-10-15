@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.UNKNOWN;
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.WRONG;
@@ -48,7 +49,7 @@ public class DeliveryTrackerUseCase {
                 orderId,
                 lastEvent.status().code(),
                 lastEvent.status().code().getMessage(),
-                lastEvent.time() == null ? null : lastEvent.time().toLocalDateTime()
+                lastEvent.time() == null ? null : lastEvent.time().atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime()
         );
     }
 
@@ -103,7 +104,7 @@ public class DeliveryTrackerUseCase {
             return;
         }
 
-        LocalDateTime updatedAt = lastEvent.time() == null ? LocalDateTime.now() : lastEvent.time().toLocalDateTime();
+        LocalDateTime updatedAt = lastEvent.time() == null ? LocalDateTime.now() : lastEvent.time().atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
 
         transactionTemplate.executeWithoutResult(status -> {
             int updated = deliveryRepository.updateStatus(delivery.getId(), delivery.getCarrier(), delivery.getWaybill(), beforeCode, afterCode);
