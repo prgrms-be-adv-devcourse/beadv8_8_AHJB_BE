@@ -24,7 +24,7 @@ public class ProductCreateUseCase {
     private final ProductMemberRepository productMemberRepository;
 
     public Product createProduct(Long sellerId, ProductCreateRequestDto request){
-        // TODO: 판매자 등록 여부(PRODUCT002), 계정 정지/차단(PRODUCT003) 검사는 회원 컨텍스트 구현 후 추가
+        // 판매자 등록 여부, 계정 정지/차단은 컨트롤러의 PERM_SELL 권한 검사에서 확인한다.
         ProductMember seller = productMemberRepository.findById(sellerId)
                 .orElseThrow(() -> new BusinessException(CommonErrorCode.USER_NOT_FOUND));
 

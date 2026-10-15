@@ -9,7 +9,7 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum ProductErrorCode implements ErrorCode {
 
-    // TODO: PRODUCT002(판매자 미등록), PRODUCT003(정지/차단)은 회원 컨텍스트 구현 후 추가
+    // 판매자 미등록, 정지/차단은 PERM_SELL 권한 검사(COMMON003)로 처리하므로 PRODUCT002, 003은 사용하지 않는다.
     PRODUCT_NOT_FOUND("PRODUCT001", "존재하지 않는 상품입니다.", HttpStatus.NOT_FOUND),
     POLICY_NOT_AGREED("PRODUCT004", "판매 정책에 동의하지 않았거나 정책 버전이 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
     INVALID_INSTANT_WIN_PRICE("PRODUCT005", "즉시낙찰가는 시작가보다 커야 합니다.", HttpStatus.BAD_REQUEST),
