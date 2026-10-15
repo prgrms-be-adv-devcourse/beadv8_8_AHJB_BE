@@ -17,7 +17,8 @@ public class RefundCreateRefundUseCase {
     /**
      * 주문의 환불 요청 이벤트를 받아 환불을 생성한다.
      * 요청 가능 여부(본인 주문, 배송완료 상태)는 주문 도메인이 이미 검증했다.
-     * @param event - 주문 ID, 낙찰자 ID, 판매자 ID, 상품 ID, 낙찰가
+     * 환불 금액은 구매자가 결제한 금액 전체(낙찰가 + 배송비)다.
+     * @param event - 주문 ID, 낙찰자 ID, 판매자 ID, 상품 ID, 낙찰가, 배송비
      * @return Refund - 생성된 환불 (REQUESTED)
      */
     public Refund createRefund(OrderRefundRequestedEvent event) {
@@ -30,7 +31,7 @@ public class RefundCreateRefundUseCase {
                 event.winnerId(),
                 event.sellerId(),
                 event.productId(),
-                event.winningPrice()
+                event.winningPrice() + event.deliveryFee()
         );
 
         return refundRepository.save(refund);
