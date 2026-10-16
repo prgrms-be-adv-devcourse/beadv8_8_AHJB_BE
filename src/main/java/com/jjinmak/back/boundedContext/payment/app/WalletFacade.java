@@ -2,21 +2,22 @@ package com.jjinmak.back.boundedContext.payment.app;
 
 import com.jjinmak.back.boundedContext.payment.domain.WalletMember;
 import com.jjinmak.back.shared.member.dto.MemberDto;
-import com.jjinmak.back.boundedContext.payment.app.dto.ChargeDto;
-import com.jjinmak.back.boundedContext.payment.app.dto.HoldDto;
 import com.jjinmak.back.shared.payment.dto.WalletMemberDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 이벤트로 들어오는 지갑 내부 작업의 진입점 (PaymentEventListener 가 호출).
+ * 회원 동기화·지갑 생성·환불·구매 확정·정산. 토스 호출이 없으므로 메서드 단위 @Transactional 로 충분하다.
+ *
+ * 충전·주문 결제처럼 토스 호출이 끼는 흐름은 PaymentFacade 가 담당한다.
+ */
 @Service
 @RequiredArgsConstructor
 public class WalletFacade {
     private final WalletSyncMemberUseCase walletSyncMemberUseCase;
     private final WalletCreateUseCase walletCreateUseCase;
-    private final WalletChargeUseCase walletChargeUseCase;
-    private final WalletChargeCancelUseCase walletChargeCancelUseCase;
-    private final WalletCreateHoldingUseCase walletCreateHoldingUseCase;
     private final WalletGetBalanceUseCase walletGetBalanceUseCase;
     private final WalletRefundOrderUseCase walletRefundOrderUseCase;
     private final WalletConfirmHoldingUseCase walletConfirmHoldingUseCase;
@@ -30,26 +31,6 @@ public class WalletFacade {
     @Transactional
     public void createWallet(WalletMemberDto holder) {
         walletCreateUseCase.createWallet(holder);
-    }
-
-    @Transactional
-    public void charge(ChargeDto dto) {
-        walletChargeUseCase.charge(dto);
-    }
-
-    @Transactional
-    public void cancelCharge(ChargeDto dto) {
-        walletChargeCancelUseCase.cancelCharge(dto);
-    }
-
-    @Transactional
-    public void revertCancelCharge(ChargeDto dto) {
-        walletChargeCancelUseCase.revertCancelCharge(dto);
-    }
-
-    @Transactional
-    public void hold(HoldDto dto) {
-        walletCreateHoldingUseCase.hold(dto);
     }
 
     @Transactional
