@@ -14,13 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class MemberReissueTokenUseCase {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final MemberRepository memberRepository;
 
+    @Transactional
     public Member reissue(String refreshToken){
 
         RefreshToken token = refreshTokenRepository.findByRefreshToken(refreshToken)

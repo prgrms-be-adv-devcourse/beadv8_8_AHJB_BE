@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class MemberAuthenticateUseCase {
 
@@ -20,6 +19,7 @@ public class MemberAuthenticateUseCase {
     private final MemberLoginFailHandler loginFailHandler;
     private final PasswordEncoder passwordEncoder;
 
+    @Transactional
     public Member authenticate(String email, String password){
 
         Member member = memberRepository.findByEmail(email)

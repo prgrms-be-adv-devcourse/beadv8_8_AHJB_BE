@@ -8,6 +8,7 @@ import com.jjinmak.back.boundedContext.member.out.MemberSanctionRepository;
 import com.jjinmak.back.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -17,6 +18,7 @@ public class MemberSanctionReleaseUseCase {
 
     private final MemberSanctionRepository memberSanctionRepository;
 
+    @Transactional
     public void releaseIfExpired(Member member){
 
         LocalDateTime now = LocalDateTime.now();

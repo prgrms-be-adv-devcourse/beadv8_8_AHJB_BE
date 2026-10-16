@@ -23,7 +23,7 @@ public class MemberLoginFailHandler {
     public void handleFail(Long memberId){
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(()-> new BusinessException(CommonErrorCode.USER_NOT_FOUND));
-        member.increaseLoginFailCount(LocalDateTime.now());;
+        member.increaseLoginFailCount(LocalDateTime.now());
     }
 
 }
