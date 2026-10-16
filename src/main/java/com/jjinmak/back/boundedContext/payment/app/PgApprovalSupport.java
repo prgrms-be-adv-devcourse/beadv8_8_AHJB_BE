@@ -1,0 +1,85 @@
+package com.jjinmak.back.boundedContext.payment.app;
+
+import com.jjinmak.back.boundedContext.payment.domain.Charge;
+import com.jjinmak.back.boundedContext.payment.exception.PgApiException;
+import com.jjinmak.back.boundedContext.payment.out.TossPaymentsClient;
+import com.jjinmak.back.boundedContext.payment.out.dto.TossPaymentResponse;
+import com.jjinmak.back.global.exception.BusinessException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import static com.jjinmak.back.boundedContext.payment.exception.PaymentErrorCode.PG_NOT_APPROVED;
+import static com.jjinmak.back.boundedContext.payment.exception.PaymentErrorCode.PG_UNAVAILABLE;
+import static com.jjinmak.back.boundedContext.payment.out.TossPaymentsClient.ALREADY_PROCESSED_PAYMENT;
+
+/**
+ * 토스 승인/보상 공통 로직. 충전 승인과 주문 결제 승인 두 유스케이스가 같이 쓴다.
+ * UseCase에서 사용하는 지원 컴포넌트
+ */
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class PgApprovalSupport {
+
+    private static final String CONFIRM_KEY_PREFIX = "charge-confirm-";
+    private static final String CANCEL_KEY_PREFIX = "charge-cancel-";
+
+    private final TossPaymentsClient toss;
+    private final ChargeFailureRecorder failureRecorder;
+
+    /**
+     * 토스 승인. 응답이 Charge 의 pgOrderId·amount 와 일치하는 DONE 인지까지 검증한다.
+     *
+     *  - 이미 승인된 paymentKey(ALREADY_PROCESSED_PAYMENT)면 조회로 대체 (승인 응답을 못 받고 재시도한 경우)
+     *  - 승인 실패(4xx)면 Charge 를 ABORTED 로 기록(별도 트랜잭션)하고 예외
+     *  - 네트워크 오류면 상태를 알 수 없으므로 기록 없이 예외 (복구 스케줄러가 조회해 정리)
+     */
+    public TossPaymentResponse approve(Charge charge, String paymentKey) {
+        TossPaymentResponse response;
+        try {
+            response = toss.confirm(paymentKey, charge.getPgOrderId(), charge.getAmount(), CONFIRM_KEY_PREFIX + charge.getId());
+        } catch (PgApiException e) {
+            if (e.isCode(ALREADY_PROCESSED_PAYMENT)) {
+                response = toss.findByPaymentKey(paymentKey);
+            } else if (e.getErrorCode() == PG_UNAVAILABLE) {
+                throw e;
+            } else {
+                failureRecorder.recordAborted(charge.getId(), e.getPgCode(), e.getPgMessage());
+                throw e;
+            }
+        }
+
+        if (!response.isDone()
+                || !charge.getPgOrderId().equals(response.orderId())
+                || response.totalAmount() != charge.getAmount()) {
+            log.error("토스 승인 응답이 요청과 다름. chargeId={} status={} orderId={} amount={}",
+                    charge.getId(), response.status(), response.orderId(), response.totalAmount());
+            if (response.isDone()) {
+                cancelApproved(charge, response.paymentKey(), "승인 내용 불일치로 자동 취소");
+            } else {
+                failureRecorder.recordAborted(charge.getId(), response.status(), response.failureMessage());
+            }
+            throw new BusinessException(PG_NOT_APPROVED);
+        }
+        return response;
+    }
+
+    /**
+     * 보상: 토스는 승인됐는데 우리 DB 반영이 실패했을 때 토스 결제를 취소한다.
+     * 호출한 트랜잭션은 롤백되므로 Charge 는 REQUESTED 로 남고, 복구 스케줄러가 토스 상태(CANCELED)를 보고 ABORTED 로 닫는다.
+     * 취소마저 실패하면 로그만 남긴다. 역시 복구 스케줄러 대상.
+     */
+    public void cancelApproved(Charge charge, String paymentKey, String reason) {
+        try {
+            toss.cancel(paymentKey, reason, CANCEL_KEY_PREFIX + charge.getId());
+        } catch (RuntimeException ex) {
+            log.error("보상(토스 취소) 실패. chargeId={} paymentKey={} — 복구 스케줄러 대상", charge.getId(), paymentKey, ex);
+        }
+    }
+
+    /** 사용자 요청 충전 취소 (전액). 실패하면 예외를 그대로 올린다 */
+    public void cancel(Charge charge, String reason) {
+        toss.cancel(charge.getPaymentKey(), reason, CANCEL_KEY_PREFIX + charge.getId());
+    }
+}
