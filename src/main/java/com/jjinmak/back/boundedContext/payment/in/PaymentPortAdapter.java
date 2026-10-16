@@ -36,7 +36,7 @@ public class PaymentPortAdapter implements PaymentPort {
 
     @Override
     public long getBalance(Long holderId) {
-        return paymentFacade.getBalance(holderId);
+        return walletFacade.getBalance(holderId);
     }
 
     @Override
