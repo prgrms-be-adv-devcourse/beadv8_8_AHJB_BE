@@ -1,6 +1,7 @@
 package com.jjinmak.back.boundedContext.payment.app;
 
 import com.jjinmak.back.boundedContext.payment.app.dto.ChargeSummaryDto;
+import com.jjinmak.back.boundedContext.payment.app.dto.LedgerPageDto;
 import com.jjinmak.back.shared.payment.dto.PaymentConfirmDto;
 import com.jjinmak.back.shared.payment.dto.PaymentRequestDto;
 import com.jjinmak.back.shared.payment.dto.PaymentResultDto;
@@ -59,11 +60,6 @@ public class PaymentFacade {
     @Transactional
     public PaymentResultDto confirmPayment(PaymentConfirmDto dto) {
         return paymentConfirmUseCase.confirm(dto);
-    }
-
-    @Transactional(readOnly = true)
-    public long getBalance(Long holderId) {
-        return walletGetBalanceUseCase.getBalance(holderId);
     }
 
     // 복구 (PaymentScheduler)
