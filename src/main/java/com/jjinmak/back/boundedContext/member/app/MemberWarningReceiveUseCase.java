@@ -1,7 +1,6 @@
 package com.jjinmak.back.boundedContext.member.app;
 
 import com.jjinmak.back.boundedContext.member.domain.*;
-import com.jjinmak.back.boundedContext.member.exception.MemberErrorCode;
 import com.jjinmak.back.boundedContext.member.out.MemberRepository;
 import com.jjinmak.back.boundedContext.member.out.MemberSanctionRepository;
 import com.jjinmak.back.boundedContext.member.out.MemberWarningRepository;
@@ -40,7 +39,14 @@ public class MemberWarningReceiveUseCase {
             return;
         }
 
-        memberWarningRepository.save(MemberWarning.from(warningDto));
+        memberWarningRepository.save(MemberWarning.create(
+                warningDto.memberId(),
+                warningDto.sourceContext(),
+                warningDto.sourceId(),
+                warningDto.reason(),
+                warningDto.description(),
+                warningDto.occurredAt()
+        ));
         int warningCount = memberWarningRepository.countByMemberId(warningDto.memberId());
 
         Member member = memberRepository.findById(warningDto.memberId())
@@ -50,12 +56,13 @@ public class MemberWarningReceiveUseCase {
         memberSanctionRepository.findAllByMemberIdAndReleasedAtIsNull(warningDto.memberId())
                 .forEach(previous -> previous.release(now));
 
-        MemberSanction sanction = MemberSanction.sanctionFrom(warningDto, warningCount, now);
+        MemberSanction sanction = MemberSanction.sanctionFrom(
+                warningDto.memberId(), warningDto.reason(), warningCount, now);
 
         if (sanction.getSanctionType() == SanctionType.SUSPENDED) {
             member.suspend();
         }
-        if (sanction.getSanctionType() == SanctionType.BAN) {
+        if (sanction.getSanctionType() == SanctionType.BANNED) {
             member.ban();
         }
 
