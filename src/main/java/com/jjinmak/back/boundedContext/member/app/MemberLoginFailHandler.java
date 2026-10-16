@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class MemberLoginFailHandler {
@@ -21,7 +23,7 @@ public class MemberLoginFailHandler {
     public void handleFail(Long memberId){
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(()-> new BusinessException(CommonErrorCode.USER_NOT_FOUND));
-        member.increaseLoginFailCount();
+        member.increaseLoginFailCount(LocalDateTime.now());;
     }
 
 }

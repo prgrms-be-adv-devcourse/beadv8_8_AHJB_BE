@@ -9,6 +9,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -23,7 +25,7 @@ public class MemberAuthenticateUseCase {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(()-> new BusinessException(AuthErrorCode.LOGIN_FAILED));
 
-        member.prepareLogin();
+        member.prepareLogin(LocalDateTime.now());
 
         if(!member.matchesPassword(passwordEncoder, password)){
             loginFailHandler.handleFail(member.getId());
