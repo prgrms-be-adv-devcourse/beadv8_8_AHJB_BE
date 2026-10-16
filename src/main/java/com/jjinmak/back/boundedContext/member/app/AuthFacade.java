@@ -20,12 +20,9 @@ public class AuthFacade {
 
         Member member = memberAuthenticateUseCase.authenticate(email, password);
 
-        if(member.isSuspended()){
-            memberSanctionReleaseUseCase.releaseIfExpired(member);
-        }
+        memberSanctionReleaseUseCase.releaseIfExpired(member);
 
         TokenPair pair = memberTokenIssueUseCase.issue(member);
-
 
         return new MemberLoginResponseDto(pair.accessToken(), pair.refreshToken(), member.getNickname(), member.isSuspended());
     }

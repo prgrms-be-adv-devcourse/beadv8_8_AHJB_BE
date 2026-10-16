@@ -1,7 +1,6 @@
 package com.jjinmak.back.boundedContext.member.app;
 
 import com.jjinmak.back.boundedContext.member.domain.Member;
-import com.jjinmak.back.boundedContext.member.exception.AuthErrorCode;
 import com.jjinmak.back.boundedContext.member.out.MemberRepository;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.global.exception.CommonErrorCode;

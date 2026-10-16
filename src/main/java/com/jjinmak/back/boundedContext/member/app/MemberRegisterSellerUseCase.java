@@ -2,7 +2,6 @@ package com.jjinmak.back.boundedContext.member.app;
 
 import com.jjinmak.back.boundedContext.member.domain.Member;
 import com.jjinmak.back.boundedContext.member.domain.Seller;
-import com.jjinmak.back.boundedContext.member.exception.MemberErrorCode;
 import com.jjinmak.back.boundedContext.member.in.dto.RegisterSellerRequestDto;
 import com.jjinmak.back.boundedContext.member.out.MemberRepository;
 import com.jjinmak.back.boundedContext.member.out.SellerRepository;
