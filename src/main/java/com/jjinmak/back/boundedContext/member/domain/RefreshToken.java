@@ -43,18 +43,19 @@ public class RefreshToken extends BaseIdAndTime {
         return new RefreshToken(memberId, refreshToken, expiredAt);
     }
 
-    public void consume() {
+    public boolean isExpired(LocalDateTime now) {
+        return expiredAt.isBefore(now);
+    }
+
+    // 한 번 사용한 토큰은 무효화
+    public void consume(LocalDateTime now) {
         if (isRevoked()) {
             throw new BusinessException(AuthErrorCode.INVALID_REFRESH_TOKEN);
         }
-        if (isExpired()) {
+        if (isExpired(now)) {
             throw new BusinessException(AuthErrorCode.EXPIRED_REFRESH_TOKEN);
         }
         revoke();
-    }
-
-    public boolean isExpired(){
-        return expiredAt.isBefore(LocalDateTime.now());
     }
 
     public void revoke(){

@@ -16,6 +16,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -31,6 +32,8 @@ public class MemberWarningReceiveUseCase {
     @Transactional
     public void receiveWarning(MemberWarningDto warningDto) {
 
+        LocalDateTime now = LocalDateTime.now();
+
         // 동일한 원인 사건으로 이미 경고가 기록된 경우 중복 처리하지 않는다
         if (memberWarningRepository.existsBySourceContextAndSourceId(
                 warningDto.sourceContext(), warningDto.sourceId())) {
@@ -45,9 +48,9 @@ public class MemberWarningReceiveUseCase {
 
         // 새 제재가 기존 미해제 제재를 대체하기 때문에 회원당 미해제 제재가 하나만 유지되도록 정리한다
         memberSanctionRepository.findAllByMemberIdAndReleasedAtIsNull(warningDto.memberId())
-                .forEach(MemberSanction::release);
+                .forEach(previous -> previous.release(now));
 
-        MemberSanction sanction = MemberSanction.sanctionFrom(warningDto, warningCount);
+        MemberSanction sanction = MemberSanction.sanctionFrom(warningDto, warningCount, now);
 
         if (sanction.getSanctionType() == SanctionType.SUSPENDED) {
             member.suspend();

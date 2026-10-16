@@ -18,6 +18,9 @@ public class MemberSanctionReleaseUseCase {
     private final MemberSanctionRepository memberSanctionRepository;
 
     public void releaseIfExpired(Member member){
+
+        LocalDateTime now = LocalDateTime.now();
+
         if(!member.isSuspended()){
             return;
         }
@@ -25,8 +28,8 @@ public class MemberSanctionReleaseUseCase {
         MemberSanction sanction = memberSanctionRepository.findActiveByMemberId(member.getId())
                 .orElseThrow(()-> new BusinessException(MemberErrorCode.SANCTION_NOT_FOUND));
 
-        if( sanction.isExpired()){
-            sanction.release();
+        if (sanction.isExpired(now)) {
+            sanction.release(now);
             member.activate();
         }
     }
