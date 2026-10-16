@@ -1,5 +1,6 @@
 package com.jjinmak.back.shared.payment.port;
 
+import com.jjinmak.back.shared.payment.dto.HoldingSettlementDto;
 import com.jjinmak.back.shared.payment.dto.PaymentConfirmDto;
 import com.jjinmak.back.shared.payment.dto.PaymentRequestDto;
 import com.jjinmak.back.shared.payment.dto.PaymentResultDto;
@@ -24,4 +25,6 @@ public interface PaymentPort {
     PaymentResultDto confirmPayment(PaymentConfirmDto dto);
 
     long getBalance(Long holderId);
+
+    HoldingSettlementDto findSettlementOf(Long orderId);
 }

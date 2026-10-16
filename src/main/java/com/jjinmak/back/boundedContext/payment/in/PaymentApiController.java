@@ -3,6 +3,7 @@ package com.jjinmak.back.boundedContext.payment.in;
 import com.jjinmak.back.boundedContext.payment.app.PaymentFacade;
 import com.jjinmak.back.boundedContext.payment.app.WalletRetrySupport;
 import com.jjinmak.back.boundedContext.payment.app.dto.ChargeSummaryDto;
+import com.jjinmak.back.boundedContext.payment.app.dto.LedgerPageDto;
 import com.jjinmak.back.boundedContext.payment.in.dto.BalanceResponseDto;
 import com.jjinmak.back.boundedContext.payment.in.dto.ChargeConfirmRequestDto;
 import com.jjinmak.back.boundedContext.payment.in.dto.ChargeRequestDto;
@@ -21,17 +22,11 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/payments")
-public class PaymentController {
+public class PaymentApiController {
 
     private final PaymentFacade paymentFacade;
     private final WalletRetrySupport retry;   // 지갑 낙관적 락 충돌 재시도. 트랜잭션(파사드) 바깥에서 감싸야 한다
 
-    @Operation(summary = "내 예치금 잔액 조회")
-    @GetMapping("/wallet/balance")
-    public ResponseEntity<RsData<BalanceResponseDto>> getBalance(@AuthenticationPrincipal AuthPrincipal principal) {
-        long balance = paymentFacade.getBalance(principal.memberId());
-        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(new BalanceResponseDto(balance)));
-    }
 
     @Operation(
             summary = "충전 요청",

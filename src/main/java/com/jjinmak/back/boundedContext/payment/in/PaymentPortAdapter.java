@@ -1,7 +1,10 @@
 package com.jjinmak.back.boundedContext.payment.in;
 
 import com.jjinmak.back.boundedContext.payment.app.PaymentFacade;
+import com.jjinmak.back.boundedContext.payment.app.WalletFacade;
 import com.jjinmak.back.boundedContext.payment.app.WalletRetrySupport;
+import com.jjinmak.back.boundedContext.payment.domain.Wallet;
+import com.jjinmak.back.shared.payment.dto.HoldingSettlementDto;
 import com.jjinmak.back.shared.payment.dto.PaymentConfirmDto;
 import com.jjinmak.back.shared.payment.dto.PaymentRequestDto;
 import com.jjinmak.back.shared.payment.dto.PaymentResultDto;
@@ -18,6 +21,7 @@ import org.springframework.stereotype.Component;
 public class PaymentPortAdapter implements PaymentPort {
 
     private final PaymentFacade paymentFacade;
+    private final WalletFacade walletFacade;
     private final WalletRetrySupport retry;
 
     @Override
@@ -32,6 +36,11 @@ public class PaymentPortAdapter implements PaymentPort {
 
     @Override
     public long getBalance(Long holderId) {
-        return paymentFacade.getBalance(holderId);
+        return walletFacade.getBalance(holderId);
+    }
+
+    @Override
+    public HoldingSettlementDto findSettlementOf(Long orderId) {
+        return walletFacade.getSettlement(orderId);
     }
 }

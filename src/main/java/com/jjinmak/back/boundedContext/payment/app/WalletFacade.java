@@ -1,7 +1,9 @@
 package com.jjinmak.back.boundedContext.payment.app;
 
+import com.jjinmak.back.boundedContext.payment.app.dto.LedgerPageDto;
 import com.jjinmak.back.boundedContext.payment.domain.WalletMember;
 import com.jjinmak.back.shared.member.dto.MemberDto;
+import com.jjinmak.back.shared.payment.dto.HoldingSettlementDto;
 import com.jjinmak.back.shared.payment.dto.WalletMemberDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,8 @@ public class WalletFacade {
     private final WalletRefundOrderUseCase walletRefundOrderUseCase;
     private final WalletConfirmHoldingUseCase walletConfirmHoldingUseCase;
     private final WalletReleaseHoldingUseCase walletReleaseHoldingUseCase;
+    private final WalletGetSettlementUseCase walletGetSettlementUseCase;
+    private final WalletGetLedgerUseCase walletGetLedgerUseCase;
 
     @Transactional
     public WalletMember syncMember(MemberDto member) {
@@ -51,5 +55,15 @@ public class WalletFacade {
     @Transactional
     public void releaseHolding(Long orderId) {
         walletReleaseHoldingUseCase.release(orderId);
+    }
+
+    @Transactional(readOnly = true)
+    public HoldingSettlementDto getSettlement(Long orderId) {
+        return walletGetSettlementUseCase.get(orderId);
+    }
+
+    @Transactional(readOnly = true)
+    public LedgerPageDto getLedger(Long holderId, int page, int size) {
+        return walletGetLedgerUseCase.get(holderId, page, size);
     }
 }
