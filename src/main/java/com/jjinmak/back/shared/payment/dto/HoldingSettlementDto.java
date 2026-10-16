@@ -19,9 +19,7 @@ public record HoldingSettlementDto(
         long amount,
         long feeAmount,
         long settlementAmount,
-        String status,
-        LocalDateTime confirmedAt,
-        LocalDateTime releasedAt
+        String status
 ) {
     /** 구매 확정이 끝나 정산할 수 있는 상태인지 */
     public boolean isSettleable() {

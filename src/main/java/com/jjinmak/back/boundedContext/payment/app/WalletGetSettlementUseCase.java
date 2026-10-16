@@ -32,9 +32,7 @@ public class WalletGetSettlementUseCase {
                 holding.getAmount(),
                 holding.getFeeAmount(),
                 holding.getSettlementAmount(),
-                holding.getStatus().name(),
-                holding.getConfirmedAt(),
-                holding.getReleasedAt()
+                holding.getStatus().name()
         );
     }
 }
