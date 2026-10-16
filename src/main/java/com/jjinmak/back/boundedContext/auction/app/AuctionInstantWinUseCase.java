@@ -21,9 +21,8 @@ public class AuctionInstantWinUseCase {
     private final AuctionRepository auctionRepository;
     private final AuctionEventPublisher auctionEventPublisher;
 
-    public AuctionInstantWinResponseDto instantWin(Long auctionId,Long bidderId){
+    public AuctionInstantWinResponseDto instantWin(Long auctionId,Long bidderId, LocalDateTime now){
 
-        LocalDateTime now = LocalDateTime.now();
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(()->new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
         // 공통검증
