@@ -7,6 +7,7 @@ import com.jjinmak.back.boundedContext.order.domain.OrderState;
 import com.jjinmak.back.boundedContext.order.out.OrderGroupRepository;
 import com.jjinmak.back.boundedContext.order.out.OrderMemberRepository;
 import com.jjinmak.back.boundedContext.order.out.OrderRepository;
+import com.jjinmak.back.boundedContext.payment.in.PaymentEventListener;
 import com.jjinmak.back.boundedContext.settlement.in.SettlementEventListener;
 import com.jjinmak.back.global.security.JwtTokenProvider;
 import com.jjinmak.back.shared.order.event.OrderConfirmPurchaseEvent;
@@ -72,6 +73,9 @@ class OrderApiControllerTest {
 
     @MockitoBean
     SettlementEventListener settlementEventListener;
+
+    @MockitoBean
+    PaymentEventListener paymentEventListener;
 
     OrderMember winner;
     OrderMember seller;
