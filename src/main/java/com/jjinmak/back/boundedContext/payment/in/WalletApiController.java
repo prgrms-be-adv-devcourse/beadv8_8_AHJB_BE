@@ -1,7 +1,11 @@
 package com.jjinmak.back.boundedContext.payment.in;
 
 import com.jjinmak.back.boundedContext.payment.app.WalletFacade;
+import com.jjinmak.back.boundedContext.payment.app.dto.HoldingPageDto;
+import com.jjinmak.back.boundedContext.payment.app.dto.HoldingRole;
 import com.jjinmak.back.boundedContext.payment.app.dto.LedgerPageDto;
+import com.jjinmak.back.boundedContext.payment.domain.enums.HoldingStatus;
+import com.jjinmak.back.boundedContext.payment.domain.enums.WalletTransactionType;
 import com.jjinmak.back.boundedContext.payment.in.dto.BalanceResponseDto;
 import com.jjinmak.back.global.rsData.RsData;
 import com.jjinmak.back.global.security.AuthPrincipal;
@@ -17,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 
-@Tag(name = "지갑", description = "예치금 잔액 조회와 충전 내역 조회")
+@Tag(name = "지갑", description = "예치금 잔액·원장·홀딩(묶인 돈 / 정산 예정 금액) 조회")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/wallet")
@@ -34,15 +38,35 @@ public class WalletApiController {
 
     @Operation(
             summary = "내 예치금 원장 조회",
-            description = "충전·결제·환불·정산 등 예치금 입출금 내역을 최신순으로 조회합니다. amount 는 입금 +, 출금 - 이고 balanceAfter 는 그 시점 잔액입니다. size 최대 50."
+            description = "충전·결제·환불·정산 등 예치금 입출금 내역을 최신순으로 조회합니다. amount 는 입금 +, 출금 - 이고 balanceAfter 는 그 시점 잔액입니다. "
+                    + "type 을 주면 그 유형만 조회합니다 (예: SETTLEMENT_RECEIVE = 정산 수령 내역, REFUND_RECEIVE = 환불 수령 내역). size 최대 50."
     )
     @GetMapping("/me/ledger")
     public ResponseEntity<RsData<LedgerPageDto>> getLedger(
             @AuthenticationPrincipal AuthPrincipal principal,
+            @RequestParam(required = false) WalletTransactionType type,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        LedgerPageDto response = walletFacade.getLedger(principal.memberId(), page, size);
+        LedgerPageDto response = walletFacade.getLedger(principal.memberId(), type, page, size);
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
+
+    @Operation(
+            summary = "내 홀딩 조회 (묶인 돈 / 정산 예정 금액)",
+            description = "role=BUYER 면 내가 결제한 돈이 어느 주문에 묶여 있는지, role=SELLER 면 내가 받을 정산 예정 금액을 주문별로 조회합니다. "
+                    + "heldTotal 은 아직 정산·환불되지 않은 합계(BUYER 는 묶인 금액, SELLER 는 정산액), settleableTotal 은 구매 확정이 끝나 정산만 남은 합계입니다. "
+                    + "status 를 주면 그 상태만 (HELD / CONFIRMED / RELEASED / REFUNDED). size 최대 50."
+    )
+    @GetMapping("/me/holdings")
+    public ResponseEntity<RsData<HoldingPageDto>> getHoldings(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @RequestParam(defaultValue = "BUYER") HoldingRole role,
+            @RequestParam(required = false) HoldingStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        HoldingPageDto response = walletFacade.getHoldings(principal.memberId(), role, status, page, size);
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }
 }

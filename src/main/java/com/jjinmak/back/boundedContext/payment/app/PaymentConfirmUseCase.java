@@ -70,7 +70,7 @@ public class PaymentConfirmUseCase {
 
             Wallet wallet = walletSupport.getWalletByHolderId(charge.getHolderId());
             ledgerRecorder.deposit(wallet, CHARGE, charge.getAmount(), PAYMENT, charge.getId());
-            charge.markCharged(approved.paymentKey(), approved.approvedAtLocal(), now);
+            charge.markCharged(approved.paymentKey(), approved.approvedAtLocal(), now, approved.method(), approved.receiptUrl());
 
             holdingCreator.hold(PaymentRequestUseCase.toHoldDto(payment));
 

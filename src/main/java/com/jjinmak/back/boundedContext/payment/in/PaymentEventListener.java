@@ -33,12 +33,14 @@ public class PaymentEventListener {
         walletFacade.createWallet(event.getMember());
     }
 
-    @EventListener
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    @Transactional(propagation = REQUIRES_NEW)
     public void handle(RefundAcceptedEvent event) {
         walletFacade.refund(event.refund().refundId(), event.refund().orderId(), event.refund().amount());
     }
 
-    @EventListener
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    @Transactional(propagation = REQUIRES_NEW)
     public void handle(OrderConfirmPurchaseEvent event) {
         walletFacade.confirmHolding(event.orderId());
     }
