@@ -4,10 +4,13 @@ import com.jjinmak.back.boundedContext.payment.domain.Wallet;
 import com.jjinmak.back.boundedContext.payment.domain.WalletMember;
 import com.jjinmak.back.boundedContext.payment.out.WalletMemberRepository;
 import com.jjinmak.back.boundedContext.payment.out.WalletRepository;
+import com.jjinmak.back.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+
+import static com.jjinmak.back.boundedContext.payment.exception.WalletErrorCode.WALLET_NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor
@@ -25,5 +28,11 @@ public class WalletSupport {
 
     public Optional<Wallet> findWalletByHolderId(Long holderId) {
         return walletRepository.findByHolderId(holderId);
+    }
+
+    /** 없으면 WALLET_NOT_FOUND */
+    public Wallet getWalletByHolderId(Long holderId) {
+        return findWalletByHolderId(holderId)
+                .orElseThrow(() -> new BusinessException(WALLET_NOT_FOUND));
     }
 }

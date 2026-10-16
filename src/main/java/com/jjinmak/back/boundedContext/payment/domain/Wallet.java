@@ -33,18 +33,12 @@ public class Wallet extends BaseIdAndTime {
     @Column(nullable = false, length=20)
     private WalletType type;
 
-//    @Enumerated(EnumType.STRING)
-//    @JdbcTypeCode(SqlTypes.VARCHAR)
-//    @Column(nullable = false, length = 20)
-//    private WalletStatus status;
-
 
     public Wallet(WalletMember holder, WalletType type) {
         this.holder = holder;
         this.type = type;
         this.balance = 0L;
     }
-
 
     public WalletBalanceDto toDto() {
         return new WalletBalanceDto(

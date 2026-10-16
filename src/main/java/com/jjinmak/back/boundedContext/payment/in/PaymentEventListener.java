@@ -7,6 +7,7 @@ import com.jjinmak.back.shared.order.event.OrderConfirmPurchaseEvent;
 import com.jjinmak.back.shared.refund.event.RefundAcceptedEvent;
 import com.jjinmak.back.shared.payment.event.WalletMemberCreatedEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -32,14 +33,12 @@ public class PaymentEventListener {
         walletFacade.createWallet(event.getMember());
     }
 
-    @TransactionalEventListener(phase = AFTER_COMMIT)
-    @Transactional(propagation = REQUIRES_NEW)
+    @EventListener
     public void handle(RefundAcceptedEvent event) {
         walletFacade.refund(event.refund().refundId(), event.refund().orderId(), event.refund().amount());
     }
 
-    @TransactionalEventListener(phase = AFTER_COMMIT)
-    @Transactional(propagation = REQUIRES_NEW)
+    @EventListener
     public void handle(OrderConfirmPurchaseEvent event) {
         walletFacade.confirmHolding(event.orderId());
     }

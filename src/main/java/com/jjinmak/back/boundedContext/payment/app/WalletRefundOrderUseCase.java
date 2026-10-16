@@ -4,6 +4,7 @@ package com.jjinmak.back.boundedContext.payment.app;
 import com.jjinmak.back.boundedContext.payment.domain.Holding;
 import com.jjinmak.back.boundedContext.payment.domain.Wallet;
 import com.jjinmak.back.boundedContext.payment.out.HoldingRepository;
+import com.jjinmak.back.boundedContext.payment.out.PaymentRepository;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.payment.event.WalletRefundedEvent;
@@ -26,6 +27,7 @@ public class WalletRefundOrderUseCase {
 
     private final SystemWalletFinder finder;
     private final HoldingRepository holdingRepository;
+    private final PaymentRepository paymentRepository;
     private final LedgerRecorder ledgerRecorder;
     private final EventPublisher eventPublisher;
 
@@ -41,6 +43,10 @@ public class WalletRefundOrderUseCase {
         long amount = holding.getAmount();
 
         holding.refund(requestedAmount);
+
+        // 결제 기록에도 환불 시각을 남긴다. (Holding.paymentId 는 Payment 의 id)
+        paymentRepository.findWithItemsById(holding.getPaymentId())
+                .ifPresent(payment -> payment.markItemRefunded(orderId, holding.getRefundedAt()));
         ledgerRecorder.transfer(escrow, REFUND_PAY, buyer, REFUND_RECEIVE,
                 amount, UUID.randomUUID().toString(), ORDER, orderId);
 

@@ -31,7 +31,12 @@ public class AuthFacade {
     }
 
     public MemberLoginResponseDto reissue(String refreshToken){
+
+
         Member member = memberReissueTokenUseCase.reissue(refreshToken);
+
+        memberSanctionReleaseUseCase.releaseIfExpired(member);
+
         TokenPair pair = memberTokenIssueUseCase.issue(member);
 
         return new MemberLoginResponseDto(pair.accessToken(), pair.refreshToken(), member.getNickname(), member.isSuspended());
