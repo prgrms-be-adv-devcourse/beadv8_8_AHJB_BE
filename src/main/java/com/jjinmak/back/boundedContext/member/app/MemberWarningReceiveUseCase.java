@@ -7,6 +7,7 @@ import com.jjinmak.back.boundedContext.member.out.MemberSanctionRepository;
 import com.jjinmak.back.boundedContext.member.out.MemberWarningRepository;
 import com.jjinmak.back.boundedContext.member.out.RefreshTokenRepository;
 import com.jjinmak.back.global.exception.BusinessException;
+import com.jjinmak.back.global.exception.CommonErrorCode;
 import com.jjinmak.back.shared.member.dto.MemberSanctionDto;
 import com.jjinmak.back.shared.member.dto.MemberWarningDto;
 import com.jjinmak.back.shared.member.event.MemberSanctionEvent;
@@ -40,7 +41,7 @@ public class MemberWarningReceiveUseCase {
         int warningCount = memberWarningRepository.countByMemberId(warningDto.memberId());
 
         Member member = memberRepository.findById(warningDto.memberId())
-                .orElseThrow(() -> new BusinessException(MemberErrorCode.MEMBER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(CommonErrorCode.USER_NOT_FOUND));
 
         // 새 제재가 기존 미해제 제재를 대체하기 때문에 회원당 미해제 제재가 하나만 유지되도록 정리한다
         memberSanctionRepository.findAllByMemberIdAndReleasedAtIsNull(warningDto.memberId())
@@ -49,10 +50,10 @@ public class MemberWarningReceiveUseCase {
         MemberSanction sanction = MemberSanction.sanctionFrom(warningDto, warningCount);
 
         if (sanction.getSanctionType() == SanctionType.SUSPENDED) {
-            member.suspendMember();
+            member.suspend();
         }
         if (sanction.getSanctionType() == SanctionType.BAN) {
-            member.banMember();
+            member.ban();
         }
 
         memberSanctionRepository.save(sanction);

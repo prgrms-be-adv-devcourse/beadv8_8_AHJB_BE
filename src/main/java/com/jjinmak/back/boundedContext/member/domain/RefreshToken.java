@@ -1,5 +1,7 @@
 package com.jjinmak.back.boundedContext.member.domain;
 
+import com.jjinmak.back.boundedContext.member.exception.AuthErrorCode;
+import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -39,6 +41,16 @@ public class RefreshToken extends BaseIdAndTime {
 
     public static RefreshToken create(Long memberId, String refreshToken, LocalDateTime expiredAt){
         return new RefreshToken(memberId, refreshToken, expiredAt);
+    }
+
+    public void consume() {
+        if (isRevoked()) {
+            throw new BusinessException(AuthErrorCode.INVALID_REFRESH_TOKEN);
+        }
+        if (isExpired()) {
+            throw new BusinessException(AuthErrorCode.EXPIRED_REFRESH_TOKEN);
+        }
+        revoke();
     }
 
     public boolean isExpired(){

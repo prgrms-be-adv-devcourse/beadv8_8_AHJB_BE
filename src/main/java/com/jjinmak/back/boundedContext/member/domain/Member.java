@@ -1,5 +1,6 @@
 package com.jjinmak.back.boundedContext.member.domain;
 
+import com.jjinmak.back.boundedContext.member.exception.AuthErrorCode;
 import com.jjinmak.back.boundedContext.member.exception.MemberErrorCode;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.global.exception.CommonErrorCode;
@@ -79,6 +80,22 @@ public class Member extends BaseIdAndTime {
         return new Member(email, encodedPassword, nickname, username, phone, birthDate);
     }
 
+    // 로그인 시도 전 계정 상태를 확인한다. 잠금 시간이 지났으면 해제한 뒤 판단한다.
+    public void prepareLogin() {
+        unlockIfExpired();
+        validateNotBanned();
+
+        if (locked) {
+            throw new BusinessException(AuthErrorCode.ACCOUNT_LOCKED);
+        }
+    }
+
+    public void validateNotBanned() {
+        if (isBanned()) {
+            throw new BusinessException(CommonErrorCode.BANNED_ACCOUNT);
+        }
+    }
+
     public void increaseLoginFailCount(){
         loginFailCount++;
         if(loginFailCount>=MAX_LOGIN_FAIL_COUNT){
@@ -93,7 +110,7 @@ public class Member extends BaseIdAndTime {
         locked=false;
     }
 
-    public void unlockIfExpired() {
+    private void unlockIfExpired() {
         if (locked && lockedUntil.isBefore(LocalDateTime.now())) {
             locked = false;
             loginFailCount = 0;
@@ -101,17 +118,15 @@ public class Member extends BaseIdAndTime {
         }
     }
 
-    public boolean validPassword(PasswordEncoder passwordEncoder, String password){
+    public boolean matchesPassword(PasswordEncoder passwordEncoder, String password){
         return passwordEncoder.matches(password, this.password);
     }
-
-
 
     public boolean isBanned(){
         return status == AccountStatus.BANNED;
     }
 
-    public void active(){
+    public void activate(){
         status = AccountStatus.ACTIVE;
     }
 
@@ -121,11 +136,11 @@ public class Member extends BaseIdAndTime {
 
     public boolean isSuspended(){return status == AccountStatus.SUSPENDED; }
 
-    public void suspendMember(){
+    public void suspend(){
         status = AccountStatus.SUSPENDED;
     }
 
-    public void banMember(){
+    public void ban(){
         status = AccountStatus.BANNED;
     }
 

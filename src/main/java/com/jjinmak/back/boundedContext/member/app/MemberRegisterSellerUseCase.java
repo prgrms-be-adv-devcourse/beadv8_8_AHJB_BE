@@ -7,6 +7,7 @@ import com.jjinmak.back.boundedContext.member.in.dto.RegisterSellerRequestDto;
 import com.jjinmak.back.boundedContext.member.out.MemberRepository;
 import com.jjinmak.back.boundedContext.member.out.SellerRepository;
 import com.jjinmak.back.global.exception.BusinessException;
+import com.jjinmak.back.global.exception.CommonErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +23,7 @@ public class MemberRegisterSellerUseCase {
     public void registerSeller(Long memberId, RegisterSellerRequestDto request){
 
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(()->new BusinessException(MemberErrorCode.MEMBER_NOT_FOUND));
+                .orElseThrow(()->new BusinessException(CommonErrorCode.USER_NOT_FOUND));
 
         member.registerAsSeller();
 

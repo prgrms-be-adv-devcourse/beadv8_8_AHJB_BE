@@ -4,6 +4,7 @@ import com.jjinmak.back.boundedContext.member.domain.Member;
 import com.jjinmak.back.boundedContext.member.exception.AuthErrorCode;
 import com.jjinmak.back.boundedContext.member.out.MemberRepository;
 import com.jjinmak.back.global.exception.BusinessException;
+import com.jjinmak.back.global.exception.CommonErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -19,7 +20,7 @@ public class MemberLoginFailHandler {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleFail(Long memberId){
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(()-> new BusinessException(AuthErrorCode.MEMBER_NOT_FOUND));
+                .orElseThrow(()-> new BusinessException(CommonErrorCode.USER_NOT_FOUND));
         member.increaseLoginFailCount();
     }
 
