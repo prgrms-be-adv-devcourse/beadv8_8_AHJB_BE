@@ -18,6 +18,22 @@ public class OrderScheduler {
 
     // TODO: 서버를 늘리면 모든 JVM에서 스케줄러가 돌아감
     @Scheduled(fixedDelay = 60_000)
+    public void deleteDefaultPayment(){
+        List<Long> itemIds = orderFacade.findExpiredItemIds();
+
+        for (Long id : itemIds){
+            try {
+                orderFacade.deleteExpiredItem(id);
+            } catch (BusinessException e){
+                log.error("오류가 발생해 만료 상품을 취소하지 못했습니다.\ncartId: %d\nerrorCode: %s".formatted(id, e.getErrorCode()));
+            } catch (Exception e){
+                log.error("만료 상품 삭제 실패.\ncartId: %d".formatted(id), e);
+            }
+        }
+    }
+
+    // TODO: 서버를 늘리면 모든 JVM에서 스케줄러가 돌아감
+    @Scheduled(fixedDelay = 60_000)
     public void confirmPurchaseAuto(){
         List<Long> orderIds = orderFacade.getExpiredOrderIds();
 
