@@ -34,10 +34,10 @@ public class AuctionFacade {
     }
 
     @Transactional
-    public AuctionBidResponseDto bid(Long auctionId, Long bidderId, Long bidPrice){return auctionBidUseCase.bid(auctionId,bidderId,bidPrice);}
+    public AuctionBidResponseDto bid(Long auctionId, Long bidderId, Long bidPrice){return auctionBidUseCase.bid(auctionId,bidderId,bidPrice,LocalDateTime.now());}
 
     @Transactional
-    public AuctionInstantWinResponseDto instantWin(Long auctionId,Long bidderId){return auctionInstantWinUseCase.instantWin(auctionId,bidderId);}
+    public AuctionInstantWinResponseDto instantWin(Long auctionId,Long bidderId){return auctionInstantWinUseCase.instantWin(auctionId,bidderId,LocalDateTime.now());}
 
     @Transactional(readOnly = true)
     public AuctionBidHistoryResponseDto bidHistory(Long auctionId,Long memberId,int page,int size){return auctionBidHistoryUseCase.bidHistory(auctionId,memberId,page,size);}
