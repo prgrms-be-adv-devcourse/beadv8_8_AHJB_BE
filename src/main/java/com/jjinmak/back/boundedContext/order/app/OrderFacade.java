@@ -4,7 +4,6 @@ import com.jjinmak.back.boundedContext.order.app.dto.OrderDto;
 import com.jjinmak.back.boundedContext.order.domain.OrderMember;
 import com.jjinmak.back.shared.auction.event.AuctionWonEvent;
 import com.jjinmak.back.shared.cart.dto.CartItemDto;
-import com.jjinmak.back.shared.cart.event.CartCreateOrderEvent;
 import com.jjinmak.back.shared.delivery.domain.CarrierType;
 import com.jjinmak.back.shared.delivery.event.DeliveryCreatedEvent;
 import com.jjinmak.back.shared.delivery.event.DeliveryStatusUpdatedEvent;
@@ -21,12 +20,10 @@ import java.util.List;
 public class OrderFacade {
 
     private final OrderSyncMemberUseCase orderSyncMemberUseCase;
-    private final OrderPaymentUseCase orderPaymentUseCase;
     private final OrderReadOrderUseCase orderReadOrderUseCase;
     private final OrderConfirmPurchaseUseCase orderConfirmPurchaseUseCase;
     private final OrderPaymentResultUseCase orderPaymentResultUseCase;
-    private final OrderRequestRefundUseCase orderRequestRefundUseCase;
-    private final OrderRefundResultUseCase orderRefundResultUseCase;
+    private final OrderRefundUseCase orderRefundUseCase;
     private final OrderDeliveryUseCase orderDeliveryUseCase;
     private final OrderSchedulerUseCase orderSchedulerUseCase;
     private final CartItemUseCase cartItemUseCase;
@@ -63,11 +60,6 @@ public class OrderFacade {
         cartDefaultPaymentUseCase.deleteExpiredItem(itemId);
     }
 
-    @Transactional
-    public void createOrder(CartCreateOrderEvent event){
-        orderPaymentUseCase.tryPayment(event);
-    }
-
     @Transactional(readOnly = true)
     public List<OrderDto> readWinnerOrders(Long winnerId, int page, int size){
         return orderReadOrderUseCase.readWinnerOrders(winnerId, page, size);
@@ -100,17 +92,17 @@ public class OrderFacade {
 
     @Transactional
     public void requestRefund(Long memberId, Long orderId){
-        orderRequestRefundUseCase.requestRefund(memberId, orderId);
+        orderRefundUseCase.requestRefund(memberId, orderId);
     }
 
     @Transactional
     public void acceptRefund(RefundDto refund){
-        orderRefundResultUseCase.acceptRefund(refund);
+        orderRefundUseCase.acceptRefund(refund);
     }
 
     @Transactional
     public void rejectRefund(RefundDto refund){
-        orderRefundResultUseCase.rejectRefund(refund);
+        orderRefundUseCase.rejectRefund(refund);
     }
 
     @Transactional(readOnly = true)
