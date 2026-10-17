@@ -23,10 +23,19 @@ public record TossPaymentResponse(
         String requestedAt,
         String approvedAt,
         String lastTransactionKey,
-        Failure failure
+        Failure failure,
+        Receipt receipt
 ) {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Failure(String code, String message) {}
+
+    /** 토스 매출전표 링크. 사용자에게 영수증으로 보여준다 */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Receipt(String url) {}
+
+    public String receiptUrl() {
+        return receipt == null ? null : receipt.url();
+    }
 
     public boolean isDone() {
         return "DONE".equals(status);

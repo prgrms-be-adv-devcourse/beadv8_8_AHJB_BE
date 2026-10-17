@@ -85,6 +85,14 @@ public class Charge extends BaseIdAndTime {
     @Column(length = 200)
     private String paymentKey;
 
+    /** 토스 결제수단 (카드, 간편결제 등). 표시용 */
+    @Column(length = 30)
+    private String method;
+
+    /** 토스 매출전표 링크. 표시용 */
+    @Column(length = 500)
+    private String receiptUrl;
+
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(nullable = false, length = 20)
@@ -152,6 +160,12 @@ public class Charge extends BaseIdAndTime {
 
     /** 토스 승인 성공 + 지갑 CHARGE 기록 완료. 이미 CHARGED 이상이면 아무 것도 하지 않는다 (멱등) */
     public void markCharged(String paymentKey, LocalDateTime approvedAt, LocalDateTime chargedAt) {
+        markCharged(paymentKey, approvedAt, chargedAt, null, null);
+    }
+
+    /** 토스 승인 응답의 결제수단·영수증 링크까지 함께 남긴다 */
+    public void markCharged(String paymentKey, LocalDateTime approvedAt, LocalDateTime chargedAt,
+                            String method, String receiptUrl) {
         if (status != REQUESTED) {
             if (Objects.equals(paymentKey, this.paymentKey)) return;
             throw new BusinessException(INVALID_CHARGE_STATUS);
@@ -159,6 +173,8 @@ public class Charge extends BaseIdAndTime {
         this.paymentKey = paymentKey;
         this.approvedAt = approvedAt;
         this.chargedAt = chargedAt;
+        this.method = method;
+        this.receiptUrl = receiptUrl;
         this.status = CHARGED;
     }
 

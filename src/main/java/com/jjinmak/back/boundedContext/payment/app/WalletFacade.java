@@ -1,6 +1,10 @@
 package com.jjinmak.back.boundedContext.payment.app;
 
+import com.jjinmak.back.boundedContext.payment.app.dto.HoldingPageDto;
+import com.jjinmak.back.boundedContext.payment.app.dto.HoldingRole;
 import com.jjinmak.back.boundedContext.payment.app.dto.LedgerPageDto;
+import com.jjinmak.back.boundedContext.payment.domain.enums.HoldingStatus;
+import com.jjinmak.back.boundedContext.payment.domain.enums.WalletTransactionType;
 import com.jjinmak.back.boundedContext.payment.domain.WalletMember;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import com.jjinmak.back.shared.payment.dto.HoldingSettlementDto;
@@ -26,6 +30,7 @@ public class WalletFacade {
     private final WalletReleaseHoldingUseCase walletReleaseHoldingUseCase;
     private final WalletGetSettlementUseCase walletGetSettlementUseCase;
     private final WalletGetLedgerUseCase walletGetLedgerUseCase;
+    private final WalletGetHoldingsUseCase walletGetHoldingsUseCase;
 
     @Transactional
     public WalletMember syncMember(MemberDto member) {
@@ -63,7 +68,12 @@ public class WalletFacade {
     }
 
     @Transactional(readOnly = true)
-    public LedgerPageDto getLedger(Long holderId, int page, int size) {
-        return walletGetLedgerUseCase.get(holderId, page, size);
+    public LedgerPageDto getLedger(Long holderId, WalletTransactionType type, int page, int size) {
+        return walletGetLedgerUseCase.get(holderId, type, page, size);
+    }
+
+    @Transactional(readOnly = true)
+    public HoldingPageDto getHoldings(Long holderId, HoldingRole role, HoldingStatus status, int page, int size) {
+        return walletGetHoldingsUseCase.get(holderId, role, status, page, size);
     }
 }

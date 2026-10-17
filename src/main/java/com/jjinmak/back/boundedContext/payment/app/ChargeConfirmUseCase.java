@@ -54,7 +54,8 @@ public class ChargeConfirmUseCase {
         try {
             Wallet wallet = walletSupport.getWalletByHolderId(holderId);
             ledgerRecorder.deposit(wallet, CHARGE, charge.getAmount(), PAYMENT, charge.getId());
-            charge.markCharged(approved.paymentKey(), approved.approvedAtLocal(), LocalDateTime.now());
+            charge.markCharged(approved.paymentKey(), approved.approvedAtLocal(), LocalDateTime.now(),
+                    approved.method(), approved.receiptUrl());
         } catch (RuntimeException e) {
             pgApproval.cancelApproved(charge, approved.paymentKey(), "지갑 반영 실패로 자동 취소");
             throw e;

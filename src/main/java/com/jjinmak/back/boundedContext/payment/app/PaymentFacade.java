@@ -1,7 +1,10 @@
 package com.jjinmak.back.boundedContext.payment.app;
 
 import com.jjinmak.back.boundedContext.payment.app.dto.ChargeSummaryDto;
-import com.jjinmak.back.boundedContext.payment.app.dto.LedgerPageDto;
+import com.jjinmak.back.boundedContext.payment.app.dto.PageDto;
+import com.jjinmak.back.boundedContext.payment.app.dto.PaymentDetailDto;
+import com.jjinmak.back.boundedContext.payment.app.dto.PaymentQuoteDto;
+import com.jjinmak.back.boundedContext.payment.app.dto.PaymentSummaryDto;
 import com.jjinmak.back.shared.payment.dto.PaymentConfirmDto;
 import com.jjinmak.back.shared.payment.dto.PaymentRequestDto;
 import com.jjinmak.back.shared.payment.dto.PaymentResultDto;
@@ -32,6 +35,9 @@ public class PaymentFacade {
     private final PaymentConfirmUseCase paymentConfirmUseCase;
     private final ChargeRecoveryUseCase chargeRecoveryUseCase;
     private final WalletGetBalanceUseCase walletGetBalanceUseCase;
+    private final PaymentGetHistoryUseCase paymentGetHistoryUseCase;
+    private final ChargeGetHistoryUseCase chargeGetHistoryUseCase;
+    private final PaymentQuoteUseCase paymentQuoteUseCase;
 
     // 수동 충전
 
@@ -60,6 +66,33 @@ public class PaymentFacade {
     @Transactional
     public PaymentResultDto confirmPayment(PaymentConfirmDto dto) {
         return paymentConfirmUseCase.confirm(dto);
+    }
+
+    // 조회
+
+    @Transactional(readOnly = true)
+    public PageDto<PaymentSummaryDto> listPayments(Long holderId, int page, int size) {
+        return paymentGetHistoryUseCase.list(holderId, page, size);
+    }
+
+    @Transactional(readOnly = true)
+    public PaymentDetailDto getPayment(Long holderId, Long paymentId) {
+        return paymentGetHistoryUseCase.detail(holderId, paymentId);
+    }
+
+    @Transactional(readOnly = true)
+    public PageDto<ChargeSummaryDto> listCharges(Long holderId, int page, int size) {
+        return chargeGetHistoryUseCase.listManual(holderId, page, size);
+    }
+
+    @Transactional(readOnly = true)
+    public ChargeSummaryDto getCharge(Long holderId, Long chargeId) {
+        return chargeGetHistoryUseCase.detail(holderId, chargeId);
+    }
+
+    @Transactional(readOnly = true)
+    public PaymentQuoteDto quote(Long holderId, long amount) {
+        return paymentQuoteUseCase.quote(holderId, amount);
     }
 
     // 복구 (PaymentScheduler)

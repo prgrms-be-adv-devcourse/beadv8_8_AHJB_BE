@@ -87,7 +87,7 @@ public class ChargeRecoveryUseCase {
             } else {
                 Wallet wallet = walletSupport.getWalletByHolderId(charge.getHolderId());
                 ledgerRecorder.deposit(wallet, CHARGE, charge.getAmount(), PAYMENT, chargeId);
-                charge.markCharged(remote.paymentKey(), remote.approvedAtLocal(), now);
+                charge.markCharged(remote.paymentKey(), remote.approvedAtLocal(), now, remote.method(), remote.receiptUrl());
             }
             log.info("REQUESTED 충전 복구: chargeId={} purpose={} tossStatus=DONE", chargeId, charge.getPurpose());
             return;

@@ -3,8 +3,10 @@ package com.jjinmak.back.boundedContext.payment.in;
 import com.jjinmak.back.boundedContext.payment.app.PaymentFacade;
 import com.jjinmak.back.boundedContext.payment.app.WalletRetrySupport;
 import com.jjinmak.back.boundedContext.payment.app.dto.ChargeSummaryDto;
-import com.jjinmak.back.boundedContext.payment.app.dto.LedgerPageDto;
-import com.jjinmak.back.boundedContext.payment.in.dto.BalanceResponseDto;
+import com.jjinmak.back.boundedContext.payment.app.dto.PageDto;
+import com.jjinmak.back.boundedContext.payment.app.dto.PaymentDetailDto;
+import com.jjinmak.back.boundedContext.payment.app.dto.PaymentQuoteDto;
+import com.jjinmak.back.boundedContext.payment.app.dto.PaymentSummaryDto;
 import com.jjinmak.back.boundedContext.payment.in.dto.ChargeConfirmRequestDto;
 import com.jjinmak.back.boundedContext.payment.in.dto.ChargeRequestDto;
 import com.jjinmak.back.global.rsData.RsData;
@@ -65,6 +67,75 @@ public class PaymentApiController {
             @AuthenticationPrincipal AuthPrincipal principal
     ) {
         ChargeSummaryDto response = retry.withRetry(() -> paymentFacade.cancelCharge(principal.memberId(), chargeId));
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
+
+    // ===== 조회 =====
+
+    @Operation(
+            summary = "내 결제 내역 조회",
+            description = "주문 묶음 단위의 결제 내역을 최신순으로 조회합니다. walletUsedAmount 는 예치금에서 나간 금액, chargeAmount 는 카드 등으로 결제한 부족분입니다. size 최대 50."
+    )
+    @GetMapping("/me")
+    public ResponseEntity<RsData<PageDto<PaymentSummaryDto>>> listPayments(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        PageDto<PaymentSummaryDto> response = paymentFacade.listPayments(principal.memberId(), page, size);
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
+
+    @Operation(
+            summary = "내 결제 상세 조회",
+            description = "결제에 포함된 주문별 금액·환불 여부와, 부족분 충전이 있었다면 그 충전 건(영수증 링크 포함)을 함께 돌려줍니다."
+    )
+    @GetMapping("/me/{paymentId}")
+    public ResponseEntity<RsData<PaymentDetailDto>> getPayment(
+            @PathVariable Long paymentId,
+            @AuthenticationPrincipal AuthPrincipal principal
+    ) {
+        PaymentDetailDto response = paymentFacade.getPayment(principal.memberId(), paymentId);
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
+
+    @Operation(
+            summary = "내 충전 내역 조회",
+            description = "수동 충전 내역을 최신순으로 조회합니다. cancelable 이 true 인 건만 취소 버튼을 보여주세요 (실제 취소는 잔액이 충전액 이상일 때만 성공). size 최대 50."
+    )
+    @GetMapping("/charges/me")
+    public ResponseEntity<RsData<PageDto<ChargeSummaryDto>>> listCharges(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        PageDto<ChargeSummaryDto> response = paymentFacade.listCharges(principal.memberId(), page, size);
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
+
+    @Operation(
+            summary = "충전 상세 조회",
+            description = "충전 1건의 상태·결제수단·토스 영수증 링크·실패 사유를 조회합니다."
+    )
+    @GetMapping("/charges/{chargeId}")
+    public ResponseEntity<RsData<ChargeSummaryDto>> getCharge(
+            @PathVariable Long chargeId,
+            @AuthenticationPrincipal AuthPrincipal principal
+    ) {
+        ChargeSummaryDto response = paymentFacade.getCharge(principal.memberId(), chargeId);
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
+
+    @Operation(
+            summary = "결제 전 견적",
+            description = "지금 잔액으로 amount 를 결제하면 예치금에서 얼마, 카드로 얼마가 나가는지 미리 계산합니다. 저장하지 않으며 실제 결제 시점에 다시 계산됩니다."
+    )
+    @GetMapping("/quote")
+    public ResponseEntity<RsData<PaymentQuoteDto>> quote(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @RequestParam long amount
+    ) {
+        PaymentQuoteDto response = paymentFacade.quote(principal.memberId(), amount);
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }
 }
