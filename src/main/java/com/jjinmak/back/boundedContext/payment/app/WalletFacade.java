@@ -3,7 +3,9 @@ package com.jjinmak.back.boundedContext.payment.app;
 import com.jjinmak.back.boundedContext.payment.app.dto.HoldingPageDto;
 import com.jjinmak.back.boundedContext.payment.app.dto.HoldingRole;
 import com.jjinmak.back.boundedContext.payment.app.dto.LedgerPageDto;
+import com.jjinmak.back.boundedContext.payment.app.dto.WalletBalanceDto;
 import com.jjinmak.back.boundedContext.payment.domain.enums.HoldingStatus;
+import com.jjinmak.back.boundedContext.payment.domain.enums.WalletAccount;
 import com.jjinmak.back.boundedContext.payment.domain.enums.WalletTransactionType;
 import com.jjinmak.back.boundedContext.payment.domain.WalletMember;
 import com.jjinmak.back.shared.member.dto.MemberDto;
@@ -47,9 +49,16 @@ public class WalletFacade {
         walletRefundOrderUseCase.refund(refundId, orderId, amount);
     }
 
+    /** 예치금 잔액만 (주문 포트용) */
     @Transactional(readOnly = true)
     public long getBalance(Long holderId) {
         return walletGetBalanceUseCase.getBalance(holderId);
+    }
+
+    /** 예치금 + 정산금 (내 지갑 화면용) */
+    @Transactional(readOnly = true)
+    public WalletBalanceDto getBalances(Long holderId) {
+        return walletGetBalanceUseCase.getBalances(holderId);
     }
 
     @Transactional
@@ -68,8 +77,8 @@ public class WalletFacade {
     }
 
     @Transactional(readOnly = true)
-    public LedgerPageDto getLedger(Long holderId, WalletTransactionType type, int page, int size) {
-        return walletGetLedgerUseCase.get(holderId, type, page, size);
+    public LedgerPageDto getLedger(Long holderId, WalletAccount account, WalletTransactionType type, int page, int size) {
+        return walletGetLedgerUseCase.get(holderId, account, type, page, size);
     }
 
     @Transactional(readOnly = true)

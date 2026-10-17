@@ -21,7 +21,8 @@ import static com.jjinmak.back.boundedContext.payment.exception.WalletErrorCode.
 
 
 /**
- * 정산: 구매 확정된 홀딩 1건의 대금을 ESCROW 에서 판매자 지갑(정산액)과 FEE 지갑(수수료)으로 옮긴다.
+ * 정산: 구매 확정된 홀딩 1건의 대금을 ESCROW 에서 판매자 지갑의 정산금(정산액)과 FEE 지갑(수수료)으로 옮긴다.
+ * 판매자가 받는 돈은 예치금(balance)이 아니라 정산금(settlementBalance)에 쌓이며, 결제·충전 취소에 쓰이지 않는다.
  *
  * 멱등: 이미 RELEASED 면 돈을 다시 옮기지 않고 회신 이벤트만 다시 발행한다.
  *      (정산 쪽이 회신을 못 받아 재요청하는 경우를 위해)
@@ -52,7 +53,7 @@ public class WalletReleaseHoldingUseCase {
         Wallet escrow = finder.escrowForUpdate();
         String groupId = UUID.randomUUID().toString();
 
-        ledgerRecorder.transfer(escrow, SETTLEMENT_PAY, seller, SETTLEMENT_RECEIVE,
+        ledgerRecorder.transferToSettlement(escrow, SETTLEMENT_PAY, seller, SETTLEMENT_RECEIVE,
                 holding.getSettlementAmount(), groupId, ORDER, orderId);
 
         if (holding.hasFee()) {
@@ -73,4 +74,4 @@ public class WalletReleaseHoldingUseCase {
                 holding.getSettlementAmount(),
                 holding.getReleasedAt()));
     }
-}
+}
