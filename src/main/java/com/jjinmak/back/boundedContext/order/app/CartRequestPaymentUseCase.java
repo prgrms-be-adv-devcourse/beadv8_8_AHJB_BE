@@ -14,7 +14,8 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import static com.jjinmak.back.boundedContext.order.exception.CartErrorCode.*;
+import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.CART_ITEM_FORBIDDEN;
+import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.CART_ITEM_PAYMENT_EXPIRED;
 
 @Service
 @RequiredArgsConstructor

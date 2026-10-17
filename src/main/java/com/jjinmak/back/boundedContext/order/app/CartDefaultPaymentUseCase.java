@@ -11,7 +11,8 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static com.jjinmak.back.boundedContext.order.exception.CartErrorCode.CART_ITEM_NOT_FOUND;
+import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.CART_ITEM_NOT_FOUND;
+
 
 @Service
 @RequiredArgsConstructor
