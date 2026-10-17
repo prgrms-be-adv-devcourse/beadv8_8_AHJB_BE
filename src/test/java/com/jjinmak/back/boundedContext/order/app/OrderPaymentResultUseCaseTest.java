@@ -3,7 +3,7 @@ package com.jjinmak.back.boundedContext.order.app;
 import com.jjinmak.back.boundedContext.order.domain.Order;
 import com.jjinmak.back.boundedContext.order.domain.OrderGroup;
 import com.jjinmak.back.boundedContext.order.domain.OrderMember;
-import com.jjinmak.back.boundedContext.order.out.OrderGroupRepository;
+import com.jjinmak.back.boundedContext.order.out.repository.OrderGroupRepository;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.order.event.OrderPaymentSucceedEvent;

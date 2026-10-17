@@ -4,11 +4,12 @@ import com.jjinmak.back.boundedContext.order.domain.Order;
 import com.jjinmak.back.boundedContext.order.domain.OrderGroup;
 import com.jjinmak.back.boundedContext.order.domain.OrderMember;
 import com.jjinmak.back.boundedContext.order.domain.OrderState;
-import com.jjinmak.back.boundedContext.order.out.OrderRepository;
+import com.jjinmak.back.boundedContext.order.out.repository.OrderRepository;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.order.event.OrderConfirmPurchaseEvent;
 import com.jjinmak.back.shared.order.event.OrderRefundAcceptedEvent;
+import com.jjinmak.back.shared.order.event.OrderRefundRequestedEvent;
 import com.jjinmak.back.shared.refund.dto.RefundDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -27,18 +28,22 @@ import static com.jjinmak.back.boundedContext.order.domain.OrderState.CONFIRMED;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.REFUNDED;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.REFUND_REQUESTED;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.SHIPPED;
+import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_FORBIDDEN;
 import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_NOT_FOUND;
 import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_STATE_BAD_REQUEST;
+import static com.jjinmak.back.global.exception.CommonErrorCode.USER_NOT_FOUND;
 import static com.jjinmak.back.shared.refund.domain.RefundStatus.ACCEPTED;
 import static com.jjinmak.back.shared.refund.domain.RefundStatus.REJECTED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class OrderRefundResultUseCaseTest {
+class OrderRefundUseCaseTest {
 
     @Mock
     OrderSupport orderSupport;
@@ -50,7 +55,7 @@ class OrderRefundResultUseCaseTest {
     EventPublisher eventPublisher;
 
     @InjectMocks
-    OrderRefundResultUseCase orderRefundResultUseCase;
+    OrderRefundUseCase orderRefundUseCase;
 
     OrderMember winner;
     OrderMember seller;
@@ -68,12 +73,87 @@ class OrderRefundResultUseCaseTest {
     }
 
     @Test
+    @DisplayName("배송 완료된 주문에 낙찰자가 환불을 요청하면 REFUND_REQUESTED가 되고, 환불 요청 이벤트를 발행한다")
+    void requestRefund_requestsAndPublishes() {
+        Order order = order(SHIPPED);
+        when(orderSupport.getMember(1L)).thenReturn(winner);
+        when(orderSupport.getOrderWithParticipants(100L)).thenReturn(order);
+
+        orderRefundUseCase.requestRefund(1L, 100L);
+
+        assertThat(order.getState()).isEqualTo(REFUND_REQUESTED);
+        verify(eventPublisher).publish(new OrderRefundRequestedEvent(100L, 1L, 2L, 20L, 30_000L, 3_000L));
+    }
+
+    @Test
+    @DisplayName("판매자가 환불을 요청하면 ORDER_FORBIDDEN, 상태가 바뀌지 않고 이벤트를 발행하지 않는다")
+    void requestRefund_bySeller() {
+        Order order = order(SHIPPED);
+        when(orderSupport.getMember(2L)).thenReturn(seller);
+        when(orderSupport.getOrderWithParticipants(100L)).thenReturn(order);
+
+        assertThatThrownBy(() -> orderRefundUseCase.requestRefund(2L, 100L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ORDER_FORBIDDEN);
+
+        assertThat(order.getState()).isEqualTo(SHIPPED);
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    @DisplayName("구매 확정된 주문에 환불을 요청하면 ORDER_STATE_BAD_REQUEST, 상태가 바뀌지 않고 이벤트를 발행하지 않는다")
+    void requestRefund_confirmed() {
+        Order order = order(CONFIRMED);
+        when(orderSupport.getMember(1L)).thenReturn(winner);
+        when(orderSupport.getOrderWithParticipants(100L)).thenReturn(order);
+
+        assertThatThrownBy(() -> orderRefundUseCase.requestRefund(1L, 100L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ORDER_STATE_BAD_REQUEST);
+
+        assertThat(order.getState()).isEqualTo(CONFIRMED);
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    @DisplayName("이미 환불을 요청한 주문에 다시 요청하면 ORDER_STATE_BAD_REQUEST, 이벤트를 발행하지 않는다")
+    void requestRefund_alreadyRequested() {
+        Order order = order(REFUND_REQUESTED);
+        when(orderSupport.getMember(1L)).thenReturn(winner);
+        when(orderSupport.getOrderWithParticipants(100L)).thenReturn(order);
+
+        assertThatThrownBy(() -> orderRefundUseCase.requestRefund(1L, 100L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ORDER_STATE_BAD_REQUEST);
+
+        assertThat(order.getState()).isEqualTo(REFUND_REQUESTED);
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    @DisplayName("주문 회원이 없으면 USER_NOT_FOUND, 주문 조회와 이벤트 발행을 하지 않는다")
+    void requestRefund_memberNotFound() {
+        when(orderSupport.getMember(1L)).thenThrow(new BusinessException(USER_NOT_FOUND));
+
+        assertThatThrownBy(() -> orderRefundUseCase.requestRefund(1L, 100L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(USER_NOT_FOUND);
+
+        verify(orderSupport, never()).getOrderWithParticipants(any());
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
     @DisplayName("환불이 승인되면 환불 요청 상태의 주문이 REFUNDED가 되고, 환불 승인 이벤트를 발행한다")
     void acceptRefund_refundsAndPublishes() {
         Order order = order(REFUND_REQUESTED);
         when(orderRepository.findById(100L)).thenReturn(Optional.of(order));
 
-        orderRefundResultUseCase.acceptRefund(accepted);
+        orderRefundUseCase.acceptRefund(accepted);
 
         assertThat(order.getState()).isEqualTo(REFUNDED);
         verify(eventPublisher).publish(new OrderRefundAcceptedEvent(100L, 10L));
@@ -84,7 +164,7 @@ class OrderRefundResultUseCaseTest {
     void acceptRefund_orderNotFound() {
         when(orderRepository.findById(100L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> orderRefundResultUseCase.acceptRefund(accepted))
+        assertThatThrownBy(() -> orderRefundUseCase.acceptRefund(accepted))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ORDER_NOT_FOUND);
@@ -98,7 +178,7 @@ class OrderRefundResultUseCaseTest {
         Order order = order(SHIPPED);
         when(orderRepository.findById(100L)).thenReturn(Optional.of(order));
 
-        assertThatThrownBy(() -> orderRefundResultUseCase.acceptRefund(accepted))
+        assertThatThrownBy(() -> orderRefundUseCase.acceptRefund(accepted))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ORDER_STATE_BAD_REQUEST);
@@ -114,7 +194,7 @@ class OrderRefundResultUseCaseTest {
         when(orderSupport.getOrderWithParticipants(100L)).thenReturn(order);
 
         LocalDateTime before = LocalDateTime.now();
-        orderRefundResultUseCase.rejectRefund(rejected);
+        orderRefundUseCase.rejectRefund(rejected);
         LocalDateTime after = LocalDateTime.now();
 
         ArgumentCaptor<OrderConfirmPurchaseEvent> captor = ArgumentCaptor.forClass(OrderConfirmPurchaseEvent.class);
@@ -138,7 +218,7 @@ class OrderRefundResultUseCaseTest {
         Order order = order(REFUNDED);
         when(orderSupport.getOrderWithParticipants(100L)).thenReturn(order);
 
-        assertThatThrownBy(() -> orderRefundResultUseCase.rejectRefund(rejected))
+        assertThatThrownBy(() -> orderRefundUseCase.rejectRefund(rejected))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ORDER_STATE_BAD_REQUEST);

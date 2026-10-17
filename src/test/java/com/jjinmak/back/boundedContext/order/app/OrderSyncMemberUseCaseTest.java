@@ -1,7 +1,7 @@
 package com.jjinmak.back.boundedContext.order.app;
 
 import com.jjinmak.back.boundedContext.order.domain.OrderMember;
-import com.jjinmak.back.boundedContext.order.out.OrderMemberRepository;
+import com.jjinmak.back.boundedContext.order.out.repository.OrderMemberRepository;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
