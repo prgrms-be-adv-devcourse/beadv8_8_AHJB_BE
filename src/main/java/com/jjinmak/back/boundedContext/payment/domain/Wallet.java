@@ -1,5 +1,6 @@
 package com.jjinmak.back.boundedContext.payment.domain;
 
+import com.jjinmak.back.boundedContext.payment.domain.enums.WalletAccount;
 import com.jjinmak.back.boundedContext.payment.domain.enums.WalletType;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
@@ -12,6 +13,14 @@ import org.hibernate.type.SqlTypes;
 
 import static com.jjinmak.back.boundedContext.payment.exception.WalletErrorCode.*;
 
+/**
+ * 지갑. 잔액은 두 주머니로 나뉜다.
+ *
+ * - balance           : 예치금. 충전·환불로 들어오고 결제·충전 취소로 나간다
+ * - settlementBalance : 정산금. 구매 확정으로 받은 판매 대금. 예치금과 섞이지 않는다
+ *
+ * deposit / withdrawal / hasEnough 는 예치금(balance)만 다룬다.
+ */
 @Entity
 @NoArgsConstructor
 @Getter
@@ -19,6 +28,9 @@ public class Wallet extends BaseIdAndTime {
 
     @Column(nullable = false)
     private long balance;
+
+    @Column(nullable = false)
+    private long settlementBalance;
 
     @Version
     @Column(nullable = false)
@@ -38,12 +50,14 @@ public class Wallet extends BaseIdAndTime {
         this.holder = holder;
         this.type = type;
         this.balance = 0L;
+        this.settlementBalance = 0L;
     }
 
     public WalletBalanceDto toDto() {
         return new WalletBalanceDto(
                 getId(),
-                balance
+                balance,
+                settlementBalance
         );
     }
 
@@ -70,6 +84,16 @@ public class Wallet extends BaseIdAndTime {
             throw new BusinessException(INSUFFICIENT_BALANCE);
         }
         this.balance -= amount;
+    }
+
+    /** 정산금 입금. 구매 확정 릴리즈 시 판매자 지갑에만 사용한다 */
+    public void depositSettlement(long amount) {
+        validatePositive(amount);
+        this.settlementBalance += amount;
+    }
+
+    public long getBalanceOf(WalletAccount account) {
+        return account == WalletAccount.SETTLEMENT ? settlementBalance : balance;
     }
 
     private void validatePositive(long amount) {

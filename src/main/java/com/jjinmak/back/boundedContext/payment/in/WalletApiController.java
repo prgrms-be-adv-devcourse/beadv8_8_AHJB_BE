@@ -5,6 +5,7 @@ import com.jjinmak.back.boundedContext.payment.app.dto.HoldingPageDto;
 import com.jjinmak.back.boundedContext.payment.app.dto.HoldingRole;
 import com.jjinmak.back.boundedContext.payment.app.dto.LedgerPageDto;
 import com.jjinmak.back.boundedContext.payment.domain.enums.HoldingStatus;
+import com.jjinmak.back.boundedContext.payment.domain.enums.WalletAccount;
 import com.jjinmak.back.boundedContext.payment.domain.enums.WalletTransactionType;
 import com.jjinmak.back.boundedContext.payment.in.dto.BalanceResponseDto;
 import com.jjinmak.back.global.rsData.RsData;
@@ -29,26 +30,31 @@ public class WalletApiController {
 
     private final WalletFacade walletFacade;
 
-    @Operation(summary = "내 예치금 잔액 조회")
+    @Operation(
+            summary = "내 잔액 조회",
+            description = "balance 는 예치금(결제에 쓸 수 있는 돈), settlementBalance 는 정산금(구매 확정으로 받은 판매 대금, 예치금과 분리 보관)입니다."
+    )
     @GetMapping("/me")
     public ResponseEntity<RsData<BalanceResponseDto>> getBalance(@AuthenticationPrincipal AuthPrincipal principal) {
-        long balance = walletFacade.getBalance(principal.memberId());
-        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(new BalanceResponseDto(balance)));
+        BalanceResponseDto response = BalanceResponseDto.from(walletFacade.getBalances(principal.memberId()));
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }
 
     @Operation(
-            summary = "내 예치금 원장 조회",
-            description = "충전·결제·환불·정산 등 예치금 입출금 내역을 최신순으로 조회합니다. amount 는 입금 +, 출금 - 이고 balanceAfter 는 그 시점 잔액입니다. "
+            summary = "내 원장 조회",
+            description = "충전·결제·환불·정산 등 입출금 내역을 최신순으로 조회합니다. amount 는 입금 +, 출금 - 이고 balanceAfter 는 그 시점의 해당 주머니 잔액입니다. "
+                    + "account 를 주면 그 주머니만 (DEPOSIT = 예치금, SETTLEMENT = 정산금), "
                     + "type 을 주면 그 유형만 조회합니다 (예: SETTLEMENT_RECEIVE = 정산 수령 내역, REFUND_RECEIVE = 환불 수령 내역). size 최대 50."
     )
     @GetMapping("/me/ledger")
     public ResponseEntity<RsData<LedgerPageDto>> getLedger(
             @AuthenticationPrincipal AuthPrincipal principal,
+            @RequestParam(required = false) WalletAccount account,
             @RequestParam(required = false) WalletTransactionType type,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        LedgerPageDto response = walletFacade.getLedger(principal.memberId(), type, page, size);
+        LedgerPageDto response = walletFacade.getLedger(principal.memberId(), account, type, page, size);
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }
 

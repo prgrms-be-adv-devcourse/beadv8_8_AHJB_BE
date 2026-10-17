@@ -2,6 +2,7 @@ package com.jjinmak.back.boundedContext.payment.support;
 
 import com.jjinmak.back.boundedContext.payment.domain.*;
 import com.jjinmak.back.boundedContext.payment.domain.enums.ReferenceType;
+import com.jjinmak.back.boundedContext.payment.domain.enums.WalletAccount;
 import com.jjinmak.back.boundedContext.payment.domain.enums.WalletTransactionType;
 import com.jjinmak.back.boundedContext.payment.out.*;
 import lombok.RequiredArgsConstructor;
@@ -13,13 +14,14 @@ import java.util.UUID;
 /**
  * 조회 API 테스트용 데이터 세팅. 테스트 트랜잭션 안에서 저장되고 테스트가 끝나면 롤백된다.
  *
- * 회원: 구매자(BUYER), 판매자 A, 판매자 B, 남(OTHER)
+ * 회원: 구매자(BUYER, 예치금 20_000), 판매자 A(예치금 3_000 + 정산금 9_000), 판매자 B, 남(OTHER)
  *  - 결제 P1: 구매자, 주문 2건(판매자 A 22_000 / 판매자 B 8_000), 총 30_000, 부족분 18_000 을 토스로 충전(USED) 후 PAID
  *  - 결제 P2: 구매자, 주문 1건 5_000, 전액 예치금 PAID
  *  - 결제 P3: 남의 결제
  *  - 충전 C1: 구매자 수동 10_000 CHARGED (취소 가능)   C2: 구매자 수동 5_000 ABORTED   C3: 남의 수동 충전
  *  - 홀딩 H1: P1/주문10 구매자→판매자A HELD   H2: P1/주문11 구매자→판매자B CONFIRMED   H3: 남→판매자A RELEASED
- *  - 원장(구매자): CHARGE +10_000, HOLD_PAY -22_000   원장(판매자A): SETTLEMENT_RECEIVE +9_000
+ *  - 원장(구매자): CHARGE +10_000, HOLD_PAY -22_000 (예치금)
+ *  - 원장(판매자A): CHARGE +3_000 (예치금), SETTLEMENT_RECEIVE +9_000 (정산금)
  */
 @TestComponent
 @RequiredArgsConstructor
@@ -50,7 +52,8 @@ public class PaymentApiTestData {
 
     public void seed() {
         buyerWallet = walletOf(BUYER_ID, 20_000L);
-        sellerAWallet = walletOf(SELLER_A_ID, 9_000L);
+        sellerAWallet = walletOf(SELLER_A_ID, 3_000L);
+        sellerAWallet.depositSettlement(9_000L);
         sellerBWallet = walletOf(SELLER_B_ID, 0L);
         otherWallet = walletOf(OTHER_ID, 0L);
 
@@ -106,7 +109,8 @@ public class PaymentApiTestData {
         // ----- 원장 -----
         walletTransactionRepository.save(WalletTransaction.of(buyerWallet, WalletTransactionType.CHARGE, 10_000L, "g1", ReferenceType.PAYMENT, c1.getId()));
         walletTransactionRepository.save(WalletTransaction.of(buyerWallet, WalletTransactionType.HOLD_PAY, -22_000L, "g2", ReferenceType.ORDER, 10L));
-        walletTransactionRepository.save(WalletTransaction.of(sellerAWallet, WalletTransactionType.SETTLEMENT_RECEIVE, 9_000L, "g3", ReferenceType.ORDER, 13L));
+        walletTransactionRepository.save(WalletTransaction.of(sellerAWallet, WalletTransactionType.CHARGE, 3_000L, "g3", ReferenceType.PAYMENT, c3.getId()));
+        walletTransactionRepository.save(WalletTransaction.of(sellerAWallet, WalletAccount.SETTLEMENT, WalletTransactionType.SETTLEMENT_RECEIVE, 9_000L, "g4", ReferenceType.ORDER, 13L));
     }
 
     private Wallet walletOf(Long memberId, long balance) {

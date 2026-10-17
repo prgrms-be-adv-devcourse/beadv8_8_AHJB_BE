@@ -67,12 +67,23 @@ class WalletApiControllerTest {
     // ===== 잔액 =====
 
     @Test
-    @DisplayName("내 잔액 조회")
+    @DisplayName("내 잔액 조회: 예치금과 정산금이 따로 내려온다")
     void balance() throws Exception {
         mockMvc.perform(get("/api/v1/wallet/me")
                         .header(HttpHeaders.AUTHORIZATION, bearer(BUYER_ID)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.balance").value(20_000));
+                .andExpect(jsonPath("$.data.balance").value(20_000))
+                .andExpect(jsonPath("$.data.settlementBalance").value(0));
+    }
+
+    @Test
+    @DisplayName("판매자 잔액 조회: 정산금은 예치금에 섞이지 않는다")
+    void balance_seller() throws Exception {
+        mockMvc.perform(get("/api/v1/wallet/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(SELLER_A_ID)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.balance").value(3_000))
+                .andExpect(jsonPath("$.data.settlementBalance").value(9_000));
     }
 
     // ===== 원장 =====
@@ -87,6 +98,7 @@ class WalletApiControllerTest {
                 .andExpect(jsonPath("$.data.totalElements").value(2))
                 .andExpect(jsonPath("$.data.hasNext").value(false))
                 .andExpect(jsonPath("$.data.content", hasSize(2)))
+                .andExpect(jsonPath("$.data.content[0].account").value("DEPOSIT"))
                 .andExpect(jsonPath("$.data.content[0].type").value("HOLD_PAY"))
                 .andExpect(jsonPath("$.data.content[0].amount").value(-22_000))
                 .andExpect(jsonPath("$.data.content[0].referenceType").value("ORDER"))
@@ -121,14 +133,39 @@ class WalletApiControllerTest {
     }
 
     @Test
-    @DisplayName("원장 조회: 다른 회원의 기록은 섞이지 않는다")
+    @DisplayName("원장 조회: 다른 회원의 기록은 섞이지 않고, balanceAfter 는 각 주머니 기준이다")
     void ledger_onlyMine() throws Exception {
         mockMvc.perform(get("/api/v1/wallet/me/ledger")
                         .header(HttpHeaders.AUTHORIZATION, bearer(SELLER_A_ID)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.balance").value(9_000))
+                .andExpect(jsonPath("$.data.balance").value(3_000))
+                .andExpect(jsonPath("$.data.settlementBalance").value(9_000))
+                .andExpect(jsonPath("$.data.totalElements").value(2))
+                .andExpect(jsonPath("$.data.content[0].account").value("SETTLEMENT"))
+                .andExpect(jsonPath("$.data.content[0].type").value("SETTLEMENT_RECEIVE"))
+                .andExpect(jsonPath("$.data.content[0].balanceAfter").value(9_000))
+                .andExpect(jsonPath("$.data.content[1].account").value("DEPOSIT"))
+                .andExpect(jsonPath("$.data.content[1].type").value("CHARGE"))
+                .andExpect(jsonPath("$.data.content[1].balanceAfter").value(3_000));
+    }
+
+    @Test
+    @DisplayName("원장 조회: account 로 예치금/정산금 기록을 나눠 볼 수 있다")
+    void ledger_filterByAccount() throws Exception {
+        mockMvc.perform(get("/api/v1/wallet/me/ledger")
+                        .param("account", "SETTLEMENT")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(SELLER_A_ID)))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.totalElements").value(1))
-                .andExpect(jsonPath("$.data.content[0].type").value("SETTLEMENT_RECEIVE"));
+                .andExpect(jsonPath("$.data.content[0].account").value("SETTLEMENT"))
+                .andExpect(jsonPath("$.data.content[0].amount").value(9_000));
+
+        mockMvc.perform(get("/api/v1/wallet/me/ledger")
+                        .param("account", "DEPOSIT")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(SELLER_A_ID)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.content[0].type").value("CHARGE"));
     }
 
     // ===== 홀딩 (구매자) =====

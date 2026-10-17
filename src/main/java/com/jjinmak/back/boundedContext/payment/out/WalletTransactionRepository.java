@@ -2,6 +2,7 @@ package com.jjinmak.back.boundedContext.payment.out;
 
 import com.jjinmak.back.boundedContext.payment.domain.Wallet;
 import com.jjinmak.back.boundedContext.payment.domain.WalletTransaction;
+import com.jjinmak.back.boundedContext.payment.domain.enums.WalletAccount;
 import com.jjinmak.back.boundedContext.payment.domain.enums.WalletTransactionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,4 +21,9 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
 
     /** 지갑의 원장 중 특정 유형만 (정산 수령, 환불 수령 등) */
     Page<WalletTransaction> findByWalletAndType(Wallet wallet, WalletTransactionType type, Pageable pageable);
+
+    /** 지갑의 원장 중 특정 주머니만 (DEPOSIT = 예치금, SETTLEMENT = 정산금) */
+    Page<WalletTransaction> findByWalletAndAccount(Wallet wallet, WalletAccount account, Pageable pageable);
+
+    Page<WalletTransaction> findByWalletAndAccountAndType(Wallet wallet, WalletAccount account, WalletTransactionType type, Pageable pageable);
 }
