@@ -1,4 +1,4 @@
-package com.jjinmak.back.boundedContext.order.in.cart.dto;
+package com.jjinmak.back.boundedContext.order.in.dto;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;

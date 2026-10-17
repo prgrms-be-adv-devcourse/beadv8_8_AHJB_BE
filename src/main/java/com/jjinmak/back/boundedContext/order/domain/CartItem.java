@@ -16,11 +16,11 @@ public class CartItem extends BaseIdAndTime {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    private CartMember winner;
+    private OrderMember winner;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    private CartMember seller;
+    private OrderMember seller;
 
     @NotNull
     @Column(unique = true)
@@ -39,7 +39,7 @@ public class CartItem extends BaseIdAndTime {
     @NotNull
     private LocalDateTime paymentDueAt;
 
-    public CartItem(CartMember winner, CartMember seller, Long auctionId, Long productId, Long winningPrice, Long deliveryFee, LocalDateTime winAt){
+    public CartItem(OrderMember winner, OrderMember seller, Long auctionId, Long productId, Long winningPrice, Long deliveryFee, LocalDateTime winAt){
         this.winner = winner;
         this.seller = seller;
         this.auctionId = auctionId;

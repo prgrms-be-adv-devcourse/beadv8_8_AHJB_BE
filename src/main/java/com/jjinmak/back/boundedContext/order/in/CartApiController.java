@@ -1,7 +1,7 @@
-package com.jjinmak.back.boundedContext.order.in.cart;
+package com.jjinmak.back.boundedContext.order.in;
 
-import com.jjinmak.back.boundedContext.order.app.cart.CartFacade;
-import com.jjinmak.back.boundedContext.order.in.cart.dto.CartPaymentRequestDto;
+import com.jjinmak.back.boundedContext.order.app.OrderFacade;
+import com.jjinmak.back.boundedContext.order.in.dto.CartPaymentRequestDto;
 import com.jjinmak.back.global.rsData.RsData;
 import com.jjinmak.back.global.security.AuthPrincipal;
 import com.jjinmak.back.shared.cart.dto.CartItemDto;
@@ -22,7 +22,7 @@ import java.util.List;
 @RequestMapping("/api/v1/cart")
 public class CartApiController {
 
-    private final CartFacade cartFacade;
+    private final OrderFacade orderFacade;
 
     @Operation(
             summary = "장바구니 조회",
@@ -31,7 +31,7 @@ public class CartApiController {
     @GetMapping("")
     public ResponseEntity<RsData<List<CartItemDto>>> readWinnerItems(@AuthenticationPrincipal AuthPrincipal principal){
 
-        List<CartItemDto> response = cartFacade.readWinnerItems(principal.memberId());
+        List<CartItemDto> response = orderFacade.readWinnerItem(principal.memberId());
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -47,7 +47,7 @@ public class CartApiController {
             @AuthenticationPrincipal AuthPrincipal principal,
             @Valid @RequestBody CartPaymentRequestDto request
     ){
-        cartFacade.paymentCartItems(principal.memberId(), request.productIds());
+        orderFacade.requestPayment(principal.memberId(), request.productIds());
 
         return ResponseEntity
                 .status(HttpStatus.OK)

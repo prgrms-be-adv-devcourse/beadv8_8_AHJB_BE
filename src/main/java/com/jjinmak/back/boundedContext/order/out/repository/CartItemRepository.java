@@ -1,7 +1,7 @@
 package com.jjinmak.back.boundedContext.order.out.repository;
 
 import com.jjinmak.back.boundedContext.order.domain.CartItem;
-import com.jjinmak.back.boundedContext.order.domain.CartMember;
+import com.jjinmak.back.boundedContext.order.domain.OrderMember;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -13,10 +13,10 @@ import java.util.Optional;
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 
     @Query("select ci from CartItem ci join fetch ci.seller where ci.winner = :winner order by ci.winAt")
-    List<CartItem> findAllByWinnerOrderByWinAt(CartMember winner);
+    List<CartItem> findAllByWinnerOrderByWinAt(OrderMember winner);
 
     @Query("select ci from CartItem ci join fetch ci.seller where ci.winner = :winner and ci.productId in :productIds")
-    List<CartItem> findAllByWinnerAndProductIdIn(CartMember winner, Collection<Long> productIds);
+    List<CartItem> findAllByWinnerAndProductIdIn(OrderMember winner, Collection<Long> productIds);
 
     Optional<CartItem> findByAuctionId(Long auctionId);
 

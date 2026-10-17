@@ -1,8 +1,9 @@
 package com.jjinmak.back.boundedContext.order.app;
 
 import com.jjinmak.back.boundedContext.order.app.dto.OrderDto;
-import com.jjinmak.back.boundedContext.order.domain.OrderGroup;
 import com.jjinmak.back.boundedContext.order.domain.OrderMember;
+import com.jjinmak.back.shared.auction.event.AuctionWonEvent;
+import com.jjinmak.back.shared.cart.dto.CartItemDto;
 import com.jjinmak.back.shared.cart.event.CartCreateOrderEvent;
 import com.jjinmak.back.shared.delivery.domain.CarrierType;
 import com.jjinmak.back.shared.delivery.event.DeliveryCreatedEvent;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -29,10 +29,38 @@ public class OrderFacade {
     private final OrderRefundResultUseCase orderRefundResultUseCase;
     private final OrderDeliveryUseCase orderDeliveryUseCase;
     private final OrderSchedulerUseCase orderSchedulerUseCase;
+    private final CartItemUseCase cartItemUseCase;
+    private final CartRequestPaymentUseCase cartRequestPaymentUseCase;
+    private final CartDefaultPaymentUseCase cartDefaultPaymentUseCase;
 
     @Transactional
     public OrderMember syncMember(MemberDto memberDto){
         return orderSyncMemberUseCase.syncMember(memberDto);
+    }
+
+    @Transactional
+    public void createCartItem(AuctionWonEvent event){
+        cartItemUseCase.createCartItem(event);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CartItemDto> readWinnerItem(Long winnerId){
+        return cartItemUseCase.readWinnerItems(winnerId);
+    }
+
+    @Transactional
+    public void requestPayment(Long winnerId, List<Long> productIds){
+        cartRequestPaymentUseCase.requestPayment(winnerId, productIds);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> findExpiredItemIds(){
+        return cartDefaultPaymentUseCase.findExpiredItemIds();
+    }
+
+    @Transactional
+    public void deleteExpiredItem(Long itemId){
+        cartDefaultPaymentUseCase.deleteExpiredItem(itemId);
     }
 
     @Transactional

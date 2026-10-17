@@ -1,6 +1,7 @@
 package com.jjinmak.back.boundedContext.order.in;
 
 import com.jjinmak.back.boundedContext.order.app.OrderFacade;
+import com.jjinmak.back.shared.auction.event.AuctionWonEvent;
 import com.jjinmak.back.shared.cart.event.CartCreateOrderEvent;
 import com.jjinmak.back.shared.delivery.event.DeliveryCreatedEvent;
 import com.jjinmak.back.shared.delivery.event.DeliveryStatusUpdatedEvent;
@@ -21,6 +22,12 @@ import static org.springframework.transaction.event.TransactionPhase.AFTER_COMMI
 public class OrderEventListener {
 
     private final OrderFacade orderFacade;
+
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    @Transactional(propagation = REQUIRES_NEW)
+    public void handle(AuctionWonEvent event){
+        orderFacade.createCartItem(event);
+    }
 
     @TransactionalEventListener(phase = AFTER_COMMIT)
     @Transactional(propagation = REQUIRES_NEW)

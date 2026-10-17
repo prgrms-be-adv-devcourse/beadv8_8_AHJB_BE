@@ -1,9 +1,8 @@
-package com.jjinmak.back.boundedContext.order.app.cart;
+package com.jjinmak.back.boundedContext.order.app;
 
 import com.jjinmak.back.boundedContext.order.domain.CartItem;
-import com.jjinmak.back.boundedContext.order.domain.CartMember;
+import com.jjinmak.back.boundedContext.order.domain.OrderMember;
 import com.jjinmak.back.boundedContext.order.out.repository.CartItemRepository;
-import com.jjinmak.back.boundedContext.order.out.repository.CartMemberRepository;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.cart.event.CartCreateOrderEvent;
@@ -15,13 +14,12 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.jjinmak.back.boundedContext.order.exception.CartErrorCode.*;
-import static com.jjinmak.back.global.exception.CommonErrorCode.USER_NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor
-public class CartPaymentUseCase {
+public class CartRequestPaymentUseCase {
 
-    private final CartMemberRepository cartMemberRepository;
+    private final OrderSupport orderSupport;
     private final CartItemRepository cartItemRepository;
     private final EventPublisher eventPublisher;
 
@@ -30,9 +28,8 @@ public class CartPaymentUseCase {
      * @param winnerId   - 조회의 주체가 되는 낙찰자
      * @param productIds - 결제를 시도하는 상품의 id 리스트
      */
-    public void payment(Long winnerId, List<Long> productIds){
-        CartMember winner = cartMemberRepository.findById(winnerId)
-                .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
+    public void requestPayment(Long winnerId, List<Long> productIds){
+        OrderMember winner = orderSupport.getMember(winnerId);
 
         Set<Long> productIdSet = new HashSet<>(productIds);
 

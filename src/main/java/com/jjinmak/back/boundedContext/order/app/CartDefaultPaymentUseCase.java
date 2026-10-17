@@ -1,4 +1,4 @@
-package com.jjinmak.back.boundedContext.order.app.cart;
+package com.jjinmak.back.boundedContext.order.app;
 
 import com.jjinmak.back.boundedContext.order.domain.CartItem;
 import com.jjinmak.back.boundedContext.order.out.repository.CartItemRepository;
