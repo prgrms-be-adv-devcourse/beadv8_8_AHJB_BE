@@ -1,4 +1,4 @@
-package com.jjinmak.back.boundedContext.cart.domain;
+package com.jjinmak.back.boundedContext.order.domain;
 
 import com.jjinmak.back.shared.cart.dto.CartItemDto;
 import org.junit.jupiter.api.DisplayName;
@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class CartItemTest {
 
-    CartMember winner = new CartMember(1L, UUID.randomUUID(), "낙찰자");
-    CartMember seller = new CartMember(2L, UUID.randomUUID(), "판매자");
+    OrderMember winner = new OrderMember(1L, UUID.randomUUID(), "낙찰자");
+    OrderMember seller = new OrderMember(2L, UUID.randomUUID(), "판매자");
 
     LocalDateTime winAt = LocalDateTime.of(2026, 10, 15, 12, 30);
 

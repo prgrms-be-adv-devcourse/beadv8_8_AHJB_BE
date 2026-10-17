@@ -1,8 +1,7 @@
 package com.jjinmak.back.boundedContext.order.in;
 
 import com.jjinmak.back.boundedContext.order.app.OrderFacade;
-import com.jjinmak.back.shared.cart.dto.CartItemDto;
-import com.jjinmak.back.shared.cart.event.CartCreateOrderEvent;
+import com.jjinmak.back.shared.auction.event.AuctionWonEvent;
 import com.jjinmak.back.shared.delivery.event.DeliveryCreatedEvent;
 import com.jjinmak.back.shared.delivery.event.DeliveryStatusUpdatedEvent;
 import com.jjinmak.back.shared.member.dto.MemberDto;
@@ -18,7 +17,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.DELIVERED;
@@ -49,15 +47,13 @@ class OrderEventListenerTest {
     }
 
     @Test
-    @DisplayName("장바구니 주문 생성 이벤트를 받으면 그 이벤트로 주문을 만든다")
-    void cartCreateOrder_createsOrder() {
-        CartItemDto cartItem = new CartItemDto(5L, UUID.randomUUID(), UUID.randomUUID(), 10L, 20L, 30_000L, 3_000L,
-                LocalDateTime.of(2026, 10, 15, 12, 0), LocalDateTime.of(2026, 10, 16, 12, 0));
-        CartCreateOrderEvent event = new CartCreateOrderEvent(33_000L, List.of(cartItem));
+    @DisplayName("낙찰 이벤트를 받으면 그 이벤트로 장바구니 항목을 만든다")
+    void auctionWon_createsCartItem() {
+        AuctionWonEvent event = new AuctionWonEvent(10L, 20L, 1L, 2L, 30_000L, 3_000L, LocalDateTime.of(2026, 10, 15, 12, 0));
 
         orderEventListener.handle(event);
 
-        verify(orderFacade).createOrder(event);
+        verify(orderFacade).createCartItem(event);
     }
 
     @Test

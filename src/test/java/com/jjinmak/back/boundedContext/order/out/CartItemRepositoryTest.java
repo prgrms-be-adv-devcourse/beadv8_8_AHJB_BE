@@ -1,7 +1,9 @@
-package com.jjinmak.back.boundedContext.cart.out;
+package com.jjinmak.back.boundedContext.order.out;
 
-import com.jjinmak.back.boundedContext.cart.domain.CartItem;
-import com.jjinmak.back.boundedContext.cart.domain.CartMember;
+import com.jjinmak.back.boundedContext.order.domain.CartItem;
+import com.jjinmak.back.boundedContext.order.domain.OrderMember;
+import com.jjinmak.back.boundedContext.order.out.repository.CartItemRepository;
+import com.jjinmak.back.boundedContext.order.out.repository.OrderMemberRepository;
 import org.hibernate.Hibernate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -27,20 +29,20 @@ class CartItemRepositoryTest {
     CartItemRepository cartItemRepository;
 
     @Autowired
-    CartMemberRepository cartMemberRepository;
+    OrderMemberRepository orderMemberRepository;
 
     @Autowired
     TestEntityManager em;
 
-    CartMember a;
-    CartMember b;
-    CartMember c;
+    OrderMember a;
+    OrderMember b;
+    OrderMember c;
 
     @BeforeEach
     void setUp() {
-        a = cartMemberRepository.save(new CartMember(1L, UUID.randomUUID(), "회원A"));
-        b = cartMemberRepository.save(new CartMember(2L, UUID.randomUUID(), "회원B"));
-        c = cartMemberRepository.save(new CartMember(3L, UUID.randomUUID(), "회원C"));
+        a = orderMemberRepository.save(new OrderMember(1L, UUID.randomUUID(), "회원A"));
+        b = orderMemberRepository.save(new OrderMember(2L, UUID.randomUUID(), "회원B"));
+        c = orderMemberRepository.save(new OrderMember(3L, UUID.randomUUID(), "회원C"));
     }
 
     @Test
@@ -127,7 +129,7 @@ class CartItemRepositoryTest {
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
-    private CartItem save(CartMember winner, CartMember seller, Long auctionId, Long productId, LocalDateTime winAt) {
+    private CartItem save(OrderMember winner, OrderMember seller, Long auctionId, Long productId, LocalDateTime winAt) {
         return cartItemRepository.save(new CartItem(winner, seller, auctionId, productId, 30_000L, 3_000L, winAt));
     }
 

@@ -1,15 +1,16 @@
 package com.jjinmak.back.boundedContext.order.in;
 
+import com.jjinmak.back.boundedContext.order.domain.CartItem;
 import com.jjinmak.back.boundedContext.order.domain.Order;
 import com.jjinmak.back.boundedContext.order.domain.OrderGroup;
 import com.jjinmak.back.boundedContext.order.domain.OrderMember;
 import com.jjinmak.back.boundedContext.order.domain.OrderState;
-import com.jjinmak.back.boundedContext.order.out.OrderGroupRepository;
-import com.jjinmak.back.boundedContext.order.out.OrderMemberRepository;
-import com.jjinmak.back.boundedContext.order.out.OrderRepository;
+import com.jjinmak.back.boundedContext.order.out.repository.CartItemRepository;
+import com.jjinmak.back.boundedContext.order.out.repository.OrderGroupRepository;
+import com.jjinmak.back.boundedContext.order.out.repository.OrderMemberRepository;
+import com.jjinmak.back.boundedContext.order.out.repository.OrderRepository;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
-import com.jjinmak.back.shared.cart.dto.CartItemDto;
-import com.jjinmak.back.shared.cart.event.CartCreateOrderEvent;
+import com.jjinmak.back.shared.auction.event.AuctionWonEvent;
 import com.jjinmak.back.shared.delivery.event.DeliveryCreatedEvent;
 import com.jjinmak.back.shared.delivery.event.DeliveryStatusUpdatedEvent;
 import org.junit.jupiter.api.AfterEach;
@@ -21,19 +22,16 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.UUID;
 
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.PAID;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.SHIPPED;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.SHIPPING;
-import static com.jjinmak.back.boundedContext.order.domain.OrderState.WAITING;
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.AT_PICKUP;
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.DELIVERED;
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.IN_TRANSIT;
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.OUT_FOR_DELIVERY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 
 @SpringBootTest
 class OrderEventListenerIntegrationTest {
@@ -53,6 +51,9 @@ class OrderEventListenerIntegrationTest {
     @Autowired
     OrderRepository orderRepository;
 
+    @Autowired
+    CartItemRepository cartItemRepository;
+
     UUID winnerUuid = UUID.randomUUID();
     UUID sellerUuid = UUID.randomUUID();
     UUID otherSellerUuid = UUID.randomUUID();
@@ -63,65 +64,49 @@ class OrderEventListenerIntegrationTest {
     void tearDown() {
         orderRepository.deleteAllInBatch();
         orderGroupRepository.deleteAllInBatch();
+        cartItemRepository.deleteAllInBatch();
         orderMemberRepository.deleteAllInBatch();
     }
 
     @Test
-    @DisplayName("트랜잭션 안에서 주문 생성 이벤트를 발행하면, 커밋 뒤 주문 그룹 1개와 WAITING 주문들이 생긴다")
-    void cartCreateOrder_insideTransaction_createsGroupAndOrders() {
+    @DisplayName("트랜잭션 안에서 낙찰 이벤트를 발행하면, 커밋 뒤 주문 회원을 낙찰자·판매자로 가진 장바구니 항목이 생긴다")
+    void auctionWon_insideTransaction_createsItem() {
         syncMembers();
 
-        transactionTemplate.executeWithoutResult(status -> eventPublisher.publish(createOrderEvent()));
+        transactionTemplate.executeWithoutResult(status -> eventPublisher.publish(wonEvent(10L)));
 
-        List<OrderGroup> groups = orderGroupRepository.findAll();
-        assertThat(groups).hasSize(1);
-        assertThat(groups.get(0).getTotalPrice()).isEqualTo(87_000L);
-        Long groupId = groups.get(0).getId();
-        assertThat(orderRepository.findAll())
-                .extracting(
-                        order -> order.getGroup().getId(),
-                        order -> order.getWinner().getId(),
-                        order -> order.getSeller().getId(),
-                        Order::getAuctionId,
-                        Order::getProductId,
-                        Order::getWinningPrice,
-                        Order::getDeliveryFee,
-                        Order::getState)
-                .containsExactlyInAnyOrder(
-                        tuple(groupId, 1L, 2L, 10L, 20L, 30_000L, 3_000L, WAITING),
-                        tuple(groupId, 1L, 4L, 11L, 21L, 50_000L, 4_000L, WAITING));
+        CartItem item = cartItemRepository.findByAuctionId(10L).orElseThrow();
+        assertThat(item.getWinner().getId()).isEqualTo(1L);
+        assertThat(item.getSeller().getId()).isEqualTo(2L);
     }
 
     @Test
-    @DisplayName("트랜잭션 밖에서 발행한 주문 생성 이벤트는 리스너가 받지 않는다")
-    void cartCreateOrder_outsideTransaction_ignored() {
+    @DisplayName("트랜잭션 밖에서 발행한 낙찰 이벤트는 리스너가 받지 않는다")
+    void auctionWon_outsideTransaction_ignored() {
         syncMembers();
 
-        eventPublisher.publish(createOrderEvent());
+        eventPublisher.publish(wonEvent(10L));
 
-        assertThat(orderGroupRepository.count()).isZero();
-        assertThat(orderRepository.count()).isZero();
+        assertThat(cartItemRepository.findByAuctionId(10L)).isEmpty();
     }
 
     @Test
-    @DisplayName("회원 동기화보다 주문 생성 이벤트가 먼저 오면 주문 그룹도 주문도 생기지 않는다 (현재 동작)")
-    void cartCreateOrder_beforeMemberSync_nothingStored() {
-        transactionTemplate.executeWithoutResult(status -> eventPublisher.publish(createOrderEvent()));
+    @DisplayName("같은 낙찰 이벤트가 두 번 와도 장바구니 항목은 1개다")
+    void auctionWon_twice_onlyOneItem() {
+        syncMembers();
 
-        assertThat(orderGroupRepository.count()).isZero();
-        assertThat(orderRepository.count()).isZero();
+        transactionTemplate.executeWithoutResult(status -> eventPublisher.publish(wonEvent(10L)));
+        transactionTemplate.executeWithoutResult(status -> eventPublisher.publish(wonEvent(10L)));
+
+        assertThat(cartItemRepository.count()).isEqualTo(1);
     }
 
     @Test
-    @DisplayName("두 번째 판매자가 아직 동기화되지 않았으면, 먼저 저장된 주문 그룹과 첫 주문까지 모두 롤백된다")
-    void cartCreateOrder_secondSellerNotSynced_rollsBackGroupAndOrders() {
-        orderMemberRepository.save(new OrderMember(1L, winnerUuid, "낙찰자"));
-        orderMemberRepository.save(new OrderMember(2L, sellerUuid, "판매자"));
+    @DisplayName("회원 동기화보다 낙찰 이벤트가 먼저 오면 장바구니 항목이 생기지 않는다 (현재 동작)")
+    void auctionWon_beforeMemberSync_noItem() {
+        transactionTemplate.executeWithoutResult(status -> eventPublisher.publish(wonEvent(10L)));
 
-        transactionTemplate.executeWithoutResult(status -> eventPublisher.publish(createOrderEvent()));
-
-        assertThat(orderGroupRepository.count()).isZero();
-        assertThat(orderRepository.count()).isZero();
+        assertThat(cartItemRepository.findByAuctionId(10L)).isEmpty();
     }
 
     @Test
@@ -169,14 +154,8 @@ class OrderEventListenerIntegrationTest {
         orderMemberRepository.save(new OrderMember(4L, otherSellerUuid, "다른 판매자"));
     }
 
-    private CartCreateOrderEvent createOrderEvent() {
-        return new CartCreateOrderEvent(87_000L, List.of(
-                cartItem(5L, sellerUuid, 10L, 20L, 30_000L, 3_000L),
-                cartItem(6L, otherSellerUuid, 11L, 21L, 50_000L, 4_000L)));
-    }
-
-    private CartItemDto cartItem(Long id, UUID sellerId, Long auctionId, Long productId, Long winningPrice, Long deliveryFee) {
-        return new CartItemDto(id, winnerUuid, sellerId, auctionId, productId, winningPrice, deliveryFee, winAt, winAt.plusDays(1));
+    private AuctionWonEvent wonEvent(Long auctionId) {
+        return new AuctionWonEvent(auctionId, 20L, 1L, 2L, 30_000L, 3_000L, winAt);
     }
 
     private Long saveOrder(OrderState state) {

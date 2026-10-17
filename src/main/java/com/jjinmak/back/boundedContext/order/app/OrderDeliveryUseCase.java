@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.UUID;
 
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.*;
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.*;

@@ -1,7 +1,7 @@
 package com.jjinmak.back.boundedContext.order.in;
 
 import com.jjinmak.back.boundedContext.order.app.OrderFacade;
-import com.jjinmak.back.shared.cart.event.CartCreateOrderEvent;
+import com.jjinmak.back.shared.auction.event.AuctionWonEvent;
 import com.jjinmak.back.shared.delivery.event.DeliveryCreatedEvent;
 import com.jjinmak.back.shared.delivery.event.DeliveryStatusUpdatedEvent;
 import com.jjinmak.back.shared.member.dto.MemberDto;
@@ -24,16 +24,16 @@ public class OrderEventListener {
 
     @TransactionalEventListener(phase = AFTER_COMMIT)
     @Transactional(propagation = REQUIRES_NEW)
-    public void handle(MemberCreatedEvent event){
-        MemberDto member = event.member();
-
-        orderFacade.syncMember(member);
+    public void handle(AuctionWonEvent event){
+        orderFacade.createCartItem(event);
     }
 
     @TransactionalEventListener(phase = AFTER_COMMIT)
     @Transactional(propagation = REQUIRES_NEW)
-    public void handle(CartCreateOrderEvent event){
-        orderFacade.createOrder(event);
+    public void handle(MemberCreatedEvent event){
+        MemberDto member = event.member();
+
+        orderFacade.syncMember(member);
     }
 
     @TransactionalEventListener(phase = AFTER_COMMIT)

@@ -1,8 +1,8 @@
-package com.jjinmak.back.boundedContext.cart.app;
+package com.jjinmak.back.boundedContext.order.app;
 
-import com.jjinmak.back.boundedContext.cart.domain.CartItem;
-import com.jjinmak.back.boundedContext.cart.domain.CartMember;
-import com.jjinmak.back.boundedContext.cart.out.CartItemRepository;
+import com.jjinmak.back.boundedContext.order.domain.CartItem;
+import com.jjinmak.back.boundedContext.order.domain.OrderMember;
+import com.jjinmak.back.boundedContext.order.out.repository.CartItemRepository;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.cart.event.CartPaymentDefaultEvent;
@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.jjinmak.back.boundedContext.cart.exception.CartErrorCode.CART_ITEM_NOT_FOUND;
+import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.CART_ITEM_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,8 +59,8 @@ class CartDefaultPaymentUseCaseTest {
     @Test
     @DisplayName("만료 항목을 삭제하고, 미납 이벤트를 발행한다")
     void deleteExpiredItem_deletesAndPublishes() {
-        CartMember winner = new CartMember(1L, UUID.randomUUID(), "낙찰자");
-        CartMember seller = new CartMember(2L, UUID.randomUUID(), "판매자");
+        OrderMember winner = new OrderMember(1L, UUID.randomUUID(), "낙찰자");
+        OrderMember seller = new OrderMember(2L, UUID.randomUUID(), "판매자");
         CartItem item = new CartItem(winner, seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.of(2026, 10, 13, 12, 0));
         when(cartItemRepository.findByIdWithParticipant(7L)).thenReturn(Optional.of(item));
 
