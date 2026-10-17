@@ -1,7 +1,6 @@
 package com.jjinmak.back.boundedContext.member.domain;
 
 import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
-import com.jjinmak.back.shared.member.dto.MemberWarningDto;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -41,32 +40,34 @@ public class MemberSanction extends BaseIdAndTime {
 
     private LocalDateTime releasedAt;
 
-    private MemberSanction(Long memberId, SanctionType type, String reason,
-                           int warningCount, LocalDateTime expiredAt, LocalDateTime releasedAt){
+    private MemberSanction(Long memberId, SanctionType type, String reason, int warningCount,
+                           LocalDateTime startedAt, LocalDateTime expiredAt){
         this.memberId = memberId;
         this.sanctionType = type;
         this.reason = reason;
         this.warningCount = warningCount;
-        this.startedAt = LocalDateTime.now();
+        this.startedAt = startedAt;
         this.expiredAt = expiredAt;
-        this.releasedAt = releasedAt;
     }
 
-    public static MemberSanction sanctionFrom(MemberWarningDto warning, int warningCount){
+    public static MemberSanction sanctionFrom(Long memberId, String reason, int warningCount, LocalDateTime now){
         if (warningCount <= 1) {
-            return new MemberSanction(warning.memberId(), SanctionType.SUSPENDED, warning.reason(), warningCount, LocalDateTime.now().plusDays(FIRST_SUSPENSION_DAYS), null );
+            return new MemberSanction(memberId, SanctionType.SUSPENDED, reason, warningCount,
+                    now, now.plusDays(FIRST_SUSPENSION_DAYS));
         }
         if (warningCount == 2) {
-            return new MemberSanction(warning.memberId(), SanctionType.SUSPENDED, warning.reason(), warningCount, LocalDateTime.now().plusDays(SECOND_SUSPENSION_DAYS), null );
+            return new MemberSanction(memberId, SanctionType.SUSPENDED, reason, warningCount,
+                    now, now.plusDays(SECOND_SUSPENSION_DAYS));
         }
-        return new MemberSanction(warning.memberId(), SanctionType.BAN, warning.reason(), warningCount, null, null );
+        return new MemberSanction(memberId, SanctionType.BANNED, reason, warningCount,
+                now, null);
     }
 
-    public boolean isExpired() {
-        return expiredAt != null && expiredAt.isBefore(LocalDateTime.now());
+    public boolean isExpired(LocalDateTime now) {
+        return expiredAt != null && expiredAt.isBefore(now);
     }
 
-    public void release(){
-        this.releasedAt = LocalDateTime.now();
+    public void release(LocalDateTime now){
+        this.releasedAt = now;
     }
 }

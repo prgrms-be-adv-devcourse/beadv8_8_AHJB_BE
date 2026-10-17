@@ -8,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class AuthFacade {
 
     private final MemberAuthenticateUseCase memberAuthenticateUseCase;
@@ -16,22 +15,20 @@ public class AuthFacade {
     private final MemberReissueTokenUseCase memberReissueTokenUseCase;
     private final MemberSanctionReleaseUseCase memberSanctionReleaseUseCase;
 
+    @Transactional
     public MemberLoginResponseDto login(String email, String password){
 
         Member member = memberAuthenticateUseCase.authenticate(email, password);
 
-        if(member.isSuspended()){
-            memberSanctionReleaseUseCase.releaseIfExpired(member);
-        }
+        memberSanctionReleaseUseCase.releaseIfExpired(member);
 
         TokenPair pair = memberTokenIssueUseCase.issue(member);
-
 
         return new MemberLoginResponseDto(pair.accessToken(), pair.refreshToken(), member.getNickname(), member.isSuspended());
     }
 
+    @Transactional
     public MemberLoginResponseDto reissue(String refreshToken){
-
 
         Member member = memberReissueTokenUseCase.reissue(refreshToken);
 

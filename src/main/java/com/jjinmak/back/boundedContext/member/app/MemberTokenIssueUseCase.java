@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-@Transactional
 public class MemberTokenIssueUseCase {
 
     private final long refreshTokenExpiration;
@@ -30,6 +29,7 @@ public class MemberTokenIssueUseCase {
         this.refreshTokenRepository = refreshTokenRepository;
     }
 
+    @Transactional
     public TokenPair issue(Member member){
         List<String> authorities = member.getAuthorities();
 

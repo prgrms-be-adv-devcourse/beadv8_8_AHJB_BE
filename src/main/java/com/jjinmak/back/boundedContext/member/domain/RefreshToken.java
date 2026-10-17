@@ -1,5 +1,7 @@
 package com.jjinmak.back.boundedContext.member.domain;
 
+import com.jjinmak.back.boundedContext.member.exception.AuthErrorCode;
+import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -41,8 +43,19 @@ public class RefreshToken extends BaseIdAndTime {
         return new RefreshToken(memberId, refreshToken, expiredAt);
     }
 
-    public boolean isExpired(){
-        return expiredAt.isBefore(LocalDateTime.now());
+    public boolean isExpired(LocalDateTime now) {
+        return expiredAt.isBefore(now);
+    }
+
+    // 한 번 사용한 토큰은 무효화
+    public void consume(LocalDateTime now) {
+        if (isRevoked()) {
+            throw new BusinessException(AuthErrorCode.INVALID_REFRESH_TOKEN);
+        }
+        if (isExpired(now)) {
+            throw new BusinessException(AuthErrorCode.EXPIRED_REFRESH_TOKEN);
+        }
+        revoke();
     }
 
     public void revoke(){

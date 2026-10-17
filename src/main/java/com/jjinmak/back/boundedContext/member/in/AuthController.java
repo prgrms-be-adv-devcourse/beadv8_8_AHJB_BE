@@ -83,7 +83,7 @@ public class AuthController {
     )
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
-            @Valid @RequestBody LogoutRequestDto request
+            @Valid @RequestBody RefreshTokenRequestDto request
     ){
         memberLogoutUseCase.revokeRefreshToken(request.refreshToken());
 
@@ -96,7 +96,7 @@ public class AuthController {
     )
     @PostMapping("/reissue")
     public ResponseEntity<RsData<MemberLoginResponseDto>> reissue(
-            @Valid @RequestBody ReissueRequestDto request
+            @Valid @RequestBody RefreshTokenRequestDto request
     ){
         MemberLoginResponseDto result = authFacade.reissue(request.refreshToken());
         return ResponseEntity.ok(new RsData<>(result));
