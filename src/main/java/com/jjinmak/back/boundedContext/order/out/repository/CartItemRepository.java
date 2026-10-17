@@ -1,7 +1,7 @@
-package com.jjinmak.back.boundedContext.cart.out;
+package com.jjinmak.back.boundedContext.order.out.repository;
 
-import com.jjinmak.back.boundedContext.cart.domain.CartItem;
-import com.jjinmak.back.boundedContext.cart.domain.CartMember;
+import com.jjinmak.back.boundedContext.order.domain.CartItem;
+import com.jjinmak.back.boundedContext.order.domain.CartMember;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 

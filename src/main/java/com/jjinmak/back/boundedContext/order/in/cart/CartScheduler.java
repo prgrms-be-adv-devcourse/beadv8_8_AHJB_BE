@@ -1,6 +1,6 @@
-package com.jjinmak.back.boundedContext.cart.in;
+package com.jjinmak.back.boundedContext.order.in.cart;
 
-import com.jjinmak.back.boundedContext.cart.app.CartFacade;
+import com.jjinmak.back.boundedContext.order.app.cart.CartFacade;
 import com.jjinmak.back.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

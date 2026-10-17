@@ -1,6 +1,6 @@
-package com.jjinmak.back.boundedContext.cart.in;
+package com.jjinmak.back.boundedContext.order.in.cart;
 
-import com.jjinmak.back.boundedContext.cart.app.CartFacade;
+import com.jjinmak.back.boundedContext.order.app.cart.CartFacade;
 import com.jjinmak.back.shared.auction.event.AuctionWonEvent;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import com.jjinmak.back.shared.member.event.MemberCreatedEvent;

@@ -1,9 +1,9 @@
-package com.jjinmak.back.boundedContext.cart.app;
+package com.jjinmak.back.boundedContext.order.app.cart;
 
-import com.jjinmak.back.boundedContext.cart.domain.CartItem;
-import com.jjinmak.back.boundedContext.cart.domain.CartMember;
-import com.jjinmak.back.boundedContext.cart.out.CartItemRepository;
-import com.jjinmak.back.boundedContext.cart.out.CartMemberRepository;
+import com.jjinmak.back.boundedContext.order.domain.CartItem;
+import com.jjinmak.back.boundedContext.order.domain.CartMember;
+import com.jjinmak.back.boundedContext.order.out.repository.CartItemRepository;
+import com.jjinmak.back.boundedContext.order.out.repository.CartMemberRepository;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.cart.event.CartCreateOrderEvent;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import static com.jjinmak.back.boundedContext.cart.exception.CartErrorCode.*;
+import static com.jjinmak.back.boundedContext.order.exception.CartErrorCode.*;
 import static com.jjinmak.back.global.exception.CommonErrorCode.USER_NOT_FOUND;
 
 @Service

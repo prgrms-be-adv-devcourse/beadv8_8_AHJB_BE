@@ -1,12 +1,12 @@
-package com.jjinmak.back.boundedContext.cart.app;
+package com.jjinmak.back.boundedContext.order.app.cart;
 
-import com.jjinmak.back.boundedContext.cart.domain.CartItem;
-import com.jjinmak.back.boundedContext.cart.out.CartItemRepository;
+import com.jjinmak.back.boundedContext.order.domain.CartItem;
+import com.jjinmak.back.boundedContext.order.out.repository.CartItemRepository;
 import com.jjinmak.back.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import static com.jjinmak.back.boundedContext.cart.exception.CartErrorCode.*;
+import static com.jjinmak.back.boundedContext.order.exception.CartErrorCode.*;
 
 @Service
 @RequiredArgsConstructor

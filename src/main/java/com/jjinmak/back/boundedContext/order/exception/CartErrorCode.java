@@ -1,4 +1,4 @@
-package com.jjinmak.back.boundedContext.cart.exception;
+package com.jjinmak.back.boundedContext.order.exception;
 
 import com.jjinmak.back.global.exception.ErrorCode;
 import lombok.Getter;

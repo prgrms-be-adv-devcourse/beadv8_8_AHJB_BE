@@ -1,11 +1,10 @@
-package com.jjinmak.back.boundedContext.cart.app;
+package com.jjinmak.back.boundedContext.order.app.cart;
 
-import com.jjinmak.back.boundedContext.cart.domain.CartItem;
-import com.jjinmak.back.boundedContext.cart.domain.CartMember;
-import com.jjinmak.back.boundedContext.cart.out.CartItemRepository;
-import com.jjinmak.back.boundedContext.cart.out.CartMemberRepository;
+import com.jjinmak.back.boundedContext.order.domain.CartItem;
+import com.jjinmak.back.boundedContext.order.domain.CartMember;
+import com.jjinmak.back.boundedContext.order.out.repository.CartItemRepository;
+import com.jjinmak.back.boundedContext.order.out.repository.CartMemberRepository;
 import com.jjinmak.back.global.exception.BusinessException;
-import com.jjinmak.back.shared.auction.dto.AuctionDto;
 import com.jjinmak.back.shared.auction.event.AuctionWonEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

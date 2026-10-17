@@ -1,7 +1,7 @@
-package com.jjinmak.back.boundedContext.cart.in;
+package com.jjinmak.back.boundedContext.order.in.cart;
 
-import com.jjinmak.back.boundedContext.cart.app.CartFacade;
-import com.jjinmak.back.boundedContext.cart.in.dto.CartPaymentRequestDto;
+import com.jjinmak.back.boundedContext.order.app.cart.CartFacade;
+import com.jjinmak.back.boundedContext.order.in.cart.dto.CartPaymentRequestDto;
 import com.jjinmak.back.global.rsData.RsData;
 import com.jjinmak.back.global.security.AuthPrincipal;
 import com.jjinmak.back.shared.cart.dto.CartItemDto;
@@ -15,7 +15,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @Tag(name = "장바구니", description = "낙찰 후 구매 예정된 상품을 관리하는 API")
 @RestController

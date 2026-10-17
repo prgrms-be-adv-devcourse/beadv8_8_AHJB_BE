@@ -1,4 +1,4 @@
-package com.jjinmak.back.boundedContext.cart.domain;
+package com.jjinmak.back.boundedContext.order.domain;
 
 import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
 import com.jjinmak.back.shared.cart.dto.CartItemDto;

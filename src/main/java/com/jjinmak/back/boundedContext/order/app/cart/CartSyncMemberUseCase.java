@@ -1,7 +1,7 @@
-package com.jjinmak.back.boundedContext.cart.app;
+package com.jjinmak.back.boundedContext.order.app.cart;
 
-import com.jjinmak.back.boundedContext.cart.domain.CartMember;
-import com.jjinmak.back.boundedContext.cart.out.CartMemberRepository;
+import com.jjinmak.back.boundedContext.order.domain.CartMember;
+import com.jjinmak.back.boundedContext.order.out.repository.CartMemberRepository;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

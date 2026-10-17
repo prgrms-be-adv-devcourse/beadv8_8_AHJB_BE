@@ -1,7 +1,7 @@
-package com.jjinmak.back.boundedContext.cart.app;
+package com.jjinmak.back.boundedContext.order.app.cart;
 
-import com.jjinmak.back.boundedContext.cart.domain.CartItem;
-import com.jjinmak.back.boundedContext.cart.out.CartItemRepository;
+import com.jjinmak.back.boundedContext.order.domain.CartItem;
+import com.jjinmak.back.boundedContext.order.out.repository.CartItemRepository;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.cart.event.CartPaymentDefaultEvent;
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static com.jjinmak.back.boundedContext.cart.exception.CartErrorCode.CART_ITEM_NOT_FOUND;
+import static com.jjinmak.back.boundedContext.order.exception.CartErrorCode.CART_ITEM_NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor
