@@ -23,8 +23,7 @@ public class AuctionBidUseCase {
     private final BidRepository bidRepository;
     private final AuctionEventPublisher auctionEventPublisher;
 
-    public AuctionBidResponseDto bid(Long auctionId, Long bidderId, Long bidPrice){
-        LocalDateTime now = LocalDateTime.now();
+    public AuctionBidResponseDto bid(Long auctionId, Long bidderId, Long bidPrice, LocalDateTime now){
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(()->new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
         // 공통검증
