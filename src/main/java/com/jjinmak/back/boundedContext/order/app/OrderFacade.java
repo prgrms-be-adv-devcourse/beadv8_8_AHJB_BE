@@ -1,9 +1,9 @@
 package com.jjinmak.back.boundedContext.order.app;
 
 import com.jjinmak.back.boundedContext.order.app.dto.OrderDto;
-import com.jjinmak.back.boundedContext.order.domain.OrderGroup;
 import com.jjinmak.back.boundedContext.order.domain.OrderMember;
-import com.jjinmak.back.shared.cart.event.CartCreateOrderEvent;
+import com.jjinmak.back.shared.auction.event.AuctionWonEvent;
+import com.jjinmak.back.shared.cart.dto.CartItemDto;
 import com.jjinmak.back.shared.delivery.domain.CarrierType;
 import com.jjinmak.back.shared.delivery.event.DeliveryCreatedEvent;
 import com.jjinmak.back.shared.delivery.event.DeliveryStatusUpdatedEvent;
@@ -14,21 +14,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class OrderFacade {
 
     private final OrderSyncMemberUseCase orderSyncMemberUseCase;
-    private final OrderPaymentUseCase orderPaymentUseCase;
     private final OrderReadOrderUseCase orderReadOrderUseCase;
     private final OrderConfirmPurchaseUseCase orderConfirmPurchaseUseCase;
     private final OrderPaymentResultUseCase orderPaymentResultUseCase;
-    private final OrderRequestRefundUseCase orderRequestRefundUseCase;
-    private final OrderRefundResultUseCase orderRefundResultUseCase;
+    private final OrderRefundUseCase orderRefundUseCase;
     private final OrderDeliveryUseCase orderDeliveryUseCase;
     private final OrderSchedulerUseCase orderSchedulerUseCase;
+    private final CartItemUseCase cartItemUseCase;
+    private final CartRequestPaymentUseCase cartRequestPaymentUseCase;
+    private final CartDefaultPaymentUseCase cartDefaultPaymentUseCase;
 
     @Transactional
     public OrderMember syncMember(MemberDto memberDto){
@@ -36,8 +36,28 @@ public class OrderFacade {
     }
 
     @Transactional
-    public void createOrder(CartCreateOrderEvent event){
-        orderPaymentUseCase.tryPayment(event);
+    public void createCartItem(AuctionWonEvent event){
+        cartItemUseCase.createCartItem(event);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CartItemDto> readWinnerItem(Long winnerId){
+        return cartItemUseCase.readWinnerItems(winnerId);
+    }
+
+    @Transactional
+    public void requestPayment(Long winnerId, List<Long> productIds){
+        cartRequestPaymentUseCase.requestPayment(winnerId, productIds);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> findExpiredItemIds(){
+        return cartDefaultPaymentUseCase.findExpiredItemIds();
+    }
+
+    @Transactional
+    public void deleteExpiredItem(Long itemId){
+        cartDefaultPaymentUseCase.deleteExpiredItem(itemId);
     }
 
     @Transactional(readOnly = true)
@@ -72,17 +92,17 @@ public class OrderFacade {
 
     @Transactional
     public void requestRefund(Long memberId, Long orderId){
-        orderRequestRefundUseCase.requestRefund(memberId, orderId);
+        orderRefundUseCase.requestRefund(memberId, orderId);
     }
 
     @Transactional
     public void acceptRefund(RefundDto refund){
-        orderRefundResultUseCase.acceptRefund(refund);
+        orderRefundUseCase.acceptRefund(refund);
     }
 
     @Transactional
     public void rejectRefund(RefundDto refund){
-        orderRefundResultUseCase.rejectRefund(refund);
+        orderRefundUseCase.rejectRefund(refund);
     }
 
     @Transactional(readOnly = true)

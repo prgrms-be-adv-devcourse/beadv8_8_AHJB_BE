@@ -1,4 +1,4 @@
-package com.jjinmak.back.boundedContext.order.out;
+package com.jjinmak.back.boundedContext.order.out.repository;
 
 import com.jjinmak.back.boundedContext.order.domain.OrderMember;
 import org.springframework.data.jpa.repository.JpaRepository;

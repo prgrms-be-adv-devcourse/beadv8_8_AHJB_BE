@@ -4,12 +4,11 @@ import com.jjinmak.back.boundedContext.order.app.dto.OrderDto;
 import com.jjinmak.back.boundedContext.order.domain.Order;
 import com.jjinmak.back.boundedContext.order.domain.OrderMember;
 import com.jjinmak.back.boundedContext.order.domain.OrderState;
-import com.jjinmak.back.boundedContext.order.out.OrderRepository;
+import com.jjinmak.back.boundedContext.order.out.repository.OrderRepository;
 import com.jjinmak.back.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.EnumSet;

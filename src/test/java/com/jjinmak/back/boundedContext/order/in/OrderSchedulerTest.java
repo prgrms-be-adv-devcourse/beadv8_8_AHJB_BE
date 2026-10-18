@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.CART_ITEM_NOT_FOUND;
 import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_STATE_BAD_REQUEST;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
@@ -27,6 +28,42 @@ class OrderSchedulerTest {
 
     @InjectMocks
     OrderScheduler orderScheduler;
+
+    @Test
+    @DisplayName("한 건이 업무 예외로 실패해도 나머지 만료 장바구니 항목을 계속 처리한다")
+    void deleteDefaultPayment_continuesAfterBusinessException() {
+        when(orderFacade.findExpiredItemIds()).thenReturn(List.of(1L, 2L, 3L));
+        doThrow(new BusinessException(CART_ITEM_NOT_FOUND)).when(orderFacade).deleteExpiredItem(2L);
+
+        orderScheduler.deleteDefaultPayment();
+
+        verify(orderFacade).deleteExpiredItem(1L);
+        verify(orderFacade).deleteExpiredItem(2L);
+        verify(orderFacade).deleteExpiredItem(3L);
+    }
+
+    @Test
+    @DisplayName("한 건이 예상하지 못한 예외로 실패해도 나머지 만료 장바구니 항목을 계속 처리한다")
+    void deleteDefaultPayment_continuesAfterUnexpectedException() {
+        when(orderFacade.findExpiredItemIds()).thenReturn(List.of(1L, 2L, 3L));
+        doThrow(new IllegalStateException("예상하지 못한 오류")).when(orderFacade).deleteExpiredItem(2L);
+
+        orderScheduler.deleteDefaultPayment();
+
+        verify(orderFacade).deleteExpiredItem(1L);
+        verify(orderFacade).deleteExpiredItem(2L);
+        verify(orderFacade).deleteExpiredItem(3L);
+    }
+
+    @Test
+    @DisplayName("만료 장바구니 항목이 없으면 아무것도 삭제하지 않는다")
+    void deleteDefaultPayment_noTargets() {
+        when(orderFacade.findExpiredItemIds()).thenReturn(List.of());
+
+        orderScheduler.deleteDefaultPayment();
+
+        verify(orderFacade, never()).deleteExpiredItem(anyLong());
+    }
 
     @Test
     @DisplayName("한 건이 업무 예외로 실패해도 나머지 만료 주문을 계속 자동 구매 확정한다")

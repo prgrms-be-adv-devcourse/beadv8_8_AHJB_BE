@@ -2,8 +2,8 @@ package com.jjinmak.back.boundedContext.order.app;
 
 import com.jjinmak.back.boundedContext.order.domain.Order;
 import com.jjinmak.back.boundedContext.order.domain.OrderGroup;
-import com.jjinmak.back.boundedContext.order.out.OrderGroupRepository;
-import com.jjinmak.back.boundedContext.order.out.OrderRepository;
+import com.jjinmak.back.boundedContext.order.out.repository.OrderGroupRepository;
+import com.jjinmak.back.boundedContext.order.out.repository.OrderRepository;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.shared.order.event.OrderConfirmPurchaseEvent;
 import lombok.RequiredArgsConstructor;
