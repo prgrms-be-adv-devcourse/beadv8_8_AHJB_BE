@@ -72,7 +72,7 @@ public class PaymentConfirmUseCase {
             ledgerRecorder.deposit(wallet, CHARGE, charge.getAmount(), PAYMENT, charge.getId());
             charge.markCharged(approved.paymentKey(), approved.approvedAtLocal(), now, approved.method(), approved.receiptUrl());
 
-            holdingCreator.hold(PaymentRequestUseCase.toHoldDto(payment));
+            holdingCreator.hold(PaymentRequestUseCase.toHoldDto(payment), charge);   // 이 충전이 먼저 소비된다
 
             charge.markUsed(now);
             payment.markPaid(now);

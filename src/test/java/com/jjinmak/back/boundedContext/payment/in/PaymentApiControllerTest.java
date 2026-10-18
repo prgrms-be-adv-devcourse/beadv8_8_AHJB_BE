@@ -171,6 +171,8 @@ class PaymentApiControllerTest {
                 .andExpect(jsonPath("$.data.content[1].amount").value(10_000))
                 .andExpect(jsonPath("$.data.content[1].status").value("CHARGED"))
                 .andExpect(jsonPath("$.data.content[1].cancelable").value(true))
+                .andExpect(jsonPath("$.data.content[1].usedAmount").value(0))
+                .andExpect(jsonPath("$.data.content[1].remainingAmount").value(10_000))
                 .andExpect(jsonPath("$.data.content[1].method").value("간편결제"))
                 .andExpect(jsonPath("$.data.content[1].receiptUrl").value("https://receipt/pk_c1"))
                 .andExpect(jsonPath("$.data.content[1].approvedAt").exists());
