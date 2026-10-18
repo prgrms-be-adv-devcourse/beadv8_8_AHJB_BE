@@ -1,6 +1,7 @@
 package com.jjinmak.back.boundedContext.product.in;
 
 import com.jjinmak.back.boundedContext.product.app.ProductFacade;
+import com.jjinmak.back.shared.auction.event.AuctionStartedEvent;
 import com.jjinmak.back.shared.member.event.MemberCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -20,5 +21,12 @@ public class ProductEventListener {
     @Transactional(propagation = REQUIRES_NEW)
     public void handle(MemberCreatedEvent event){
         productFacade.syncMember(event.member());
+    }
+
+    // 경매가 시작되면 상품에 현재 회차의 경매 id를 기록한다.
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    @Transactional(propagation = REQUIRES_NEW)
+    public void handle(AuctionStartedEvent event){
+        productFacade.startAuction(event);
     }
 }
