@@ -18,4 +18,4 @@ public record HoldDto(
             long winningPrice,
             long deliveryFee
     ) {}
-}
+}

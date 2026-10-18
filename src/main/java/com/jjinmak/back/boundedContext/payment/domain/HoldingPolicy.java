@@ -31,4 +31,4 @@ public class HoldingPolicy {
     public long feeOf(long winningPrice) {
         return winningPrice * feeRatePercent / 100;
     }
-}
+}
