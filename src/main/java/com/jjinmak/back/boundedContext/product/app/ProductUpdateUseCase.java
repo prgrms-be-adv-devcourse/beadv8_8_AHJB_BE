@@ -37,7 +37,8 @@ public class ProductUpdateUseCase {
                 auctionTerms != null
                         ? ProductAuctionTerms.create(
                                 auctionTerms.startingPrice(), auctionTerms.instantWinPrice(),
-                                auctionTerms.duration(), auctionTerms.customEndAt())
+                                auctionTerms.duration(), auctionTerms.customEndAt(),
+                                product.getAuctionScheduledAt())
                         : null
         );
 

@@ -104,8 +104,13 @@ public class Product extends BaseIdAndTime {
         this.policyVersion = policyVersion;
         this.policyAgreedAt = now;
         this.auctionTerms = auctionTerms;
-        this.auctionScheduledAt = now.plus(EDITABLE_PERIOD);
+        this.auctionScheduledAt = scheduleAuctionAt(now);
         this.round = 1;
+    }
+
+    // 등록 시각 기준 경매 시작 예정 시각 (등록 전 경매 조건 검증에도 사용)
+    public static LocalDateTime scheduleAuctionAt(LocalDateTime registeredAt) {
+        return registeredAt.plus(EDITABLE_PERIOD);
     }
 
     public static Product create(ProductMember seller, String name, ProductCategory category,

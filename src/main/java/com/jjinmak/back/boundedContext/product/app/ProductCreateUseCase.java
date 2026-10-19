@@ -35,16 +35,18 @@ public class ProductCreateUseCase {
 
         AuctionTerms auctionTerms = request.auctionTerms();
         Shipping shipping = request.shipping();
+        LocalDateTime now = LocalDateTime.now();
 
         // 경매 조건은 수정 기간 동안 보관했다가, 수정 기간이 끝나면 경매 컨텍스트로 전달한다.
         Product product = Product.create(
                 seller, request.name(), request.category(),
                 request.manufacturer(), request.manufacturerEtc(), request.description(),
                 shipping.feeType(), shipping.customFee(), shipping.bundleAllowed(),
-                request.policyVersion(), LocalDateTime.now(),
+                request.policyVersion(), now,
                 ProductAuctionTerms.create(
                         auctionTerms.startingPrice(), auctionTerms.instantWinPrice(),
-                        auctionTerms.duration(), auctionTerms.customEndAt()
+                        auctionTerms.duration(), auctionTerms.customEndAt(),
+                        Product.scheduleAuctionAt(now)
                 )
         );
 
