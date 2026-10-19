@@ -44,6 +44,7 @@ public class ProductRequestAuctionUseCase {
         eventPublisher.publishEvent(new ProductRegisteredEvent(
                 product.getId(),
                 product.getSeller().getId(),
+                product.getShippingFee(),
                 auctionTerms.getStartPrice(),
                 auctionTerms.getInstantWinPrice(),
                 duration.getDays(),
