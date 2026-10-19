@@ -3,7 +3,9 @@ package com.jjinmak.back.boundedContext.product.app;
 import com.jjinmak.back.boundedContext.product.domain.Product;
 import com.jjinmak.back.boundedContext.product.domain.ProductMember;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductCreateRequestDto;
+import com.jjinmak.back.boundedContext.product.in.dto.ProductDetailDto;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductUpdateRequestDto;
+import com.jjinmak.back.shared.auction.event.AuctionStartedEvent;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import com.jjinmak.back.shared.product.dto.ProductSummaryDto;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,8 @@ public class ProductFacade {
     private final ProductDeleteUseCase productDeleteUseCase;
     private final ProductRequestAuctionUseCase productRequestAuctionUseCase;
     private final ProductReadSummaryUseCase productReadSummaryUseCase;
+    private final ProductReadDetailUseCase productReadDetailUseCase;
+    private final ProductStartAuctionUseCase productStartAuctionUseCase;
 
     @Transactional
     public ProductMember syncMember(MemberDto memberDto){
@@ -58,5 +62,15 @@ public class ProductFacade {
     @Transactional(readOnly = true)
     public ProductSummaryDto getProductSummary(Long productId){
         return productReadSummaryUseCase.getProductSummary(productId);
+    }
+
+    @Transactional(readOnly = true)
+    public ProductDetailDto readDetail(Long memberId, Long productId){
+        return productReadDetailUseCase.readDetail(memberId, productId);
+    }
+
+    @Transactional
+    public void startAuction(AuctionStartedEvent event){
+        productStartAuctionUseCase.startAuction(event);
     }
 }

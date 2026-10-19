@@ -74,6 +74,13 @@ public class Product extends BaseIdAndTime {
     // 경매 컨텍스트로 경매 생성을 요청한 시각 (null이면 아직 요청 전)
     private LocalDateTime auctionRequestedAt;
 
+    // 경매 회차 (재등록 시 증가)
+    @Column(nullable = false)
+    private int round;
+
+    // 현재 회차의 경매 id. 경매 시작 이벤트로 채워진다. (null이면 아직 경매 시작 전)
+    private Long currentAuctionId;
+
     private LocalDateTime deletedAt;
 
     // 수정 기간 종료 시점에 판매자 수정과 경매 요청이 동시에 일어나는 것을 막는다.
@@ -98,6 +105,7 @@ public class Product extends BaseIdAndTime {
         this.policyAgreedAt = now;
         this.auctionTerms = auctionTerms;
         this.auctionScheduledAt = now.plus(EDITABLE_PERIOD);
+        this.round = 1;
     }
 
     public static Product create(ProductMember seller, String name, ProductCategory category,
@@ -121,6 +129,20 @@ public class Product extends BaseIdAndTime {
 
     public void requestAuction(LocalDateTime now) {
         this.auctionRequestedAt = now;
+    }
+
+    // 경매 컨텍스트에서 경매가 시작되면 현재 회차의 경매 id를 기록한다.
+    public void startAuction(Long auctionId) {
+        this.currentAuctionId = auctionId;
+    }
+
+    public boolean isSoldBy(Long memberId) {
+        return memberId != null && seller.getId().equals(memberId);
+    }
+
+    // 직접입력 배송비일 때만 입력한 금액을 돌려준다. (수정 화면 표시용)
+    public Long getCustomShippingFee() {
+        return shippingFeeType == ShippingFeeType.CUSTOM ? shippingFee : null;
     }
 
     // 본인 상품이고, 경매 요청 전이면서 시작 예정 시각 전일 때만 수정/삭제할 수 있다.
