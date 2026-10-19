@@ -33,6 +33,12 @@ import static com.jjinmak.back.boundedContext.payment.exception.PaymentErrorCode
  * CHARGED 에 머문 FOR_PAYMENT 건 = 돈은 들어왔는데 홀딩이 안 끝난 건 → 복구 대상
  * REQUESTED 에 오래 머문 건         = pgOrderId 로 토스에 조회해 DONE 이면 반영, 아니면 ABORTED
  *
+ * 선입선출(미사용 금액 추적)
+ * - remainingAmount : 이 충전으로 들어온 돈 중 아직 쓰이지 않은 금액. CHARGED 가 되는 순간 amount 로 시작하고
+ *                     예치금이 빠져나갈 때마다(결제) DepositConsumer 가 오래된 충전부터 줄인다.
+ * - 충전 취소는 remainingAmount == amount (한 번도 쓰이지 않음) 일 때만 가능하다. 일부라도 쓰이면 영구히 취소 불가.
+ * - 불변식: 지갑 예치금 잔액 == 환불금 풀 + Σ(CHARGED 충전의 remainingAmount)
+ *
  * 지갑 원장에서는 ReferenceType.PAYMENT + 이 엔티티의 id 로 참조된다.
  *
  * 토스 식별자
@@ -69,6 +75,10 @@ public class Charge extends BaseIdAndTime {
     /** 충전 금액. 결제창 요청 전에 서버가 정한 값이며, 승인 시 클라이언트가 보낸 amount 와 반드시 대조한다 */
     @Column(nullable = false)
     private long amount;
+
+    /** 아직 쓰이지 않은 금액. REQUESTED 동안은 0, CHARGED 가 되면 amount, 소비될수록 감소, USED/CANCELED 면 0 */
+    @Column(nullable = false)
+    private long remainingAmount;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
@@ -131,6 +141,7 @@ public class Charge extends BaseIdAndTime {
         this.payment = payment;
         this.pgOrderId = generatePgOrderId();
         this.status = REQUESTED;
+        this.remainingAmount = 0L;
     }
 
     /** 사용자가 직접 예치금을 충전 */
@@ -176,6 +187,18 @@ public class Charge extends BaseIdAndTime {
         this.method = method;
         this.receiptUrl = receiptUrl;
         this.status = CHARGED;
+        this.remainingAmount = this.amount;
+    }
+
+    /**
+     * 예치금이 빠져나갈 때 이 충전의 미사용 금액을 소비한다 (DepositConsumer 가 호출).
+     * 남은 금액까지만 소비하고 실제로 소비한 금액을 돌려준다.
+     */
+    public long consume(long requested) {
+        if (requested <= 0 || status != CHARGED) return 0L;
+        long consumed = Math.min(requested, remainingAmount);
+        this.remainingAmount -= consumed;
+        return consumed;
     }
 
     /** FOR_PAYMENT 충전이 해당 주문의 홀딩에 소비됨. 같은 트랜잭션에서 홀딩 직후 호출 */
@@ -187,6 +210,7 @@ public class Charge extends BaseIdAndTime {
         requireStatus(CHARGED);
         this.status = USED;
         this.usedAt = usedAt;
+        this.remainingAmount = 0L;
     }
 
     /** 충전 취소 (토스 취소 + 지갑 CHARGE_CANCEL 완료 후) */
@@ -197,6 +221,7 @@ public class Charge extends BaseIdAndTime {
         }
         this.status = CANCELED;
         this.canceledAt = canceledAt;
+        this.remainingAmount = 0L;
     }
 
     /** 토스 승인 실패 또는 만료. 토스 failure 객체의 code / message 를 남긴다 */
@@ -209,9 +234,19 @@ public class Charge extends BaseIdAndTime {
         this.failureMessage = failureMessage;
     }
 
-    /** 돈이 들어와 있고 아직 어디에도 쓰이지 않은 충전만 취소할 수 있다 */
+    /** 돈이 들어와 있고 한 푼도 쓰이지 않은 충전만 취소할 수 있다 (선입선출 기준). 일부라도 쓰였으면 영구히 불가 */
     public boolean isCancelable() {
-        return status == CHARGED;
+        return status == CHARGED && remainingAmount == amount;
+    }
+
+    /** 이 충전으로 들어온 돈 중 이미 쓰인 금액 */
+    public long getUsedAmount() {
+        return isCharged() || status == CANCELED ? amount - remainingAmount : 0L;
+    }
+
+    /** 선입선출 소비 대상인지: 돈이 들어와 있고 남은 금액이 있는 건 */
+    public boolean hasRemaining() {
+        return status == CHARGED && remainingAmount > 0;
     }
 
     /** 돈은 들어왔는데 주문 결제가 끝나지 않은 건인지 (복구 대상 판별) */

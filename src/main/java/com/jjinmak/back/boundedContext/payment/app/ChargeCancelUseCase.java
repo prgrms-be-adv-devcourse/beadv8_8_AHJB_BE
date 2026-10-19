@@ -23,9 +23,11 @@ import static com.jjinmak.back.boundedContext.payment.exception.WalletErrorCode.
 /**
  * 충전 취소 (전액). (파사드 트랜잭션 안에서 실행)
  *
- *   검증(소유자·취소 가능 상태) → 지갑 차감 + 원장 CHARGE_CANCEL → 토스 취소 → Charge → CANCELED
+ *   검증(소유자·취소 가능) → 지갑 차감 + 원장 CHARGE_CANCEL → 토스 취소 → Charge → CANCELED
  *
- * 지갑 차감을 토스 취소보다 먼저 하는 이유: 잔액이 부족하면(이미 예치금을 썼으면) 토스를 부르기 전에 INSUFFICIENT_BALANCE 로 끝난다.
+ * 취소 가능 = CHARGED 이고 선입선출상 한 푼도 쓰이지 않은 건 (Charge.remainingAmount == amount).
+ * 일부라도 결제에 쓰였으면 환불이 돌아와도 영구히 취소할 수 없다.
+ * 지갑 차감을 토스 취소보다 먼저 하는 이유: 불변식이 깨져 잔액이 모자라면 토스를 부르기 전에 INSUFFICIENT_BALANCE 로 끝난다.
  * 토스 취소가 실패하면 예외로 롤백되어 차감도 함께 되돌아가므로 별도 보상(REVERSAL)이 필요 없다.
  */
 @Service

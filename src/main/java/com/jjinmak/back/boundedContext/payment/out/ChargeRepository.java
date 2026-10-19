@@ -2,6 +2,7 @@ package com.jjinmak.back.boundedContext.payment.out;
 
 import com.jjinmak.back.boundedContext.payment.domain.Charge;
 import com.jjinmak.back.boundedContext.payment.domain.Payment;
+import com.jjinmak.back.boundedContext.payment.domain.Wallet;
 import com.jjinmak.back.boundedContext.payment.domain.enums.ChargePurpose;
 import com.jjinmak.back.boundedContext.payment.domain.enums.ChargeStatus;
 import org.springframework.data.domain.Page;
@@ -26,6 +27,13 @@ public interface ChargeRepository extends JpaRepository<Charge, Long> {
 
     /** 내 충전 내역 (용도별). 정렬은 Pageable 로 */
     Page<Charge> findByHolderIdAndPurpose(Long holderId, ChargePurpose purpose, Pageable pageable);
+
+    /**
+     * 선입선출 소비 대상: 이 지갑에 돈이 들어와 있고(CHARGED) 아직 남은 금액이 있는 충전을 오래된 순으로.
+     * chargedAt 이 같으면 id 순. (DepositConsumer 전용)
+     */
+    List<Charge> findByWalletAndStatusAndRemainingAmountGreaterThanOrderByChargedAtAscIdAsc(
+            Wallet wallet, ChargeStatus status, long remainingAmount);
 
     /** 내 충전 상세 (소유자 검증 포함) */
     Optional<Charge> findByIdAndHolderId(Long id, Long holderId);

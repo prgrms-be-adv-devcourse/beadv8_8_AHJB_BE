@@ -1,6 +1,7 @@
 package com.jjinmak.back.boundedContext.payment.app;
 
 import com.jjinmak.back.boundedContext.payment.app.dto.HoldDto;
+import com.jjinmak.back.boundedContext.payment.domain.Charge;
 import com.jjinmak.back.boundedContext.payment.domain.Holding;
 import com.jjinmak.back.boundedContext.payment.domain.HoldingPolicy;
 import com.jjinmak.back.boundedContext.payment.domain.Wallet;
@@ -27,6 +28,7 @@ import static com.jjinmak.back.boundedContext.payment.exception.WalletErrorCode.
  *
  * 멱등: 같은 paymentId 로 이미 홀딩이 있으면 아무 것도 하지 않는다.
  * 락 순서: 구매자 USER(낙관적) → ESCROW(비관적). 다른 지갑 로직과 같은 순서.
+ * 선입선출: 구매자 지갑에서 돈을 빼기 전에 DepositConsumer 로 어떤 충전 건의 돈이 쓰이는지 기록한다.
  */
 @Component
 @RequiredArgsConstructor
@@ -38,8 +40,17 @@ public class HoldingCreator {
     private final HoldingPolicy holdingPolicy;
     private final LedgerRecorder ledgerRecorder;
     private final HoldingRepository holdingRepository;
+    private final DepositConsumer depositConsumer;
 
+    /** 전액 예치금 결제 */
     public void hold(HoldDto dto) {
+        hold(dto, null);
+    }
+
+    /**
+     * @param earmarked 이 결제를 위해 방금 충전한 FOR_PAYMENT 건. 선입선출에서 가장 먼저 소비된다. 전액 예치금 결제면 null
+     */
+    public void hold(HoldDto dto, Charge earmarked) {
         if (alreadyHeld(dto.paymentId())) return;
         validateTotal(dto);
 
@@ -49,6 +60,8 @@ public class HoldingCreator {
         if (!buyer.hasEnough(dto.totalPrice())) {
             throw new BusinessException(INSUFFICIENT_BALANCE);
         }
+
+        depositConsumer.consume(buyer, dto.totalPrice(), earmarked);   // 지갑 차감 전에
 
         String groupId = UUID.randomUUID().toString();
 
