@@ -54,14 +54,16 @@ public class OrderDeliveryUseCase {
         Long orderId = event.orderId();
         DeliveryStatusCode afterStatus = event.afterStatus();
 
-        if (!ORDER_SHIPPED.contains(afterStatus))
-            return;
-
         Order order = orderSupport.getOrder(orderId);
 
-        if (order.getState() != SHIPPING)
+        if (order.getState() != SHIPPING && order.getState() != DELIVERY_ERROR)
             return;
 
-        order.shipped(event.updatedAt());
+        if (ORDER_SHIPPED.contains(afterStatus))
+            order.shipped(event.updatedAt());
+        else if (afterStatus == EXCEPTION)
+            order.updateState(DELIVERY_ERROR);
+        else
+            order.updateState(SHIPPING);
     }
 }
