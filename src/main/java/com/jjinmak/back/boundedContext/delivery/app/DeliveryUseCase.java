@@ -5,12 +5,15 @@ import com.jjinmak.back.boundedContext.delivery.domain.Delivery;
 import com.jjinmak.back.boundedContext.delivery.domain.DeliveryMember;
 import com.jjinmak.back.boundedContext.delivery.out.repository.DeliveryRepository;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
+import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.delivery.domain.CarrierType;
 import com.jjinmak.back.shared.delivery.event.DeliveryCreatedEvent;
 import com.jjinmak.back.boundedContext.delivery.app.event.WebhookRegisterEvent;
 import com.jjinmak.back.shared.order.event.OrderSendProductEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import static com.jjinmak.back.boundedContext.delivery.exception.DeliveryErrorCode.DELIVERY_BAD_REQUEST;
 
 @Service
 @RequiredArgsConstructor
@@ -48,6 +51,10 @@ public class DeliveryUseCase {
         DeliveryMember seller = deliverySupport.getMember(sellerId);
 
         delivery.validateSeller(seller);
+
+        if (delivery.getStatus().isCompleted()){
+            throw new BusinessException(DELIVERY_BAD_REQUEST);
+        }
 
         delivery.update(carrier, waybill);
 

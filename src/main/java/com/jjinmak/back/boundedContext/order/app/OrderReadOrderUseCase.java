@@ -23,7 +23,7 @@ import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORD
 public class OrderReadOrderUseCase {
 
     private static final Set<OrderState> READ_STATES = EnumSet.of(
-            PAID, SHIPPING, SHIPPED, CONFIRMED, REFUND_REQUESTED, REFUNDED
+            PAID, SHIPPING, DELIVERY_ERROR, SHIPPED, CONFIRMED, REFUND_REQUESTED, REFUNDED
     );
 
     private final OrderSupport orderSupport;

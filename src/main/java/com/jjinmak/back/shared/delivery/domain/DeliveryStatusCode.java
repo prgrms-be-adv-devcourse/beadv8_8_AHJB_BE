@@ -31,4 +31,8 @@ public enum DeliveryStatusCode {
                 .findFirst()
                 .orElse(WRONG);
     }
+
+    public boolean isCompleted(){
+        return this == DELIVERED || this == AVAILABLE_FOR_PICKUP;
+    }
 }
