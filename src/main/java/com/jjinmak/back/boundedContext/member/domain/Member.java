@@ -150,4 +150,4 @@ public class Member extends BaseIdAndTime {
 
         return authorities;
     }
-}
+}

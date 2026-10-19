@@ -280,4 +280,4 @@ class AuctionTradeResultUseCaseTest {
             then(auctionEventPublisher).shouldHaveNoInteractions();
         }
     }
-}
+}

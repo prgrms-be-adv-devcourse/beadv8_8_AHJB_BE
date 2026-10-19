@@ -9,6 +9,7 @@ import com.jjinmak.back.boundedContext.payment.app.dto.PaymentQuoteDto;
 import com.jjinmak.back.boundedContext.payment.app.dto.PaymentSummaryDto;
 import com.jjinmak.back.boundedContext.payment.in.dto.ChargeConfirmRequestDto;
 import com.jjinmak.back.boundedContext.payment.in.dto.ChargeRequestDto;
+import com.jjinmak.back.boundedContext.payment.in.dto.PaymentConfirmRequestDto;
 import com.jjinmak.back.global.rsData.RsData;
 import com.jjinmak.back.global.security.AuthPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,7 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "결제", description = "예치금 잔액 조회와 토스페이먼츠 충전/충전 취소 API")
+@Tag(name = "결제", description = "토스페이먼츠 충전/충전 취소, 주문 결제 승인, 결제·충전 내역 조회 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/payments")
@@ -41,6 +42,24 @@ public class PaymentApiController {
     ) {
         ChargeSummaryDto response = paymentFacade.requestCharge(principal.memberId(), request.amount());
         return ResponseEntity.status(HttpStatus.CREATED).body(new RsData<>(response));
+    }
+
+    @Operation(
+            summary = "주문 결제 승인",
+            description = "주문 결제 중 예치금이 부족해 토스 결제창을 거친 뒤, successUrl 로 돌아오면 호출합니다. "
+                    + "paymentKey, orderId(pgOrderId), amount 를 그대로 넘기세요. 토스 승인 → 예치금 충전 → 주문 대금 홀딩까지 한 번에 끝나고, "
+                    + "응답의 orderGroupId 로 주문 완료 화면으로 이동하면 됩니다. 주문 상태는 결제 완료 이벤트로 바뀝니다. "
+                    + "같은 요청을 다시 보내면 이미 끝난 결제를 그대로 돌려줍니다(멱등). "
+                    + "실패 응답의 retryable 이 true 면 '다시 결제하기'(주문 결제 요청부터)로 해결할 수 있습니다."
+    )
+    @PostMapping("/confirm")
+    public ResponseEntity<RsData<PaymentSummaryDto>> confirmPayment(
+            @Valid @RequestBody PaymentConfirmRequestDto request,
+            @AuthenticationPrincipal AuthPrincipal principal
+    ) {
+        PaymentSummaryDto response = retry.withRetry(() -> paymentFacade.confirmPayment(
+                principal.memberId(), request.pgOrderId(), request.paymentKey(), request.amount()));
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }
 
     @Operation(

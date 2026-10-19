@@ -48,4 +48,4 @@ public record MemberSignUpRequestDto(
         public boolean isPasswordMatched() {
                 return password != null && password.equals(passwordConfirm);
         }
-}
+}

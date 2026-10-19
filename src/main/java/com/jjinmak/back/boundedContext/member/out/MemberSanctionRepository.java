@@ -22,4 +22,4 @@ public interface MemberSanctionRepository extends JpaRepository<MemberSanction, 
     Optional<MemberSanction> findActiveByMemberId(@Param("memberId") Long memberId);
 
     List<MemberSanction> findAllByMemberIdAndReleasedAtIsNull(Long memberId);
-}
+}

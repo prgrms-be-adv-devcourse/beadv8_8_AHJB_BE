@@ -38,4 +38,4 @@ public class AuthFacade {
 
         return new MemberLoginResponseDto(pair.accessToken(), pair.refreshToken(), member.getNickname(), member.isSuspended());
     }
-}
+}

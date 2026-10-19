@@ -40,4 +40,4 @@ public class DeliveryTrackerClientConfig {
                 .requestInterceptor(new DeliveryTrackerRateLimitInterceptor(bucket, limit.maxWait()))
                 .build();
     }
-}
+}

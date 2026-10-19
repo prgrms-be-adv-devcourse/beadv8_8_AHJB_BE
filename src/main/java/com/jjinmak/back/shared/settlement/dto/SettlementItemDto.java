@@ -11,4 +11,4 @@ public record SettlementItemDto(
         SettlementStatus status,
         LocalDate payoutDate
 ) {
-}
+}

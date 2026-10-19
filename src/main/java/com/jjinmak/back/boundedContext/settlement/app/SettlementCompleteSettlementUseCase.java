@@ -38,4 +38,4 @@ public class SettlementCompleteSettlementUseCase {
 
         settlement.complete(event.releasedAt());
     }
-}
+}

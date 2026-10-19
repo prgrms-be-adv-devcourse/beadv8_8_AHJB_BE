@@ -18,4 +18,4 @@ public record WebhookRegisterResponseDto(
     public record Location(Integer line, Integer column){}
 
     public record Extensions(DeliveryTrackerExtension code){}
-}
+}

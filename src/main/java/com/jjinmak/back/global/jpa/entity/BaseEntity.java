@@ -15,4 +15,4 @@ public abstract class BaseEntity {
     public abstract LocalDateTime getCreatedAt();
 
     public abstract LocalDateTime getUpdatedAt();
-}
+}

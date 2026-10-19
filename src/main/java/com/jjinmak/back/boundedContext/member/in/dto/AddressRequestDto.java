@@ -34,4 +34,4 @@ public record AddressRequestDto(
         @Size(max = 255)
         @Schema(description = "상세 주소 (선택)", example = "101동 1001호")
         String addressDetail
-) {}
+) {}

@@ -18,4 +18,4 @@ public class MemberLogoutUseCase {
         refreshTokenRepository.findByRefreshToken(refreshToken)
                 .ifPresent(RefreshToken::revoke);
     }
-}
+}

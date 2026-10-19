@@ -19,4 +19,4 @@ public record SettlementDetailDto(
         LocalDate payoutDate,
         LocalDateTime completedAt
 ) {
-}
+}

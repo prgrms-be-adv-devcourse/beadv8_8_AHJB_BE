@@ -8,4 +8,4 @@ spring:
       ddl-auto: create-drop
 
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET}
