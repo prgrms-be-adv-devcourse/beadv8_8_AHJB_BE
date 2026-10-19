@@ -12,3 +12,9 @@ springdoc:
 
 jwt:
   secret: ${JWT_SECRET}
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS}
+
+server:
+  forward-headers-strategy: native
