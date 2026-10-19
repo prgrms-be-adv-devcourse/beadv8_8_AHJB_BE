@@ -3,7 +3,9 @@ package com.jjinmak.back.boundedContext.payment.app;
 import com.jjinmak.back.boundedContext.payment.app.dto.HoldingPageDto;
 import com.jjinmak.back.boundedContext.payment.app.dto.HoldingRole;
 import com.jjinmak.back.boundedContext.payment.app.dto.LedgerPageDto;
+import com.jjinmak.back.boundedContext.payment.app.dto.PageDto;
 import com.jjinmak.back.boundedContext.payment.app.dto.WalletBalanceDto;
+import com.jjinmak.back.boundedContext.payment.app.dto.WithdrawalDto;
 import com.jjinmak.back.boundedContext.payment.domain.enums.HoldingStatus;
 import com.jjinmak.back.boundedContext.payment.domain.enums.WalletAccount;
 import com.jjinmak.back.boundedContext.payment.domain.enums.WalletTransactionType;
@@ -33,6 +35,8 @@ public class WalletFacade {
     private final WalletGetSettlementUseCase walletGetSettlementUseCase;
     private final WalletGetLedgerUseCase walletGetLedgerUseCase;
     private final WalletGetHoldingsUseCase walletGetHoldingsUseCase;
+    private final WalletWithdrawUseCase walletWithdrawUseCase;
+    private final WalletGetWithdrawalsUseCase walletGetWithdrawalsUseCase;
 
     @Transactional
     public WalletMember syncMember(MemberDto member) {
@@ -79,6 +83,17 @@ public class WalletFacade {
     @Transactional(readOnly = true)
     public LedgerPageDto getLedger(Long holderId, WalletAccount account, WalletTransactionType type, int page, int size) {
         return walletGetLedgerUseCase.get(holderId, account, type, page, size);
+    }
+
+    /** 예치금 전액 출금 (명목상). 지갑을 바꾸므로 호출하는 어댑터에서 낙관적 락 재시도로 감싼다 */
+    @Transactional
+    public WithdrawalDto withdrawAll(Long holderId) {
+        return walletWithdrawUseCase.withdrawAll(holderId);
+    }
+
+    @Transactional(readOnly = true)
+    public PageDto<WithdrawalDto> listWithdrawals(Long holderId, int page, int size) {
+        return walletGetWithdrawalsUseCase.list(holderId, page, size);
     }
 
     @Transactional(readOnly = true)
