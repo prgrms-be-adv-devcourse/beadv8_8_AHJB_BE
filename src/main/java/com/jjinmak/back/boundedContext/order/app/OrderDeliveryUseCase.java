@@ -11,17 +11,12 @@ import com.jjinmak.back.shared.order.event.OrderSendProductEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.EnumSet;
-import java.util.Set;
-
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.*;
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.*;
 
 @Service
 @RequiredArgsConstructor
 public class OrderDeliveryUseCase {
-
-    private final Set<DeliveryStatusCode> ORDER_SHIPPED = EnumSet.of(DELIVERED, AVAILABLE_FOR_PICKUP);
 
     private final OrderSupport orderSupport;
     private final EventPublisher eventPublisher;
@@ -59,7 +54,7 @@ public class OrderDeliveryUseCase {
         if (order.getState() != SHIPPING && order.getState() != DELIVERY_ERROR)
             return;
 
-        if (ORDER_SHIPPED.contains(afterStatus))
+        if (afterStatus.isCompleted())
             order.shipped(event.updatedAt());
         else if (afterStatus == EXCEPTION)
             order.updateState(DELIVERY_ERROR);
