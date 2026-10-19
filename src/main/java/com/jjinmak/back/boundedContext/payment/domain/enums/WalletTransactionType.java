@@ -12,6 +12,9 @@ public enum WalletTransactionType {
     CHARGE,                  // 충전: 외부 PG → USER (+)
     CHARGE_CANCEL,            // 충전 취소: USER (-) → 외부 PG
 
+    // ===== 출금 =====
+    WITHDRAWAL,              // 출금: USER (-) → 외부 계좌 (명목상, 실제 송금 없음)
+
     // ===== 결제 (홀딩) =====
     HOLD_PAY,                // 결제: 구매자 USER (-)
     HOLD_RECEIVE,            // 결제: ESCROW (+)

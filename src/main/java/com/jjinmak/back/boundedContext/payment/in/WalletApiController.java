@@ -1,6 +1,9 @@
 package com.jjinmak.back.boundedContext.payment.in;
 
 import com.jjinmak.back.boundedContext.payment.app.WalletFacade;
+import com.jjinmak.back.boundedContext.payment.app.WalletRetrySupport;
+import com.jjinmak.back.boundedContext.payment.app.dto.PageDto;
+import com.jjinmak.back.boundedContext.payment.app.dto.WithdrawalDto;
 import com.jjinmak.back.boundedContext.payment.app.dto.HoldingPageDto;
 import com.jjinmak.back.boundedContext.payment.app.dto.HoldingRole;
 import com.jjinmak.back.boundedContext.payment.app.dto.LedgerPageDto;
@@ -17,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,6 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class WalletApiController {
 
     private final WalletFacade walletFacade;
+    private final WalletRetrySupport retry;   // 지갑 낙관적 락 충돌 재시도. 트랜잭션(파사드) 바깥에서 감싸야 한다
 
     @Operation(
             summary = "내 잔액 조회",
@@ -73,6 +78,28 @@ public class WalletApiController {
             @RequestParam(defaultValue = "20") int size
     ) {
         HoldingPageDto response = walletFacade.getHoldings(principal.memberId(), role, status, page, size);
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
+
+    @Operation(
+            summary = "예치금 전액 출금 (명목상)",
+            description = "보유 중인 예치금 전액을 등록된 계좌로 환급한 것으로 기록합니다. 현재 실제 송금은 이루어지지 않으며 잔액이 0 이 되고 출금 내역과 원장(WITHDRAWAL)에 남습니다. "
+                    + "정산금은 출금되지 않습니다. 출금 후에는 이전 충전 건을 취소할 수 없으니, 취소 가능한 충전이 있으면 먼저 안내해 주세요. 잔액이 0 이면 WALLET601."
+    )
+    @PostMapping("/me/withdrawals")
+    public ResponseEntity<RsData<WithdrawalDto>> withdrawAll(@AuthenticationPrincipal AuthPrincipal principal) {
+        WithdrawalDto response = retry.withRetry(() -> walletFacade.withdrawAll(principal.memberId()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new RsData<>(response));
+    }
+
+    @Operation(summary = "내 출금 내역 조회", description = "최신순. size 최대 50.")
+    @GetMapping("/me/withdrawals")
+    public ResponseEntity<RsData<PageDto<WithdrawalDto>>> listWithdrawals(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        PageDto<WithdrawalDto> response = walletFacade.listWithdrawals(principal.memberId(), page, size);
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }
 }
