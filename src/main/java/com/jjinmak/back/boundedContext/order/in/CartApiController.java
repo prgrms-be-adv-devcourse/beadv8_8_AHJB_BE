@@ -1,10 +1,13 @@
 package com.jjinmak.back.boundedContext.order.in;
 
 import com.jjinmak.back.boundedContext.order.app.OrderFacade;
+import com.jjinmak.back.boundedContext.order.app.dto.PaymentResponseDto;
 import com.jjinmak.back.boundedContext.order.in.dto.CartPaymentRequestDto;
 import com.jjinmak.back.global.rsData.RsData;
 import com.jjinmak.back.global.security.AuthPrincipal;
 import com.jjinmak.back.shared.cart.dto.CartItemDto;
+import com.jjinmak.back.shared.payment.dto.PaymentRequestDto;
+import com.jjinmak.back.shared.payment.dto.PaymentResultDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -43,14 +46,18 @@ public class CartApiController {
             description = "여러 상품을 묶어 한 번에 결제를 시도합니다."
     )
     @PostMapping("/payment")
-    public ResponseEntity<RsData<Void>> paymentCartItems(
+    public ResponseEntity<RsData<PaymentResponseDto>> paymentCartItems(
             @AuthenticationPrincipal AuthPrincipal principal,
             @Valid @RequestBody CartPaymentRequestDto request
     ){
-        orderFacade.requestPayment(principal.memberId(), request.productIds());
+        PaymentRequestDto req = orderFacade.createOrder(principal.memberId(), request.productIds());
+
+        PaymentResultDto res = orderFacade.requestPayment(req);
+
+        PaymentResponseDto response = orderFacade.handlePaymentResult(req.orderGroupId(), res);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(new RsData<>(null));
+                .body(new RsData<>(response));
     }
 }

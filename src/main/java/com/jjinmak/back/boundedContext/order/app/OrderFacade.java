@@ -1,6 +1,7 @@
 package com.jjinmak.back.boundedContext.order.app;
 
 import com.jjinmak.back.boundedContext.order.app.dto.OrderDto;
+import com.jjinmak.back.boundedContext.order.app.dto.PaymentResponseDto;
 import com.jjinmak.back.boundedContext.order.domain.OrderMember;
 import com.jjinmak.back.shared.auction.event.AuctionWonEvent;
 import com.jjinmak.back.shared.cart.dto.CartItemDto;
@@ -8,6 +9,8 @@ import com.jjinmak.back.shared.delivery.domain.CarrierType;
 import com.jjinmak.back.shared.delivery.event.DeliveryCreatedEvent;
 import com.jjinmak.back.shared.delivery.event.DeliveryStatusUpdatedEvent;
 import com.jjinmak.back.shared.member.dto.MemberDto;
+import com.jjinmak.back.shared.payment.dto.PaymentRequestDto;
+import com.jjinmak.back.shared.payment.dto.PaymentResultDto;
 import com.jjinmak.back.shared.refund.dto.RefundDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,7 +25,6 @@ public class OrderFacade {
     private final OrderSyncMemberUseCase orderSyncMemberUseCase;
     private final OrderReadOrderUseCase orderReadOrderUseCase;
     private final OrderConfirmPurchaseUseCase orderConfirmPurchaseUseCase;
-    private final OrderPaymentResultUseCase orderPaymentResultUseCase;
     private final OrderRefundUseCase orderRefundUseCase;
     private final OrderDeliveryUseCase orderDeliveryUseCase;
     private final OrderSchedulerUseCase orderSchedulerUseCase;
@@ -46,8 +48,17 @@ public class OrderFacade {
     }
 
     @Transactional
-    public void requestPayment(Long winnerId, List<Long> productIds){
-        cartRequestPaymentUseCase.requestPayment(winnerId, productIds);
+    public PaymentRequestDto createOrder(Long winnerId, List<Long> productIds){
+        return cartRequestPaymentUseCase.createOrder(winnerId, productIds);
+    }
+
+    public PaymentResultDto requestPayment(PaymentRequestDto request){
+        return cartRequestPaymentUseCase.requestPayment(request);
+    }
+
+    @Transactional
+    public PaymentResponseDto handlePaymentResult(Long orderGroupId, PaymentResultDto dto){
+        return cartRequestPaymentUseCase.handlePaymentResult(orderGroupId, dto);
     }
 
     @Transactional(readOnly = true)
@@ -78,16 +89,6 @@ public class OrderFacade {
     @Transactional
     public void confirmPurchase(Long memberId, Long orderId){
         orderConfirmPurchaseUseCase.confirmPurchase(memberId, orderId);
-    }
-
-    @Transactional
-    public void paymentSucceed(Long groupId){
-        orderPaymentResultUseCase.paymentSucceed(groupId);
-    }
-
-    @Transactional
-    public void paymentFailed(Long groupId){
-        orderPaymentResultUseCase.paymentFailed(groupId);
     }
 
     @Transactional
