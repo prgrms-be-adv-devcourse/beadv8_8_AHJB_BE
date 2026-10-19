@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.CONFIRMED;
+import static com.jjinmak.back.boundedContext.order.domain.OrderState.DELIVERY_ERROR;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.PAID;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.REFUNDED;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.REFUND_REQUESTED;
@@ -88,7 +89,7 @@ class OrderReadOrderUseCaseTest {
     }
 
     @Test
-    @DisplayName("낙찰자의 주문 목록은 결제 이후 상태의 주문만 조회하고, 결제 대기·결제 실패·배송 오류 주문은 조회하지 않는다")
+    @DisplayName("낙찰자의 주문 목록은 배송 오류를 포함한 결제 이후 상태의 주문만 조회하고, 결제 대기·결제 실패 주문은 조회하지 않는다")
     void readWinnerOrders_readsPaidAndLaterStates() {
         when(orderSupport.getMember(1L)).thenReturn(winner);
         when(orderRepository.findAllByWinnerAndStateIn(eq(winner), anySet(), any(Pageable.class)))
@@ -338,6 +339,6 @@ class OrderReadOrderUseCaseTest {
     }
 
     private Set<OrderState> readStates() {
-        return Set.of(PAID, SHIPPING, SHIPPED, CONFIRMED, REFUND_REQUESTED, REFUNDED);
+        return Set.of(PAID, SHIPPING, DELIVERY_ERROR, SHIPPED, CONFIRMED, REFUND_REQUESTED, REFUNDED);
     }
 }
