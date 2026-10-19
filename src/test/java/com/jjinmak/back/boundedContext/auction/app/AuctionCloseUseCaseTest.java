@@ -152,4 +152,4 @@ class AuctionCloseUseCaseTest {
             then(auctionEventPublisher).should(times(1)).publishWon(auction);
         }
     }
-}
+}

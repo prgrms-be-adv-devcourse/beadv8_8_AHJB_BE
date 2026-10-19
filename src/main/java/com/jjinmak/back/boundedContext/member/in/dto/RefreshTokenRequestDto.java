@@ -6,4 +6,4 @@ public record RefreshTokenRequestDto(
 
         @NotBlank
         String refreshToken
-) {}
+) {}

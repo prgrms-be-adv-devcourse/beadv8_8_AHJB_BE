@@ -246,4 +246,4 @@ class AuctionTest {
             assertThat(진행중_경매().isHighestBidder(BIDDER_ID)).isFalse();
         }
     }
-}
+}

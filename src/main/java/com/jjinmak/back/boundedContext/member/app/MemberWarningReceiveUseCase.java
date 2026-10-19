@@ -79,4 +79,4 @@ public class MemberWarningReceiveUseCase {
                 new MemberSanctionDto(sanction.getMemberId())
         ));
     }
-}
+}

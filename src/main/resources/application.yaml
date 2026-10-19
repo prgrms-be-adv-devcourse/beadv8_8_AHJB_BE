@@ -17,4 +17,4 @@ delivery-tracker:
     refill-period: 1s
     max-wait: 10s
   client-id: ${DELIVERY_TRACKER_CLIENT_ID}
-  client-secret: ${DELIVERY_TRACKER_CLIENT_SECRET}
+  client-secret: ${DELIVERY_TRACKER_CLIENT_SECRET}

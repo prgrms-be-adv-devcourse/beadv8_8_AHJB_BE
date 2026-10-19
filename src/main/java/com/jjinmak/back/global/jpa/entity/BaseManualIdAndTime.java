@@ -42,4 +42,4 @@ public abstract class BaseManualIdAndTime extends BaseEntity implements Persista
     public boolean isNew() {
         return createdAt == null;
     }
-}
+}

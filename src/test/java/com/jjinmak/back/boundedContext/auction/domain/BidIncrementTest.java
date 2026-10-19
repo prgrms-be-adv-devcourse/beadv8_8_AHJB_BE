@@ -38,4 +38,4 @@ class BidIncrementTest {
                 .extracting("errorCode")
                 .isEqualTo(AuctionErrorCode.INVALID_PRICE);
     }
-}
+}

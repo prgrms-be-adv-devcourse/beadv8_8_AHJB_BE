@@ -14,4 +14,4 @@ public final class Authority {
     public static final String PERM_SELL = "PERM_SELL";
 
     private Authority() {}
-}
+}

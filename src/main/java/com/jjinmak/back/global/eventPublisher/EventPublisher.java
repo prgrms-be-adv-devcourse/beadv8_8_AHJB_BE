@@ -12,4 +12,4 @@ public class EventPublisher {
     public void publish(Object event) {
         applicationEventPublisher.publishEvent(event);
     }
-}
+}

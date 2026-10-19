@@ -34,4 +34,4 @@ public class MemberSanctionReleaseUseCase {
             member.activate();
         }
     }
-}
+}

@@ -20,4 +20,4 @@ public class MemberReadUseCase {
     public boolean isNicknameAvailable(String nickname){
         return !memberRepository.existsByNickname(nickname);
     }
-}
+}

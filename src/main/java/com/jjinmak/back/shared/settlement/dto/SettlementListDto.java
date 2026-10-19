@@ -20,4 +20,4 @@ public record SettlementListDto(
                 page.hasNext()
         );
     }
-}
+}

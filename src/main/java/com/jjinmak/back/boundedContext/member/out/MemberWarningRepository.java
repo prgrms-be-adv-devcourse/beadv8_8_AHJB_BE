@@ -10,4 +10,4 @@ public interface MemberWarningRepository extends JpaRepository<MemberWarning, Lo
     int countByMemberId(Long memberId);
 
     boolean existsBySourceContextAndSourceId(String sourceContext, Long sourceId);
-}
+}
