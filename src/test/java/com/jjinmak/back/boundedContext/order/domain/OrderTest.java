@@ -3,10 +3,13 @@ package com.jjinmak.back.boundedContext.order.domain;
 import com.jjinmak.back.global.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import static com.jjinmak.back.boundedContext.order.domain.OrderState.DELIVERY_ERROR;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.PAID;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.REFUNDED;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.SHIPPED;
@@ -17,6 +20,7 @@ import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORD
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 
 class OrderTest {
 
@@ -203,16 +207,28 @@ class OrderTest {
     }
 
     @Test
-    @DisplayName("배송 중이 아닌 주문이 배송 완료되면 ORDER_STATE_BAD_REQUEST, 상태와 구매 확정 기한이 바뀌지 않는다")
-    void shipped_notShipping() {
-        Order order = order(PAID);
+    @DisplayName("배송 오류 상태의 주문이 배송 완료되면 SHIPPED가 되고, 구매 확정 기한은 배송 완료 시각 + 7일이다")
+    void shipped_fromDeliveryError() {
+        Order order = order(DELIVERY_ERROR);
+
+        order.shipped(shippedAt);
+
+        assertThat(order.getState()).isEqualTo(SHIPPED);
+        assertThat(order.getConfirmExpiredAt()).isEqualTo(LocalDateTime.of(2026, 10, 22, 12, 30));
+    }
+
+    @ParameterizedTest(name = "{0} 주문이 배송 완료")
+    @EnumSource(value = OrderState.class, names = {"SHIPPING", "DELIVERY_ERROR"}, mode = EXCLUDE)
+    @DisplayName("배송 중도 배송 오류도 아닌 주문이 배송 완료되면 ORDER_STATE_BAD_REQUEST, 상태와 구매 확정 기한이 바뀌지 않는다")
+    void shipped_notShippingOrDeliveryError(OrderState state) {
+        Order order = order(state);
 
         assertThatThrownBy(() -> order.shipped(shippedAt))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ORDER_STATE_BAD_REQUEST);
 
-        assertThat(order.getState()).isEqualTo(PAID);
+        assertThat(order.getState()).isEqualTo(state);
         assertThat(order.getConfirmExpiredAt()).isNull();
     }
 

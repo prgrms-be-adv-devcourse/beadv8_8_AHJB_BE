@@ -100,7 +100,10 @@ public class Order extends BaseIdAndTime {
     }
 
     public void shipped(LocalDateTime shippedAt){
-        validateAndUpdateState(SHIPPING, SHIPPED);
+        if (this.state != SHIPPING && this.state != DELIVERY_ERROR)
+            throw new BusinessException(ORDER_STATE_BAD_REQUEST);
+
+        this.state = SHIPPED;
         this.confirmExpiredAt = shippedAt.plusDays(7);
     }
 

@@ -52,7 +52,11 @@ public enum WalletErrorCode implements ErrorCode {
     WALLET_CONCURRENT_MODIFICATION("WALLET501", "지갑이 동시에 수정되었습니다. 다시 시도해 주세요.", HttpStatus.CONFLICT),
 
     // ===== 환불 =====
-    REFUND_AMOUNT_MISMATCH("WALLET309", "환불 요청 금액이 홀딩 금액과 일치하지 않습니다.", HttpStatus.BAD_REQUEST)
+    REFUND_AMOUNT_MISMATCH("WALLET309", "환불 요청 금액이 홀딩 금액과 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
+
+    // ===== 출금 =====
+    NOTHING_TO_WITHDRAW("WALLET601", "출금할 예치금이 없습니다.", HttpStatus.BAD_REQUEST),
+    INVALID_WITHDRAWAL_STATUS("WALLET602", "현재 상태에서는 처리할 수 없는 출금 건입니다.", HttpStatus.BAD_REQUEST)
     ;
 
     private final String code;

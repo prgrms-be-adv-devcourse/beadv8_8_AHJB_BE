@@ -11,6 +11,7 @@ import com.jjinmak.back.boundedContext.order.out.repository.OrderMemberRepositor
 import com.jjinmak.back.boundedContext.order.out.repository.OrderRepository;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.shared.auction.event.AuctionWonEvent;
+import com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode;
 import com.jjinmak.back.shared.delivery.event.DeliveryCreatedEvent;
 import com.jjinmak.back.shared.delivery.event.DeliveryStatusUpdatedEvent;
 import org.junit.jupiter.api.AfterEach;
@@ -24,11 +25,13 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
+import static com.jjinmak.back.boundedContext.order.domain.OrderState.DELIVERY_ERROR;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.PAID;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.SHIPPED;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.SHIPPING;
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.AT_PICKUP;
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.DELIVERED;
+import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.EXCEPTION;
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.IN_TRANSIT;
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.OUT_FOR_DELIVERY;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -146,6 +149,47 @@ class OrderEventListenerIntegrationTest {
         Order order = orderRepository.findById(orderId).orElseThrow();
         assertThat(order.getState()).isEqualTo(SHIPPING);
         assertThat(order.getConfirmExpiredAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("배송 문제(EXCEPTION) 이벤트를 받으면 배송 중인 주문이 DELIVERY_ERROR가 된다")
+    void deliveryStatusUpdated_exception_shippingOrderBecomesDeliveryError() {
+        Long orderId = saveOrder(SHIPPING);
+        DeliveryStatusUpdatedEvent event = new DeliveryStatusUpdatedEvent(
+                orderId, IN_TRANSIT, EXCEPTION, LocalDateTime.now());
+
+        transactionTemplate.executeWithoutResult(status -> eventPublisher.publish(event));
+
+        Order order = orderRepository.findById(orderId).orElseThrow();
+        assertThat(order.getState()).isEqualTo(DELIVERY_ERROR);
+        assertThat(order.getConfirmExpiredAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("배송 오류 주문의 배송이 EXCEPTION에서 바로 끝났다는 이벤트를 받으면 SHIPPED가 되고, 구매 확정 기한은 배송 완료 시각 + 7일이다")
+    void deliveryStatusUpdated_deliveredRightAfterException_deliveryErrorOrderBecomesShipped() {
+        Long orderId = saveOrder(DELIVERY_ERROR);
+        LocalDateTime updatedAt = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
+        DeliveryStatusUpdatedEvent event = new DeliveryStatusUpdatedEvent(
+                orderId, EXCEPTION, DELIVERED, updatedAt);
+
+        transactionTemplate.executeWithoutResult(status -> eventPublisher.publish(event));
+
+        Order order = orderRepository.findById(orderId).orElseThrow();
+        assertThat(order.getState()).isEqualTo(SHIPPED);
+        assertThat(order.getConfirmExpiredAt()).isEqualTo(updatedAt.plusDays(7));
+    }
+
+    @Test
+    @DisplayName("운송장을 바꿔 이전 배송 상태가 WAITING인 상태 변경 이벤트를 받아도 배송 오류 주문은 SHIPPING으로 돌아간다")
+    void deliveryStatusUpdated_afterWaybillChange_deliveryErrorOrderBecomesShipping() {
+        Long orderId = saveOrder(DELIVERY_ERROR);
+        DeliveryStatusUpdatedEvent event = new DeliveryStatusUpdatedEvent(
+                orderId, DeliveryStatusCode.WAITING, AT_PICKUP, LocalDateTime.now());
+
+        transactionTemplate.executeWithoutResult(status -> eventPublisher.publish(event));
+
+        assertThat(orderRepository.findById(orderId).orElseThrow().getState()).isEqualTo(SHIPPING);
     }
 
     private void syncMembers() {

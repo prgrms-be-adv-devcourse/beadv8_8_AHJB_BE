@@ -6,6 +6,7 @@ package com.jjinmak.back.boundedContext.payment.domain.enums;
  */
 
 public enum ReferenceType {
-    PAYMENT,     // PG 결제 건
-    ORDER       // order 컨텍스트의 Order
+    PAYMENT,     // PG 결제 건 (Charge)
+    ORDER,       // order 컨텍스트의 Order
+    WITHDRAWAL   // 출금 건 (Withdrawal)
 }

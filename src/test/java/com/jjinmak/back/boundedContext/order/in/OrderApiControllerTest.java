@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.CONFIRMED;
+import static com.jjinmak.back.boundedContext.order.domain.OrderState.DELIVERY_ERROR;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.PAID;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.REFUND_REQUESTED;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.SHIPPED;
@@ -335,6 +336,79 @@ class OrderApiControllerTest {
                 .andExpect(jsonPath("$.errorCode").value("ORDER003"));
 
         assertThat(events.stream(OrderSendProductEvent.class)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("상품 발송: 배송 오류(DELIVERY_ERROR) 주문이면 400 ORDER_STATE_BAD_REQUEST, 주문은 그대로이고 발송 이벤트를 발행하지 않는다")
+    void requestDelivery_deliveryError() throws Exception {
+        Long deliveryErrorOrderId = saveDeliveryErrorOrder();
+
+        mockMvc.perform(post("/api/v1/order/{orderId}/send-product", deliveryErrorOrderId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(2L))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"carrier\": \"CJ\", \"waybill\": \"1234567890\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("ORDER003"));
+
+        assertThat(stateOf(deliveryErrorOrderId)).isEqualTo(DELIVERY_ERROR);
+        assertThat(events.stream(OrderSendProductEvent.class)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("상품 발송: 결제 대기 주문이면 400 ORDER_STATE_BAD_REQUEST, 주문은 그대로이고 발송 이벤트를 발행하지 않는다")
+    void requestDelivery_waiting() throws Exception {
+        mockMvc.perform(post("/api/v1/order/{orderId}/send-product", waitingOrderId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(2L))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"carrier\": \"CJ\", \"waybill\": \"1234567890\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("ORDER003"));
+
+        assertThat(stateOf(waitingOrderId)).isEqualTo(WAITING);
+        assertThat(events.stream(OrderSendProductEvent.class)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("주문 목록: 배송 오류(DELIVERY_ERROR) 주문도 낙찰자와 판매자의 목록에 최신순으로 나온다")
+    void readOrders_includeDeliveryError() throws Exception {
+        Long deliveryErrorOrderId = saveDeliveryErrorOrder();
+        setCreatedAt(deliveryErrorOrderId, LocalDateTime.of(2026, 10, 15, 12, 0));
+
+        mockMvc.perform(get("/api/v1/order/winner")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(1L)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(3))
+                .andExpect(jsonPath("$.data[0].id").value(deliveryErrorOrderId))
+                .andExpect(jsonPath("$.data[0].state").value("DELIVERY_ERROR"));
+
+        mockMvc.perform(get("/api/v1/order/seller")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(2L)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(3))
+                .andExpect(jsonPath("$.data[0].id").value(deliveryErrorOrderId))
+                .andExpect(jsonPath("$.data[0].state").value("DELIVERY_ERROR"));
+    }
+
+    @Test
+    @DisplayName("주문 상세: 배송 오류(DELIVERY_ERROR) 주문도 판매자와 낙찰자가 조회할 수 있다")
+    void readOrder_deliveryError() throws Exception {
+        Long deliveryErrorOrderId = saveDeliveryErrorOrder();
+
+        mockMvc.perform(get("/api/v1/order/{orderId}", deliveryErrorOrderId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(2L)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(deliveryErrorOrderId))
+                .andExpect(jsonPath("$.data.state").value("DELIVERY_ERROR"));
+
+        mockMvc.perform(get("/api/v1/order/{orderId}", deliveryErrorOrderId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(1L)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(deliveryErrorOrderId));
+    }
+
+    private Long saveDeliveryErrorOrder() {
+        OrderGroup group = orderGroupRepository.save(new OrderGroup(80_000L));
+        return saveOrder(group, winner, seller, 14L, 24L, 75_000L, 5_000L, DELIVERY_ERROR);
     }
 
     private Long saveOrder(OrderGroup group, OrderMember winner, OrderMember seller, Long auctionId, Long productId, Long winningPrice, Long deliveryFee, OrderState state) {
