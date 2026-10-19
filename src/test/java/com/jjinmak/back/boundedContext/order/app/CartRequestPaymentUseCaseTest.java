@@ -14,6 +14,7 @@ import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.order.event.OrderPaymentSucceedEvent;
 import com.jjinmak.back.shared.payment.dto.PaymentRequestDto;
 import com.jjinmak.back.shared.payment.dto.PaymentResultDto;
+import com.jjinmak.back.shared.payment.event.PaymentPaidEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,7 @@ import static com.jjinmak.back.boundedContext.order.domain.OrderState.WAITING;
 import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.CART_ITEM_FORBIDDEN;
 import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.CART_ITEM_NOT_FOUND;
 import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.CART_ITEM_PAYMENT_EXPIRED;
+import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_GROUP_FORBIDDEN;
 import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_GROUP_NOT_FOUND;
 import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_STATE_BAD_REQUEST;
 import static com.jjinmak.back.global.exception.CommonErrorCode.USER_NOT_FOUND;
@@ -75,6 +77,8 @@ class CartRequestPaymentUseCaseTest {
     OrderMember winner;
     OrderMember seller;
     OrderMember otherSeller;
+
+    LocalDateTime paidAt = LocalDateTime.of(2026, 10, 19, 12, 0);
 
     @BeforeEach
     void setUp() {
@@ -242,8 +246,17 @@ class CartRequestPaymentUseCaseTest {
     }
 
     @Test
-    @DisplayName("결제 결과가 PAID면 그룹의 모든 주문을 PAID로 바꾸고, 주문마다 장바구니 항목을 지우고 같은 결제 시각으로 결제 성공 이벤트를 발행한 뒤 isPaid=true로 응답한다")
+    @DisplayName("결제 결과가 PAID면 isPaid=true로 응답만 하고, 주문 그룹을 조회하거나 장바구니를 지우거나 이벤트를 발행하지 않는다")
     void handlePaymentResult_paid() {
+        PaymentResponseDto response = cartRequestPaymentUseCase.handlePaymentResult(50L, PaymentResultDto.paid(7L, 87_000L));
+
+        assertThat(response).isEqualTo(new PaymentResponseDto(50L, true, null));
+        verifyNoInteractions(orderGroupRepository, orderRepository, cartItemRepository, eventPublisher);
+    }
+
+    @Test
+    @DisplayName("결제 완료 이벤트를 받으면 그룹의 모든 주문을 이벤트의 결제 시각으로 PAID 처리하고, 주문마다 장바구니 항목을 지우고 같은 결제 시각으로 결제 성공 이벤트를 발행한다")
+    void paymentPaid_completesEveryOrder() {
         OrderGroup group = new OrderGroup(87_000L);
         Order first = order(group, 100L, seller, 10L, 20L, 30_000L, 3_000L);
         Order second = order(group, 101L, otherSeller, 11L, 21L, 50_000L, 4_000L);
@@ -253,31 +266,28 @@ class CartRequestPaymentUseCaseTest {
         when(cartItemRepository.findByAuctionId(10L)).thenReturn(Optional.of(firstItem));
         when(cartItemRepository.findByAuctionId(11L)).thenReturn(Optional.of(secondItem));
 
-        LocalDateTime before = LocalDateTime.now();
-        PaymentResponseDto response = cartRequestPaymentUseCase.handlePaymentResult(50L, PaymentResultDto.paid(7L, 87_000L));
-        LocalDateTime after = LocalDateTime.now();
+        cartRequestPaymentUseCase.paymentPaid(paidEvent(50L, 1L));
 
-        assertThat(response).isEqualTo(new PaymentResponseDto(50L, true, null));
         assertThat(first.getState()).isEqualTo(PAID);
+        assertThat(first.getPaidAt()).isEqualTo(paidAt);
         assertThat(second.getState()).isEqualTo(PAID);
+        assertThat(second.getPaidAt()).isEqualTo(paidAt);
         verify(cartItemRepository).delete(firstItem);
         verify(cartItemRepository).delete(secondItem);
 
         ArgumentCaptor<OrderPaymentSucceedEvent> captor = ArgumentCaptor.forClass(OrderPaymentSucceedEvent.class);
         verify(eventPublisher, times(2)).publish(captor.capture());
-        LocalDateTime paidAt = captor.getAllValues().get(0).paidAt();
-        assertThat(paidAt).isBetween(before, after);
         assertThat(captor.getAllValues()).containsExactly(
                 new OrderPaymentSucceedEvent(100L, 10L, 20L, paidAt),
                 new OrderPaymentSucceedEvent(101L, 11L, 21L, paidAt));
     }
 
     @Test
-    @DisplayName("결제 결과가 PAID인데 주문 그룹이 없으면 ORDER_GROUP_NOT_FOUND, 장바구니를 지우지 않고 이벤트를 발행하지 않는다")
-    void handlePaymentResult_paid_groupNotFound() {
+    @DisplayName("결제 완료 이벤트의 주문 그룹이 없으면 ORDER_GROUP_NOT_FOUND, 장바구니를 지우지 않고 이벤트를 발행하지 않는다")
+    void paymentPaid_groupNotFound() {
         when(orderGroupRepository.findByIdWithOrders(50L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> cartRequestPaymentUseCase.handlePaymentResult(50L, PaymentResultDto.paid(7L, 87_000L)))
+        assertThatThrownBy(() -> cartRequestPaymentUseCase.paymentPaid(paidEvent(50L, 1L)))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ORDER_GROUP_NOT_FOUND);
@@ -286,14 +296,31 @@ class CartRequestPaymentUseCaseTest {
     }
 
     @Test
-    @DisplayName("결제 결과가 PAID인데 이미 결제된 주문이 있으면 ORDER_STATE_BAD_REQUEST, 장바구니를 지우지 않고 이벤트를 발행하지 않는다")
-    void handlePaymentResult_paid_orderNotWaiting() {
+    @DisplayName("결제 완료 이벤트의 구매자가 주문의 낙찰자가 아니면(판매자 id로 와도) ORDER_GROUP_FORBIDDEN, 주문은 WAITING 그대로이고 장바구니를 지우지 않고 이벤트를 발행하지 않는다")
+    void paymentPaid_buyerIsNotWinner() {
+        OrderGroup group = new OrderGroup(33_000L);
+        Order order = order(group, 100L, seller, 10L, 20L, 30_000L, 3_000L);
+        when(orderGroupRepository.findByIdWithOrders(50L)).thenReturn(Optional.of(group));
+
+        assertThatThrownBy(() -> cartRequestPaymentUseCase.paymentPaid(paidEvent(50L, 2L)))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ORDER_GROUP_FORBIDDEN);
+
+        assertThat(order.getState()).isEqualTo(WAITING);
+        assertThat(order.getPaidAt()).isNull();
+        verifyNoInteractions(cartItemRepository, eventPublisher);
+    }
+
+    @Test
+    @DisplayName("결제 완료 이벤트를 받았는데 이미 결제된 주문이 있으면 ORDER_STATE_BAD_REQUEST, 장바구니를 지우지 않고 이벤트를 발행하지 않는다")
+    void paymentPaid_orderNotWaiting() {
         OrderGroup group = new OrderGroup(33_000L);
         Order order = order(group, 100L, seller, 10L, 20L, 30_000L, 3_000L);
         order.updateState(PAID);
         when(orderGroupRepository.findByIdWithOrders(50L)).thenReturn(Optional.of(group));
 
-        assertThatThrownBy(() -> cartRequestPaymentUseCase.handlePaymentResult(50L, PaymentResultDto.paid(7L, 33_000L)))
+        assertThatThrownBy(() -> cartRequestPaymentUseCase.paymentPaid(paidEvent(50L, 1L)))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ORDER_STATE_BAD_REQUEST);
@@ -302,14 +329,14 @@ class CartRequestPaymentUseCaseTest {
     }
 
     @Test
-    @DisplayName("결제 결과가 PAID인데 주문의 장바구니 항목이 없으면 CART_ITEM_NOT_FOUND, 이벤트를 발행하지 않는다")
-    void handlePaymentResult_paid_cartItemNotFound() {
+    @DisplayName("결제 완료 이벤트를 받았는데 주문의 장바구니 항목이 없으면 CART_ITEM_NOT_FOUND, 이벤트를 발행하지 않는다")
+    void paymentPaid_cartItemNotFound() {
         OrderGroup group = new OrderGroup(33_000L);
         order(group, 100L, seller, 10L, 20L, 30_000L, 3_000L);
         when(orderGroupRepository.findByIdWithOrders(50L)).thenReturn(Optional.of(group));
         when(cartItemRepository.findByAuctionId(10L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> cartRequestPaymentUseCase.handlePaymentResult(50L, PaymentResultDto.paid(7L, 33_000L)))
+        assertThatThrownBy(() -> cartRequestPaymentUseCase.paymentPaid(paidEvent(50L, 1L)))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(CART_ITEM_NOT_FOUND);
@@ -328,6 +355,10 @@ class CartRequestPaymentUseCaseTest {
         assertThat(response).isEqualTo(new PaymentResponseDto(50L, false,
                 new PaymentResponseDto.Data(7L, 87_000L, 37_000L, "CHG-1", "찐막 주문 결제 (부족분 충전)")));
         verifyNoInteractions(orderGroupRepository, cartItemRepository, eventPublisher);
+    }
+
+    private PaymentPaidEvent paidEvent(Long orderGroupId, Long buyerId) {
+        return PaymentPaidEvent.of(orderGroupId, 7L, buyerId, 87_000L, paidAt);
     }
 
     private CartItem cartItem(OrderMember seller, Long auctionId, Long productId, Long winningPrice, Long deliveryFee, LocalDateTime winAt) {

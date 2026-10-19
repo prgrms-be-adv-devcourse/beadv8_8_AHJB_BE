@@ -14,11 +14,15 @@ import com.jjinmak.back.shared.auction.event.AuctionWonEvent;
 import com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode;
 import com.jjinmak.back.shared.delivery.event.DeliveryCreatedEvent;
 import com.jjinmak.back.shared.delivery.event.DeliveryStatusUpdatedEvent;
+import com.jjinmak.back.shared.order.event.OrderPaymentSucceedEvent;
+import com.jjinmak.back.shared.payment.event.PaymentPaidEvent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
@@ -29,14 +33,17 @@ import static com.jjinmak.back.boundedContext.order.domain.OrderState.DELIVERY_E
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.PAID;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.SHIPPED;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.SHIPPING;
+import static com.jjinmak.back.boundedContext.order.domain.OrderState.WAITING;
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.AT_PICKUP;
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.DELIVERED;
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.EXCEPTION;
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.IN_TRANSIT;
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.OUT_FOR_DELIVERY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 @SpringBootTest
+@RecordApplicationEvents
 class OrderEventListenerIntegrationTest {
 
     @Autowired
@@ -57,11 +64,16 @@ class OrderEventListenerIntegrationTest {
     @Autowired
     CartItemRepository cartItemRepository;
 
+    @Autowired
+    ApplicationEvents events;
+
     UUID winnerUuid = UUID.randomUUID();
     UUID sellerUuid = UUID.randomUUID();
     UUID otherSellerUuid = UUID.randomUUID();
 
     LocalDateTime winAt = LocalDateTime.now();
+
+    LocalDateTime paidAt = LocalDateTime.of(2026, 10, 19, 12, 0);
 
     @AfterEach
     void tearDown() {
@@ -192,6 +204,53 @@ class OrderEventListenerIntegrationTest {
         assertThat(orderRepository.findById(orderId).orElseThrow().getState()).isEqualTo(SHIPPING);
     }
 
+    @Test
+    @DisplayName("트랜잭션 안에서 결제 완료 이벤트를 발행하면, 커밋 뒤 그룹의 주문이 모두 결제 시각과 함께 PAID가 되고, 장바구니 항목이 지워지며 주문마다 결제 성공 이벤트가 발행된다")
+    void paymentPaid_insideTransaction_completesOrders() {
+        Long groupId = saveWaitingGroupWithCartItems();
+
+        transactionTemplate.executeWithoutResult(status -> eventPublisher.publish(paidEvent(groupId, paidAt)));
+
+        assertThat(orderRepository.findAll())
+                .extracting(Order::getAuctionId, Order::getState, Order::getPaidAt)
+                .containsExactlyInAnyOrder(tuple(10L, PAID, paidAt), tuple(11L, PAID, paidAt));
+        assertThat(cartItemRepository.count()).isZero();
+        assertThat(events.stream(OrderPaymentSucceedEvent.class))
+                .extracting(OrderPaymentSucceedEvent::auctionId, OrderPaymentSucceedEvent::productId, OrderPaymentSucceedEvent::paidAt)
+                .containsExactlyInAnyOrder(tuple(10L, 20L, paidAt), tuple(11L, 21L, paidAt));
+    }
+
+    @Test
+    @DisplayName("결제 완료 이벤트를 발행한 트랜잭션이 롤백되면 주문은 WAITING, 장바구니 항목은 그대로이고 결제 성공 이벤트를 발행하지 않는다")
+    void paymentPaid_rolledBack_ignored() {
+        Long groupId = saveWaitingGroupWithCartItems();
+
+        transactionTemplate.executeWithoutResult(status -> {
+            eventPublisher.publish(paidEvent(groupId, paidAt));
+            status.setRollbackOnly();
+        });
+
+        assertThat(orderRepository.findAll())
+                .extracting(Order::getState, Order::getPaidAt)
+                .containsExactly(tuple(WAITING, null), tuple(WAITING, null));
+        assertThat(cartItemRepository.count()).isEqualTo(2);
+        assertThat(events.stream(OrderPaymentSucceedEvent.class)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("같은 그룹의 결제 완료 이벤트가 다시 와도 처음 결제 시각이 그대로이고, 결제 성공 이벤트는 주문마다 한 번만 발행된다")
+    void paymentPaid_twice_firstPaymentKept() {
+        Long groupId = saveWaitingGroupWithCartItems();
+
+        transactionTemplate.executeWithoutResult(status -> eventPublisher.publish(paidEvent(groupId, paidAt)));
+        transactionTemplate.executeWithoutResult(status -> eventPublisher.publish(paidEvent(groupId, paidAt.plusMinutes(5))));
+
+        assertThat(orderRepository.findAll())
+                .extracting(Order::getState, Order::getPaidAt)
+                .containsExactly(tuple(PAID, paidAt), tuple(PAID, paidAt));
+        assertThat(events.stream(OrderPaymentSucceedEvent.class)).hasSize(2);
+    }
+
     private void syncMembers() {
         orderMemberRepository.save(new OrderMember(1L, winnerUuid, "낙찰자"));
         orderMemberRepository.save(new OrderMember(2L, sellerUuid, "판매자"));
@@ -209,5 +268,20 @@ class OrderEventListenerIntegrationTest {
         Order order = new Order(group, winner, seller, 10L, 20L, 30_000L, 3_000L);
         order.updateState(state);
         return orderRepository.save(order).getId();
+    }
+
+    private Long saveWaitingGroupWithCartItems() {
+        OrderMember winner = orderMemberRepository.save(new OrderMember(1L, winnerUuid, "낙찰자"));
+        OrderMember seller = orderMemberRepository.save(new OrderMember(2L, sellerUuid, "판매자"));
+        cartItemRepository.save(new CartItem(winner, seller, 10L, 20L, 30_000L, 3_000L, winAt));
+        cartItemRepository.save(new CartItem(winner, seller, 11L, 21L, 50_000L, 4_000L, winAt));
+        OrderGroup group = orderGroupRepository.save(new OrderGroup(87_000L));
+        orderRepository.save(new Order(group, winner, seller, 10L, 20L, 30_000L, 3_000L));
+        orderRepository.save(new Order(group, winner, seller, 11L, 21L, 50_000L, 4_000L));
+        return group.getId();
+    }
+
+    private PaymentPaidEvent paidEvent(Long groupId, LocalDateTime paidAt) {
+        return PaymentPaidEvent.of(groupId, 7L, 1L, 87_000L, paidAt);
     }
 }

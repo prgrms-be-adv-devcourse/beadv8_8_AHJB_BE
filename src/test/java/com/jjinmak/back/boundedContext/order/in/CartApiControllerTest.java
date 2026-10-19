@@ -34,7 +34,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-import static com.jjinmak.back.boundedContext.order.domain.OrderState.PAID;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.WAITING;
 import static com.jjinmak.back.global.exception.CommonErrorCode.CONFLICT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -188,7 +187,7 @@ class CartApiControllerTest {
     }
 
     @Test
-    @DisplayName("결제 요청: 예치금으로 결제되면(PAID) 200, 주문 그룹 id와 isPaid=true를 응답하고, 주문은 PAID, 내 장바구니 항목은 지워지며 결제 성공 이벤트를 한 번 발행한다")
+    @DisplayName("결제 요청: 예치금으로 결제되면(PAID) 200, 주문 그룹 id와 isPaid=true를 응답하고, 주문은 WAITING, 장바구니 항목은 그대로이며 이벤트를 발행하지 않는다 (결제 완료 처리는 결제 완료 이벤트가 맡는다)")
     void payment_paid() throws Exception {
         when(paymentPort.requestPayment(any())).thenReturn(PaymentResultDto.paid(7L, 33_000L));
 
@@ -213,15 +212,9 @@ class CartApiControllerTest {
                         Order::getWinningPrice,
                         Order::getDeliveryFee,
                         Order::getState)
-                .containsExactly(tuple(groupId, 1L, 2L, 10L, 20L, 30_000L, 3_000L, PAID));
-        assertThat(cartItemRepository.findAll()).extracting(CartItem::getAuctionId).containsExactly(11L);
-
-        Long orderId = orderRepository.findAll().get(0).getId();
-        List<OrderPaymentSucceedEvent> published = events.stream(OrderPaymentSucceedEvent.class).toList();
-        assertThat(published).hasSize(1);
-        assertThat(published.get(0).orderId()).isEqualTo(orderId);
-        assertThat(published.get(0).auctionId()).isEqualTo(10L);
-        assertThat(published.get(0).productId()).isEqualTo(20L);
+                .containsExactly(tuple(groupId, 1L, 2L, 10L, 20L, 30_000L, 3_000L, WAITING));
+        assertThat(cartItemRepository.findAll()).extracting(CartItem::getAuctionId).containsExactlyInAnyOrder(10L, 11L);
+        assertThat(events.stream(OrderPaymentSucceedEvent.class)).isEmpty();
     }
 
     @Test
