@@ -88,10 +88,14 @@ jobs:
         run: |
           IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}:${{ github.sha }}"
           cp docker-compose.server.yaml ~/app/docker-compose.server.yaml
+          mkdir -p ~/app/nginx
+          cp -r nginx/. ~/app/nginx/
           cd ~/app
           sed -i "s|^APP_IMAGE=.*|APP_IMAGE=${IMAGE}|" .env
           docker compose -f docker-compose.server.yaml pull app
           docker compose -f docker-compose.server.yaml up -d
+          docker compose -f docker-compose.server.yaml exec -T nginx nginx -t
+          docker compose -f docker-compose.server.yaml exec -T nginx nginx -s reload
           docker compose -f docker-compose.server.yaml ps
 
       - name: 사용하지 않는 이미지 정리

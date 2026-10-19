@@ -27,11 +27,19 @@ services:
       DB_PASSWORD: ${MYSQL_PASSWORD}
       DELIVERY_TRACKER_CLIENT_ID: ${DELIVERY_TRACKER_CLIENT_ID:?서버 .env에 DELIVERY_TRACKER_CLIENT_ID가 필요합니다}
       DELIVERY_TRACKER_CLIENT_SECRET: ${DELIVERY_TRACKER_CLIENT_SECRET:?서버 .env에 DELIVERY_TRACKER_CLIENT_SECRET이 필요합니다}
-    ports:
-      - "8080:8080"
     depends_on:
       mysql:
         condition: service_healthy
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.30-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - app
     restart: unless-stopped
 
 volumes:
