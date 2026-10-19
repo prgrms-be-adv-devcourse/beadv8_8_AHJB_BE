@@ -6,6 +6,7 @@ import com.jjinmak.back.shared.delivery.event.DeliveryCreatedEvent;
 import com.jjinmak.back.shared.delivery.event.DeliveryStatusUpdatedEvent;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import com.jjinmak.back.shared.member.event.MemberCreatedEvent;
+import com.jjinmak.back.shared.payment.event.PaymentPaidEvent;
 import com.jjinmak.back.shared.refund.event.RefundAcceptedEvent;
 import com.jjinmak.back.shared.refund.event.RefundRejectedEvent;
 import lombok.RequiredArgsConstructor;
@@ -58,5 +59,11 @@ public class OrderEventListener {
     @Transactional(propagation = REQUIRES_NEW)
     public void handle(DeliveryStatusUpdatedEvent event){
         orderFacade.updateDeliveryStatus(event);
+    }
+
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    @Transactional(propagation = REQUIRES_NEW)
+    public void handle(PaymentPaidEvent event){
+        orderFacade.paymentPaid(event);
     }
 }

@@ -16,7 +16,8 @@ public enum OrderErrorCode implements ErrorCode {
     ORDER_BAD_REQUEST("ORDER005", "잘못된 주문 요청입니다.", HttpStatus.BAD_REQUEST),
     CART_ITEM_NOT_FOUND("ORDER006", "존재하지 않는 상품입니다.", HttpStatus.NOT_FOUND),
     CART_ITEM_FORBIDDEN("ORDER007", "상품에 접근할 수 없습니다.", HttpStatus.FORBIDDEN),
-    CART_ITEM_PAYMENT_EXPIRED("ORDER008", "결제 기한이 만료된 상품입니다.", HttpStatus.FORBIDDEN)
+    CART_ITEM_PAYMENT_EXPIRED("ORDER008", "결제 기한이 만료된 상품입니다.", HttpStatus.FORBIDDEN),
+    ORDER_GROUP_FORBIDDEN("ORDER009", "주문그룹에 접근할 수 없습니다.", HttpStatus.FORBIDDEN)
     ;
 
     private final String code;

@@ -11,6 +11,7 @@ import com.jjinmak.back.shared.delivery.event.DeliveryStatusUpdatedEvent;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import com.jjinmak.back.shared.payment.dto.PaymentRequestDto;
 import com.jjinmak.back.shared.payment.dto.PaymentResultDto;
+import com.jjinmak.back.shared.payment.event.PaymentPaidEvent;
 import com.jjinmak.back.shared.refund.dto.RefundDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -56,7 +57,6 @@ public class OrderFacade {
         return cartRequestPaymentUseCase.requestPayment(request);
     }
 
-    @Transactional
     public PaymentResponseDto handlePaymentResult(Long orderGroupId, PaymentResultDto dto){
         return cartRequestPaymentUseCase.handlePaymentResult(orderGroupId, dto);
     }
@@ -134,5 +134,10 @@ public class OrderFacade {
     @Transactional
     public void updateDeliveryStatus(DeliveryStatusUpdatedEvent event){
         orderDeliveryUseCase.updateDeliveryStatus(event);
+    }
+
+    @Transactional
+    public void paymentPaid(PaymentPaidEvent event){
+        cartRequestPaymentUseCase.paymentPaid(event);
     }
 }
