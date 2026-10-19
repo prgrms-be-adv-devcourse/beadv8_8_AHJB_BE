@@ -22,7 +22,8 @@ public enum ProductErrorCode implements ErrorCode {
     ONLY_SELLER_CAN_REPLY("PRODUCT012", "답글은 상품 판매자만 작성할 수 있습니다.", HttpStatus.FORBIDDEN),
     ALREADY_WISHED("PRODUCT013", "이미 찜한 상품입니다.", HttpStatus.BAD_REQUEST),
     WISH_NOT_FOUND("PRODUCT014", "찜하지 않은 상품입니다.", HttpStatus.NOT_FOUND),
-    CANNOT_WISH_OWN_PRODUCT("PRODUCT015", "본인이 등록한 상품은 찜할 수 없습니다.", HttpStatus.BAD_REQUEST)
+    CANNOT_WISH_OWN_PRODUCT("PRODUCT015", "본인이 등록한 상품은 찜할 수 없습니다.", HttpStatus.BAD_REQUEST),
+    INVALID_CUSTOM_END_AT("PRODUCT016", "종료 시각은 경매 시작 후 1일부터 7일 사이로 지정해야 합니다.", HttpStatus.BAD_REQUEST)
     ;
     private final String code;
     private final String message;
