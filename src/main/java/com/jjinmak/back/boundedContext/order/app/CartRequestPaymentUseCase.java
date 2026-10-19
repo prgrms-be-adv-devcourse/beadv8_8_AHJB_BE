@@ -14,14 +14,13 @@ import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.order.event.OrderPaymentSucceedEvent;
 import com.jjinmak.back.shared.payment.dto.PaymentRequestDto;
 import com.jjinmak.back.shared.payment.dto.PaymentResultDto;
+import com.jjinmak.back.shared.payment.event.PaymentPaidEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
 
-import static com.jjinmak.back.boundedContext.order.domain.OrderState.PAID;
-import static com.jjinmak.back.boundedContext.order.domain.OrderState.WAITING;
 import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.*;
 
 @Service
@@ -88,27 +87,6 @@ public class CartRequestPaymentUseCase {
 
     public PaymentResponseDto handlePaymentResult(Long orderGroupId, PaymentResultDto dto){
         if (dto.status() == PaymentResultDto.Status.PAID){
-            OrderGroup orderGroup = orderGroupRepository.findByIdWithOrders(orderGroupId)
-                    .orElseThrow(() -> new BusinessException(ORDER_GROUP_NOT_FOUND));
-
-            List<Order> orders = orderGroup.getOrders();
-
-            LocalDateTime paidAt = LocalDateTime.now();
-
-            orders.forEach(
-                    order -> {
-                        order.validateAndUpdateState(WAITING, PAID);
-                        CartItem item = cartItemRepository.findByAuctionId(order.getAuctionId())
-                                .orElseThrow(() -> new BusinessException(CART_ITEM_NOT_FOUND));
-
-                        cartItemRepository.delete(item);
-
-                        eventPublisher.publish(new OrderPaymentSucceedEvent(
-                                order.getId(), order.getAuctionId(), order.getProductId(), paidAt
-                        ));
-                    }
-            );
-
             return new PaymentResponseDto(orderGroupId, true, null);
         }
         else {
@@ -117,6 +95,33 @@ public class CartRequestPaymentUseCase {
                     dto.pgOrderId(), dto.orderName()
             );
             return new PaymentResponseDto(orderGroupId, false, data);
+        }
+    }
+
+    public void paymentPaid(PaymentPaidEvent event){
+        Long orderGroupId = event.orderGroupId();
+        Long winnerId = event.buyerId();
+        LocalDateTime paidAt = event.paidAt();
+
+        OrderGroup orderGroup = orderGroupRepository.findByIdWithOrders(orderGroupId)
+                .orElseThrow(() -> new BusinessException(ORDER_GROUP_NOT_FOUND));
+
+        List<Order> orders = orderGroup.getOrders();
+
+        if (!orders.getFirst().getWinner().getId().equals(winnerId))
+            throw new BusinessException(ORDER_GROUP_FORBIDDEN);
+
+        for (Order order : orders){
+            order.paid(paidAt);
+
+            CartItem item = cartItemRepository.findByAuctionId(order.getAuctionId())
+                    .orElseThrow(() -> new BusinessException(CART_ITEM_NOT_FOUND));
+
+            cartItemRepository.delete(item);
+
+            eventPublisher.publish(new OrderPaymentSucceedEvent(
+                    order.getId(), order.getAuctionId(), order.getProductId(), paidAt
+            ));
         }
     }
 }

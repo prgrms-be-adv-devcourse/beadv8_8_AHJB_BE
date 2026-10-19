@@ -32,6 +32,8 @@ class OrderTest {
 
     LocalDateTime shippedAt = LocalDateTime.of(2026, 10, 15, 12, 30);
 
+    LocalDateTime paidAt = LocalDateTime.of(2026, 10, 19, 12, 0);
+
     @Test
     @DisplayName("주문을 만들면 WAITING 상태이고, 모든 값이 제자리에 들어간다")
     void constructor_mapsAllFieldsAndStartsWaiting() {
@@ -46,6 +48,7 @@ class OrderTest {
         assertThat(order.getWinningPrice()).isEqualTo(30_000L);
         assertThat(order.getDeliveryFee()).isEqualTo(3_000L);
         assertThat(order.getConfirmExpiredAt()).isNull();
+        assertThat(order.getPaidAt()).isNull();
     }
 
     @Test
@@ -230,6 +233,46 @@ class OrderTest {
 
         assertThat(order.getState()).isEqualTo(state);
         assertThat(order.getConfirmExpiredAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("결제 대기 주문이 결제되면 PAID가 되고, 결제 시각이 기록된다")
+    void paid_fromWaiting() {
+        Order order = order(WAITING);
+
+        order.paid(paidAt);
+
+        assertThat(order.getState()).isEqualTo(PAID);
+        assertThat(order.getPaidAt()).isEqualTo(paidAt);
+    }
+
+    @Test
+    @DisplayName("이미 결제된 주문이 다시 결제되면 ORDER_STATE_BAD_REQUEST, 상태와 처음 결제 시각이 그대로다")
+    void paid_alreadyPaid() {
+        Order order = order(WAITING);
+        order.paid(paidAt);
+
+        assertThatThrownBy(() -> order.paid(paidAt.plusHours(1)))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ORDER_STATE_BAD_REQUEST);
+
+        assertThat(order.getState()).isEqualTo(PAID);
+        assertThat(order.getPaidAt()).isEqualTo(paidAt);
+    }
+
+    @Test
+    @DisplayName("결제 대기도 결제 완료도 아닌 주문이 결제되면 ORDER_STATE_BAD_REQUEST, 상태가 바뀌지 않고 결제 시각이 기록되지 않는다")
+    void paid_notWaiting() {
+        Order order = order(SHIPPING);
+
+        assertThatThrownBy(() -> order.paid(paidAt))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ORDER_STATE_BAD_REQUEST);
+
+        assertThat(order.getState()).isEqualTo(SHIPPING);
+        assertThat(order.getPaidAt()).isNull();
     }
 
     @Test

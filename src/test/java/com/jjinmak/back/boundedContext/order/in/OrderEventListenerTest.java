@@ -6,6 +6,7 @@ import com.jjinmak.back.shared.delivery.event.DeliveryCreatedEvent;
 import com.jjinmak.back.shared.delivery.event.DeliveryStatusUpdatedEvent;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import com.jjinmak.back.shared.member.event.MemberCreatedEvent;
+import com.jjinmak.back.shared.payment.event.PaymentPaidEvent;
 import com.jjinmak.back.shared.refund.dto.RefundDto;
 import com.jjinmak.back.shared.refund.event.RefundAcceptedEvent;
 import com.jjinmak.back.shared.refund.event.RefundRejectedEvent;
@@ -74,6 +75,16 @@ class OrderEventListenerTest {
         orderEventListener.handle(event);
 
         verify(orderFacade).updateDeliveryStatus(event);
+    }
+
+    @Test
+    @DisplayName("결제 완료 이벤트를 받으면 그 이벤트로 주문 결제를 완료한다")
+    void paymentPaid_completesOrderPayment() {
+        PaymentPaidEvent event = PaymentPaidEvent.of(50L, 7L, 1L, 33_000L, LocalDateTime.of(2026, 10, 19, 12, 0));
+
+        orderEventListener.handle(event);
+
+        verify(orderFacade).paymentPaid(event);
     }
 
     @Test

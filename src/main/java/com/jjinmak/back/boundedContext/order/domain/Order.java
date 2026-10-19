@@ -46,6 +46,9 @@ public class Order extends BaseIdAndTime {
     Long deliveryFee;
 
     @Column(nullable = true)
+    LocalDateTime paidAt;
+
+    @Column(nullable = true)
     LocalDateTime confirmExpiredAt;
 
     @NotNull
@@ -102,5 +105,10 @@ public class Order extends BaseIdAndTime {
 
         this.state = SHIPPED;
         this.confirmExpiredAt = shippedAt.plusDays(7);
+    }
+
+    public void paid(LocalDateTime paidAt){
+        validateAndUpdateState(WAITING, PAID);
+        this.paidAt = paidAt;
     }
 }
