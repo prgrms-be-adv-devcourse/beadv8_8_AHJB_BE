@@ -36,4 +36,4 @@ public class MemberAuthenticateUseCase {
 
         return member;
     }
-}
+}

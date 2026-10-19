@@ -7,9 +7,11 @@ import com.jjinmak.back.boundedContext.payment.domain.Payment;
 import com.jjinmak.back.boundedContext.payment.domain.Wallet;
 import com.jjinmak.back.boundedContext.payment.out.ChargeRepository;
 import com.jjinmak.back.boundedContext.payment.out.PaymentRepository;
+import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.payment.dto.PaymentRequestDto;
 import com.jjinmak.back.shared.payment.dto.PaymentResultDto;
+import com.jjinmak.back.shared.payment.event.PaymentPaidEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -36,6 +38,7 @@ public class PaymentRequestUseCase {
     private final PaymentRepository paymentRepository;
     private final ChargeRepository chargeRepository;
     private final HoldingCreator holdingCreator;
+    private final EventPublisher eventPublisher;
 
     public PaymentResultDto request(PaymentRequestDto dto) {
         Wallet buyerWallet = walletSupport.getWalletByHolderId(dto.buyerId());
@@ -55,6 +58,9 @@ public class PaymentRequestUseCase {
         if (shortage == 0) {
             holdingCreator.hold(toHoldDto(payment));
             payment.markPaid(LocalDateTime.now());
+            // 결제창 경로(confirm)와 같은 이벤트. 주문은 이 이벤트 하나로 결제 완료를 안다
+            eventPublisher.publish(PaymentPaidEvent.of(
+                    payment.getOrderGroupId(), payment.getId(), payment.getHolderId(), payment.getTotalPrice(), payment.getPaidAt()));
             return PaymentResultDto.paid(payment.getId(), payment.getTotalPrice());
         }
 

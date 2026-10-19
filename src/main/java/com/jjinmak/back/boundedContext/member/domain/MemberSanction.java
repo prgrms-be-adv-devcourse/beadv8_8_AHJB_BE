@@ -70,4 +70,4 @@ public class MemberSanction extends BaseIdAndTime {
     public void release(LocalDateTime now){
         this.releasedAt = now;
     }
-}
+}

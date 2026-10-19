@@ -1,10 +1,11 @@
 package com.jjinmak.back.shared.payment.dto;
 
 /**
- * requestPayment / confirmPayment 의 결과.
+ * requestPayment 의 결과. 주문은 status 만 보고, 나머지는 해석 없이 클라이언트에 그대로 내려준다.
  *
- * PAID         : 결제 완료. 주문은 PAID 로 바꾸면 된다
- * NEEDS_CHARGE : 예치금 부족. pgOrderId 와 chargeAmount 로 토스 결제창을 띄운 뒤 confirmPayment 를 호출해야 한다
+ * PAID         : 결제 완료. 결제 완료 이벤트(PaymentPaidEvent)도 함께 발행된다
+ * NEEDS_CHARGE : 예치금 부족. 클라이언트가 pgOrderId / chargeAmount / orderName 으로 토스 결제창을 띄운 뒤
+ *                successUrl 로 돌아와 결제 API(POST /api/v1/payments/confirm)를 호출한다
  */
 public record PaymentResultDto(
         Status status,

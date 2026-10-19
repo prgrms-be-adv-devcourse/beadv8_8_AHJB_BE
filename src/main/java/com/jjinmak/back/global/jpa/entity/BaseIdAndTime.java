@@ -27,4 +27,4 @@ public abstract class BaseIdAndTime extends BaseEntity {
     @LastModifiedDate
     @Column(nullable = false)
     private LocalDateTime updatedAt;
-}
+}

@@ -421,4 +421,4 @@ class AuctionBidUseCaseTest {
             assertThat(auction.getEndAt()).isEqualTo(endAt);
         }
     }
-}
+}

@@ -51,4 +51,4 @@ public class MemberWarning extends BaseIdAndTime {
                                        String reason, String description, LocalDateTime occurredAt){
         return new MemberWarning(memberId, sourceContext, sourceId, reason, description, occurredAt);
     }
-}
+}

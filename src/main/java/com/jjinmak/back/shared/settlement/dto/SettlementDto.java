@@ -7,4 +7,4 @@ public record SettlementDto(
         Long settlementAmount,
         Long feeAmount
 ) {
-}
+}

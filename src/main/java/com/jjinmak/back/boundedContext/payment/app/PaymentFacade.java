@@ -5,7 +5,6 @@ import com.jjinmak.back.boundedContext.payment.app.dto.PageDto;
 import com.jjinmak.back.boundedContext.payment.app.dto.PaymentDetailDto;
 import com.jjinmak.back.boundedContext.payment.app.dto.PaymentQuoteDto;
 import com.jjinmak.back.boundedContext.payment.app.dto.PaymentSummaryDto;
-import com.jjinmak.back.shared.payment.dto.PaymentConfirmDto;
 import com.jjinmak.back.shared.payment.dto.PaymentRequestDto;
 import com.jjinmak.back.shared.payment.dto.PaymentResultDto;
 import lombok.RequiredArgsConstructor;
@@ -63,9 +62,10 @@ public class PaymentFacade {
         return paymentRequestUseCase.request(dto);
     }
 
+    /** 클라이언트가 결제 API 로 직접 호출. 주문은 관여하지 않는다 */
     @Transactional
-    public PaymentResultDto confirmPayment(PaymentConfirmDto dto) {
-        return paymentConfirmUseCase.confirm(dto);
+    public PaymentSummaryDto confirmPayment(Long holderId, String pgOrderId, String paymentKey, long amount) {
+        return paymentConfirmUseCase.confirm(holderId, pgOrderId, paymentKey, amount);
     }
 
     // 조회
