@@ -12,3 +12,11 @@ jwt:
 
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS}
+
+# dev 서버는 IAM 역할로 S3에 접근한다. (Access Key 불필요, dev/ 경로만 허용)
+product-image:
+  storage: ${PRODUCT_IMAGE_STORAGE:s3}
+  bucket: ${S3_BUCKET:team03-jjinmak-s3-823315816237-ap-northeast-2-an}
+  region: ${AWS_REGION:ap-northeast-2}
+  key-prefix: ${S3_KEY_PREFIX:dev/}
+  public-base-url: ${S3_PUBLIC_BASE_URL:https://team03-jjinmak-s3-823315816237-ap-northeast-2-an.s3.ap-northeast-2.amazonaws.com}

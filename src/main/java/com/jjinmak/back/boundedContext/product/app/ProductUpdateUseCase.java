@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 public class ProductUpdateUseCase {
 
     private final ProductRepository productRepository;
+    private final ProductImageAttachUseCase productImageAttachUseCase;
 
     public Product updateProduct(Long sellerId, Long productId, ProductUpdateRequestDto request){
         Product product = productRepository.findByIdAndDeletedAtIsNull(productId)
@@ -41,6 +42,11 @@ public class ProductUpdateUseCase {
                                 product.getAuctionScheduledAt())
                         : null
         );
+
+        // 이미지 목록을 보내면 통째로 교체한다. (안 보내면 기존 유지)
+        if (request.imageIds() != null){
+            productImageAttachUseCase.replace(product, sellerId, request.imageIds());
+        }
 
         return product;
     }

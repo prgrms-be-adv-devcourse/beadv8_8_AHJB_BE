@@ -50,7 +50,8 @@ public record ProductDetailDto(
     ) {
     }
 
-    public static ProductDetailDto of(Product product, SellerRatingDto sellerRating, boolean wished, boolean isMine) {
+    public static ProductDetailDto of(Product product, List<String> imageUrls, SellerRatingDto sellerRating,
+                                      boolean wished, boolean isMine) {
         ProductAuctionTerms terms = product.getAuctionTerms();
         ProductMember seller = product.getSeller();
 
@@ -63,7 +64,7 @@ public record ProductDetailDto(
                 product.getManufacturer(),
                 product.getManufacturerEtc(),
                 product.getDescription(),
-                List.of(), // TODO: presigned url 이미지 업로드 구현 후 채우기
+                imageUrls,
                 new Shipping(
                         product.getShippingFeeType(),
                         product.getCustomShippingFee(),
