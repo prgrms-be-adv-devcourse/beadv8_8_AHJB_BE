@@ -158,6 +158,10 @@ public class Payment extends BaseIdAndTime {
         this.failureReason = reason;
     }
 
+    public boolean isFailed() {
+        return status == FAILED;
+    }
+
     /** 주문 1건 환불 완료 표시. 돈의 이동은 Holding/원장이 담당하고 여기는 시각만 남긴다 */
     public void markItemRefunded(Long orderId, LocalDateTime refundedAt) {
         requireStatus(PAID);

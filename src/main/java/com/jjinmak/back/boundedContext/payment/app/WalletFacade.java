@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 이벤트로 들어오는 지갑 내부 작업의 진입점 (PaymentEventListener 가 호출).
- * 회원 동기화·지갑 생성·환불·구매 확정·정산. 토스 호출이 없으므로 메서드 단위 @Transactional 로 충분하다.
+ * 회원 동기화·지갑 생성·환불·구매 확정·정산·주문 그룹 삭제에 따른 결제 종료. 토스 호출이 없으므로 메서드 단위 @Transactional 로 충분하다.
  *
  * 충전·주문 결제처럼 토스 호출이 끼는 흐름은 PaymentFacade 가 담당한다.
  */
@@ -37,6 +37,7 @@ public class WalletFacade {
     private final WalletGetHoldingsUseCase walletGetHoldingsUseCase;
     private final WalletWithdrawUseCase walletWithdrawUseCase;
     private final WalletGetWithdrawalsUseCase walletGetWithdrawalsUseCase;
+    private final PaymentCloseOnOrderDeletedUseCase paymentCloseOnOrderDeletedUseCase;
 
     @Transactional
     public WalletMember syncMember(MemberDto member) {
@@ -63,6 +64,12 @@ public class WalletFacade {
     @Transactional(readOnly = true)
     public WalletBalanceDto getBalances(Long holderId) {
         return walletGetBalanceUseCase.getBalances(holderId);
+    }
+
+    /** 주문 그룹 삭제(결제 기한 만료 등) → 그 그룹의 미완료 결제를 FAILED 로 닫는다 */
+    @Transactional
+    public void closePaymentByOrderGroupDeleted(Long orderGroupId) {
+        paymentCloseOnOrderDeletedUseCase.close(orderGroupId);
     }
 
     @Transactional
