@@ -6,6 +6,7 @@ import com.jjinmak.back.boundedContext.order.out.repository.OrderGroupRepository
 import com.jjinmak.back.boundedContext.order.out.repository.OrderRepository;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.shared.order.event.OrderConfirmPurchaseEvent;
+import com.jjinmak.back.shared.order.event.OrderGroupDeletedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -49,6 +50,10 @@ public class OrderSchedulerUseCase {
     public void deleteOverWaitingOrders(){
         List<Order> orders = orderRepository.findOverWaitedAll(LocalDateTime.now().minusHours(1));
         Set<OrderGroup> groups = orders.stream().map(Order::getGroup).collect(Collectors.toSet());
+
+        groups.forEach(
+                g -> eventPublisher.publish(new OrderGroupDeletedEvent(g.getId(), g.getTotalPrice()))
+        );
 
         orderGroupRepository.deleteAll(groups);
     }
