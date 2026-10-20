@@ -41,6 +41,10 @@ dependencies {
 
 	implementation("com.bucket4j:bucket4j_jdk17-core:8.21.0")
 
+	// 상품 이미지 S3 저장 (AWS SDK v2)
+	implementation(platform("software.amazon.awssdk:bom:2.57.0"))
+	implementation("software.amazon.awssdk:s3")
+
 	mockitoAgent("org.mockito:mockito-core") { isTransitive = false }
 }
 

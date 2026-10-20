@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 @Service
@@ -62,6 +63,11 @@ public class ProductFacade {
     @Transactional(readOnly = true)
     public ProductSummaryDto getProductSummary(Long productId){
         return productReadSummaryUseCase.getProductSummary(productId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductSummaryDto> getProductSummaries(Collection<Long> productIds){
+        return productReadSummaryUseCase.getProductSummaries(productIds);
     }
 
     @Transactional(readOnly = true)
