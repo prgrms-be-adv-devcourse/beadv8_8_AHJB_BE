@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-//인덱스추가예정
+@Table(indexes = @Index(name = "idx_bid_bidder_auction", columnList = "bidder_id, auction_id"))
 public class Bid {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,6 +1,7 @@
 package com.jjinmak.back.boundedContext.auction.app;
 
 import com.jjinmak.back.boundedContext.auction.domain.Auction;
+import com.jjinmak.back.boundedContext.auction.domain.ProductSnapshot;
 import com.jjinmak.back.boundedContext.auction.exception.AuctionErrorCode;
 import com.jjinmak.back.boundedContext.auction.out.AuctionEventPublisher;
 import com.jjinmak.back.boundedContext.auction.out.AuctionRepository;
@@ -30,6 +31,7 @@ class AuctionTradeResultUseCaseTest {
     private static final Long WINNER_ID = 200L;
     private static final LocalDateTime END_AT = LocalDateTime.of(2026, 10, 20, 21, 0);
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 21, 10, 0);
+    private static final ProductSnapshot SNAPSHOT = ProductSnapshot.of("테스트 상품", "CONSOLE", null);
 
     @Mock AuctionRepository auctionRepository;
     @Mock AuctionEventPublisher auctionEventPublisher;
@@ -38,7 +40,7 @@ class AuctionTradeResultUseCaseTest {
 
     // ── 상태별 경매 ──
     private Auction 진행중_경매() {
-        return Auction.create(1L, SELLER_ID, 10_000L, null, 3_000L, END_AT, END_AT.minusDays(3));
+        return Auction.create(1L, SELLER_ID, 10_000L, null, 3_000L, SNAPSHOT, END_AT, END_AT.minusDays(3));
     }
 
     private Auction 낙찰_경매() {

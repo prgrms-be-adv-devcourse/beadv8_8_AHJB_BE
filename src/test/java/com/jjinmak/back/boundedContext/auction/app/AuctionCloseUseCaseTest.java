@@ -1,6 +1,7 @@
 package com.jjinmak.back.boundedContext.auction.app;
 
 import com.jjinmak.back.boundedContext.auction.domain.Auction;
+import com.jjinmak.back.boundedContext.auction.domain.ProductSnapshot;
 import com.jjinmak.back.boundedContext.auction.domain.AuctionCloseResult;
 import com.jjinmak.back.boundedContext.auction.out.AuctionEventPublisher;
 import com.jjinmak.back.boundedContext.auction.out.AuctionRepository;
@@ -31,6 +32,7 @@ class AuctionCloseUseCaseTest {
     private static final Long BIDDER_ID = 200L;
     private static final Long HIGHEST_PRICE = 20_000L;
     private static final LocalDateTime END_AT = LocalDateTime.of(2026, 10, 20, 21, 0);
+    private static final ProductSnapshot SNAPSHOT = ProductSnapshot.of("테스트 상품", "CONSOLE", null);
 
     @Mock AuctionRepository auctionRepository;
     @Mock AuctionEventPublisher auctionEventPublisher;
@@ -38,7 +40,7 @@ class AuctionCloseUseCaseTest {
     @InjectMocks AuctionCloseUseCase auctionCloseUseCase;
 
     private Auction 입찰_없는_경매() {
-        return Auction.create(1L, SELLER_ID, 10_000L, null, 3_000L, END_AT, END_AT.minusDays(3));
+        return Auction.create(1L, SELLER_ID, 10_000L, null, 3_000L, SNAPSHOT, END_AT, END_AT.minusDays(3));
     }
 
     private Auction 입찰_있는_경매() {

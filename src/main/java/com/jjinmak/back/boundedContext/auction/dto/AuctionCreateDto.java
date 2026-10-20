@@ -9,6 +9,9 @@ public record AuctionCreateDto(
         Long startPrice,
         Long instantWinPrice,   // 선택
         Long shippingFee,
-        LocalDateTime endAt
+        LocalDateTime endAt,
+        String productName,
+        String category,
+        String thumbnailUrl
 ) {
 }

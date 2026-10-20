@@ -1,10 +1,9 @@
 package com.jjinmak.back.boundedContext.auction.in;
 
 import com.jjinmak.back.boundedContext.auction.app.AuctionFacade;
-import com.jjinmak.back.boundedContext.auction.dto.AuctionBidHistoryResponseDto;
-import com.jjinmak.back.boundedContext.auction.dto.AuctionBidResponseDto;
-import com.jjinmak.back.boundedContext.auction.dto.AuctionDetailResponseDto;
-import com.jjinmak.back.boundedContext.auction.dto.AuctionInstantWinResponseDto;
+import com.jjinmak.back.boundedContext.auction.domain.AuctionListStatus;
+import com.jjinmak.back.boundedContext.auction.domain.AuctionSortType;
+import com.jjinmak.back.boundedContext.auction.dto.*;
 import com.jjinmak.back.boundedContext.auction.exception.AuctionErrorCode;
 import com.jjinmak.back.boundedContext.auction.in.dto.AuctionBidRequestDto;
 import com.jjinmak.back.global.exception.BusinessException;
@@ -20,6 +19,8 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 
 @Tag(name = "경매", description = "입찰, 즉시낙찰, 경매 상세, 입찰 내역 조회 API")
@@ -89,5 +90,34 @@ public class AuctionApiController {
     public ResponseEntity<RsData<AuctionDetailResponseDto>> detail(@PathVariable Long auctionId,@AuthenticationPrincipal AuthPrincipal principal){
         AuctionDetailResponseDto response = auctionFacade.detail(auctionId,principal.memberId());
         return ResponseEntity.ok(new RsData<>(true,"경매 상세 조회에 성공했습니다.",response));
+    }
+
+    @Operation(
+            summary = "입찰 중인 경매",
+            description = "내가 입찰한 진행 중 경매를 마감 임박순으로 조회합니다. (최고 입찰자 여부 포함)"
+    )
+    @GetMapping("/me/bids")
+    public ResponseEntity<RsData<List<AuctionMyBidDto>>> myBids(@AuthenticationPrincipal AuthPrincipal principal) {
+        List<AuctionMyBidDto> response = auctionFacade.myBids(principal.memberId());
+        return ResponseEntity.ok(new RsData<>(true, "입찰 중인 경매 조회에 성공했습니다.", response));
+    }
+
+    @Operation(
+            summary = "경매 목록",
+            description = "status: IN_PROGRESS(기본) | ENDED / "
+                    + "category: CONSOLE, GAME_SOFTWARE, ACCESSORY, LIMITED_EDITION, ETC (생략 시 전체) / "
+                    + "sort: ENDING_SOON, RECENTLY_ENDED, NEWEST, MOST_BIDS, PRICE_ASC, PRICE_DESC "
+                    + "(생략 시 진행 중 ENDING_SOON, 종료 RECENTLY_ENDED)"
+    )
+    @GetMapping
+    public ResponseEntity<RsData<AuctionListResponseDto>> list(
+            @RequestParam(defaultValue = "IN_PROGRESS") AuctionListStatus status,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) AuctionSortType sort,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        AuctionListResponseDto response = auctionFacade.list(status, category, sort, page, size);
+        return ResponseEntity.ok(new RsData<>(true, "경매 목록 조회에 성공했습니다.", response));
     }
 }

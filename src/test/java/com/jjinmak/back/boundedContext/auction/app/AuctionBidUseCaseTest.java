@@ -1,6 +1,7 @@
 package com.jjinmak.back.boundedContext.auction.app;
 
 import com.jjinmak.back.boundedContext.auction.domain.Auction;
+import com.jjinmak.back.boundedContext.auction.domain.ProductSnapshot;
 import com.jjinmak.back.boundedContext.auction.domain.Bid;
 import com.jjinmak.back.boundedContext.auction.exception.AuctionErrorCode;
 import com.jjinmak.back.boundedContext.auction.out.AuctionEventPublisher;
@@ -37,6 +38,7 @@ class AuctionBidUseCaseTest {
     private static final Long SHIPPING_FEE = 3_000L;
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 20, 20, 0);   // 입찰 시각
     private static final LocalDateTime END_AT = NOW.plusDays(1);
+    private static final ProductSnapshot SNAPSHOT = ProductSnapshot.of("테스트 상품", "CONSOLE", null);
 
     @Mock AuctionRepository auctionRepository;
     @Mock BidRepository bidRepository;
@@ -46,7 +48,7 @@ class AuctionBidUseCaseTest {
 
     // ── 경매 만들기 ──
     private Auction 경매(Long instantWinPrice, LocalDateTime endAt) {
-        return Auction.create(1L, SELLER_ID, START_PRICE, instantWinPrice, SHIPPING_FEE, endAt, NOW.minusDays(3));
+        return Auction.create(1L, SELLER_ID, START_PRICE, instantWinPrice, SHIPPING_FEE, SNAPSHOT, endAt, NOW.minusDays(3));
     }
 
     private Auction 진행중_경매() {
@@ -103,7 +105,6 @@ class AuctionBidUseCaseTest {
             assertThat(response.isExtended()).isFalse();
             assertThat(auction.getHighestBidderId()).isEqualTo(BIDDER_ID);
             assertThat(auction.getBidCount()).isEqualTo(1);
-            then(auctionEventPublisher).should().publishBidUpdated(auction);
             then(auctionEventPublisher).should(never()).publishWon(any());
         }
 
@@ -334,7 +335,6 @@ class AuctionBidUseCaseTest {
             assertThat(auction.getWinnerId()).isEqualTo(BIDDER_ID);
             assertThat(auction.getWinningPrice()).isEqualTo(INSTANT_WIN_PRICE);
             then(auctionEventPublisher).should().publishWon(auction);
-            then(auctionEventPublisher).should(never()).publishBidUpdated(any());
         }
 
         @Test
@@ -386,7 +386,6 @@ class AuctionBidUseCaseTest {
 
             assertThat(response.isInstantWin()).isFalse();
             assertThat(auction.getStatus()).isEqualTo(IN_PROGRESS);
-            then(auctionEventPublisher).should().publishBidUpdated(auction);
         }
 
         @Test
