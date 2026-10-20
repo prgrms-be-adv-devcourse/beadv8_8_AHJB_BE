@@ -2,7 +2,6 @@ package com.jjinmak.back.boundedContext.auction.out;
 
 import com.jjinmak.back.boundedContext.auction.domain.Auction;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
-import com.jjinmak.back.shared.auction.event.AuctionBidUpdatedEvent;
 import com.jjinmak.back.shared.auction.event.AuctionFailedEvent;
 import com.jjinmak.back.shared.auction.event.AuctionStartedEvent;
 import com.jjinmak.back.shared.auction.event.AuctionWonEvent;
@@ -43,15 +42,6 @@ public class AuctionEventPublisher {
                 auction.getStartPrice(),
                 auction.getInstantWinPrice(),
                 auction.getStartAt(),
-                auction.getEndAt()
-        ));
-    }
-    public void publishBidUpdated(Auction auction) {
-        eventPublisher.publish(new AuctionBidUpdatedEvent(
-                auction.getId(),
-                auction.getProductId(),
-                auction.getCurrentPrice(),
-                auction.getBidCount(),
                 auction.getEndAt()
         ));
     }

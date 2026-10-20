@@ -1,6 +1,7 @@
 package com.jjinmak.back.boundedContext.auction.app;
 
 import com.jjinmak.back.boundedContext.auction.domain.Auction;
+import com.jjinmak.back.boundedContext.auction.domain.ProductSnapshot;
 import com.jjinmak.back.boundedContext.auction.domain.Bid;
 import com.jjinmak.back.boundedContext.auction.exception.AuctionErrorCode;
 import com.jjinmak.back.boundedContext.auction.out.AuctionEventPublisher;
@@ -23,7 +24,6 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,6 +36,7 @@ class AuctionInstantWinUseCaseTest {
     private static final Long INSTANT_WIN_PRICE = 50_000L;
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 20, 20, 0);   // 요청 시각
     private static final LocalDateTime END_AT = NOW.plusDays(1);
+    private static final ProductSnapshot SNAPSHOT = ProductSnapshot.of("테스트 상품", "CONSOLE", null);
 
     @Mock AuctionRepository auctionRepository;
     @Mock BidRepository bidRepository;
@@ -44,7 +45,7 @@ class AuctionInstantWinUseCaseTest {
     @InjectMocks AuctionInstantWinUseCase auctionInstantWinUseCase;
 
     private Auction 경매(Long instantWinPrice, LocalDateTime endAt) {
-        return Auction.create(1L, SELLER_ID, 10_000L, instantWinPrice, 3_000L, endAt, NOW.minusDays(3));
+        return Auction.create(1L, SELLER_ID, 10_000L, instantWinPrice, 3_000L, SNAPSHOT, endAt, NOW.minusDays(3));
     }
 
     private Auction 즉시낙찰_가능_경매() {
@@ -89,7 +90,6 @@ class AuctionInstantWinUseCaseTest {
             assertThat(auction.getWinnerId()).isEqualTo(BIDDER_ID);
             assertThat(auction.getWinAt()).isEqualTo(NOW);
             then(auctionEventPublisher).should().publishWon(auction);
-            then(auctionEventPublisher).should(never()).publishBidUpdated(any());
         }
 
         @Test
