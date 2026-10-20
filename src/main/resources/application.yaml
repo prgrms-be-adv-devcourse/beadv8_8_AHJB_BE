@@ -7,10 +7,6 @@ spring:
     name: back
   jpa:
     open-in-view: false
-  servlet:
-    multipart:
-      max-file-size: 10MB     # 상품 이미지 1장 최대 크기
-      max-request-size: 11MB  # multipart 헤더 여유분 포함
 
 jwt:
   access-token-expiration: 900000
