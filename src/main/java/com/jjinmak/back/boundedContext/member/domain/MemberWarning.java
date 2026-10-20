@@ -1,6 +1,8 @@
 package com.jjinmak.back.boundedContext.member.domain;
 
+import com.jjinmak.back.boundedContext.member.in.dto.WarningResponse;
 import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
+import com.jjinmak.back.shared.member.dto.MemberWarningDto;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -51,4 +53,13 @@ public class MemberWarning extends BaseIdAndTime {
                                        String reason, String description, LocalDateTime occurredAt){
         return new MemberWarning(memberId, sourceContext, sourceId, reason, description, occurredAt);
     }
-}
+
+    public WarningResponse to(){
+        return new WarningResponse(
+                this.getId(),
+                this.getReason(),
+                this.sourceId,
+                this.getOccurredAt()
+        );
+    }
+}

@@ -2,8 +2,7 @@ package com.jjinmak.back.boundedContext.member.in;
 
 import com.jjinmak.back.boundedContext.member.app.MemberReadUseCase;
 import com.jjinmak.back.boundedContext.member.app.MemberRegisterSellerUseCase;
-import com.jjinmak.back.boundedContext.member.in.dto.MemberSummaryResponseDto;
-import com.jjinmak.back.boundedContext.member.in.dto.RegisterSellerRequestDto;
+import com.jjinmak.back.boundedContext.member.in.dto.*;
 import com.jjinmak.back.global.rsData.RsData;
 import com.jjinmak.back.global.security.AuthPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,13 +40,42 @@ public class MemberController {
     }
 
     @Operation(
+            summary = "내 정보 상세조회",
+            description = "현재 인증된 사용자 ID와 요청 정보를 통해 회원의 상세정보를 조회합니다."
+    )
+    @GetMapping("/me")
+    public ResponseEntity<RsData<MemberDetailResponseDto>> getMyDetail(@AuthenticationPrincipal AuthPrincipal principal){
+
+        return ResponseEntity.ok(new RsData<>(memberReadUseCase.getMemberDetail(principal.memberId())));
+    }
+
+
+    @Operation(
             summary = "내 정보 요약 조회",
             description = "로그인한 회원의 닉네임, 판매자 여부, 정지 여부를 반환합니다."
     )
     @GetMapping("/me/summary")
-    public ResponseEntity<RsData<MemberSummaryResponseDto>> getMySummary(
-            @AuthenticationPrincipal AuthPrincipal principal
-    ) {
+    public ResponseEntity<RsData<MemberSummaryResponseDto>> getMySummary(@AuthenticationPrincipal AuthPrincipal principal) {
         return ResponseEntity.ok(new RsData<>(memberReadUseCase.getSummary(principal.memberId())));
     }
+
+
+    @Operation(
+            summary = "판매자 정보를 조회합니다",
+            description = "로그인한 회원의 판매자 정보를 조회합니다."
+    )
+    @GetMapping("/me/seller")
+    public ResponseEntity<RsData<SellerInfoResponseDto>> getSellerInfo(@AuthenticationPrincipal AuthPrincipal principal){
+        return ResponseEntity.ok(new RsData<>(memberReadUseCase.getSellerInfo(principal.memberId())));
+    }
+
+    @Operation(
+            summary = "경고 및 제재 내역을 조회합니다",
+            description = "로그인한 회원의 판매자 정보를 조회합니다."
+    )
+    @GetMapping("/me/warnings")
+    public ResponseEntity<RsData<AccountStatusResponse>> getAccountStatus(@AuthenticationPrincipal AuthPrincipal principal){
+        return ResponseEntity.ok(new RsData<>(memberReadUseCase.getAccountStatus(principal.memberId())));
+    }
+
 }
