@@ -19,7 +19,10 @@ import static com.jjinmak.back.boundedContext.auction.exception.AuctionErrorCode
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(indexes = @Index(name = "idx_auction_status_end_at", columnList = "status, end_at"))
+@Table(indexes = {
+        @Index(name = "idx_auction_status_end_at", columnList = "status, end_at"),
+        @Index(name = "idx_auction_status_category_end_at", columnList = "status, category, end_at")
+})
 public class Auction extends BaseIdAndTime {
 
     @Column(nullable = false)
@@ -35,6 +38,8 @@ public class Auction extends BaseIdAndTime {
 
     private Long shippingFee;
 
+    @Embedded
+    private ProductSnapshot productSnapshot;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
@@ -68,12 +73,14 @@ public class Auction extends BaseIdAndTime {
     private Long version;
 
     private Auction(Long productId, Long sellerId, Long startPrice, Long instantWinPrice,
-                      Long shippingFee, LocalDateTime startAt, LocalDateTime endAt) {
+                    Long shippingFee, ProductSnapshot productSnapshot,
+                    LocalDateTime startAt, LocalDateTime endAt) {
         this.productId = productId;
         this.sellerId = sellerId;
         this.startPrice = startPrice;
         this.instantWinPrice = instantWinPrice;
         this.shippingFee = shippingFee;
+        this.productSnapshot = productSnapshot;
         this.startAt = startAt;
         this.endAt = endAt;
         this.status = AuctionStatus.IN_PROGRESS;
@@ -83,9 +90,10 @@ public class Auction extends BaseIdAndTime {
     // 경매 조건은 상품 컨텍스트에서 검증된 값을 받는다.
     public static Auction create(Long productId, Long sellerId, Long startPrice,
                                  Long instantWinPrice, Long shippingFee,
+                                 ProductSnapshot productSnapshot,
                                  LocalDateTime endAt, LocalDateTime now) {
         return new Auction(productId, sellerId, startPrice, instantWinPrice,
-                shippingFee, now, endAt);
+                shippingFee, productSnapshot, now, endAt);
     }
 
     // 입찰

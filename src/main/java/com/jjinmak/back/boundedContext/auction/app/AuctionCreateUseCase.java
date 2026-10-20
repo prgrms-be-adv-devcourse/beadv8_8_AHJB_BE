@@ -2,6 +2,7 @@ package com.jjinmak.back.boundedContext.auction.app;
 
 import com.jjinmak.back.boundedContext.auction.domain.Auction;
 import com.jjinmak.back.boundedContext.auction.domain.AuctionStatus;
+import com.jjinmak.back.boundedContext.auction.domain.ProductSnapshot;
 import com.jjinmak.back.boundedContext.auction.dto.AuctionCreateDto;
 import com.jjinmak.back.boundedContext.auction.out.AuctionEventPublisher;
 import com.jjinmak.back.boundedContext.auction.out.AuctionRepository;
@@ -26,6 +27,7 @@ public class AuctionCreateUseCase {
                 dto.startPrice(),
                 dto.instantWinPrice(),
                 dto.shippingFee(),
+                ProductSnapshot.of(dto.productName(), dto.category(), dto.thumbnailUrl()),
                 dto.endAt(),
                 LocalDateTime.now()
         );

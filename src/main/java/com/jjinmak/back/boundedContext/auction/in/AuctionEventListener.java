@@ -33,7 +33,10 @@ public class AuctionEventListener {
                 event.startPrice(),
                 event.instantWinPrice(),
                 event.shippingFee(),
-                resolveEndAt(event, LocalDateTime.now())
+                resolveEndAt(event, LocalDateTime.now()),
+                event.productName(),
+                event.category(),
+                event.thumbnailUrl()
         );
         auctionFacade.createAuction(dto);
     }
