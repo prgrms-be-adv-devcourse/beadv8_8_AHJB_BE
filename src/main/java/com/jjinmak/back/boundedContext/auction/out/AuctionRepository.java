@@ -2,6 +2,7 @@ package com.jjinmak.back.boundedContext.auction.out;
 
 import com.jjinmak.back.boundedContext.auction.domain.Auction;
 import com.jjinmak.back.boundedContext.auction.domain.AuctionStatus;
+import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import org.springframework.data.domain.Pageable;
@@ -9,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 public interface AuctionRepository extends JpaRepository<Auction,Long> {
@@ -29,4 +31,13 @@ public interface AuctionRepository extends JpaRepository<Auction,Long> {
             order by a.endAt asc
             """)
     List<Auction> findMyBidding(@Param("bidderId") Long bidderId, @Param("status") AuctionStatus status);
+
+    @Query("""
+            select a from Auction a
+            where a.status in :statuses
+              and (:category is null or a.productSnapshot.category = :category)
+            """)
+    Page<Auction> findList(@Param("statuses") Collection<AuctionStatus> statuses,
+                           @Param("category") String category,
+                           Pageable pageable);
 }

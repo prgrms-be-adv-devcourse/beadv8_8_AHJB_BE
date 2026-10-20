@@ -1,7 +1,9 @@
 package com.jjinmak.back.boundedContext.auction.app;
 
 import com.jjinmak.back.boundedContext.auction.domain.AuctionCloseResult;
+import com.jjinmak.back.boundedContext.auction.domain.AuctionListStatus;
 import com.jjinmak.back.boundedContext.auction.domain.AuctionMember;
+import com.jjinmak.back.boundedContext.auction.domain.AuctionSortType;
 import com.jjinmak.back.boundedContext.auction.dto.*;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +25,7 @@ public class AuctionFacade {
     private final AuctionDetailUseCase auctionDetailUseCase;
     private final AuctionTradeResultUseCase auctionTradeResultUseCase;
     private final AuctionMyBidsUseCase auctionMyBidsUseCase;
+    private final AuctionListUseCase auctionListUseCase;
 
     @Transactional
     public AuctionMember syncMember(MemberDto dto){
@@ -66,4 +69,8 @@ public class AuctionFacade {
 
     @Transactional(readOnly = true)
     public List<AuctionMyBidDto> myBids(Long memberId){return auctionMyBidsUseCase.myBids(memberId);}
+
+    @Transactional(readOnly = true)
+    public AuctionListResponseDto list(AuctionListStatus status, String category, AuctionSortType sort, int page, int size){return auctionListUseCase.list(status, category, sort, page, size, LocalDateTime.now());}
 }
+

@@ -1,6 +1,8 @@
 package com.jjinmak.back.boundedContext.auction.in;
 
 import com.jjinmak.back.boundedContext.auction.app.AuctionFacade;
+import com.jjinmak.back.boundedContext.auction.domain.AuctionListStatus;
+import com.jjinmak.back.boundedContext.auction.domain.AuctionSortType;
 import com.jjinmak.back.boundedContext.auction.dto.*;
 import com.jjinmak.back.boundedContext.auction.exception.AuctionErrorCode;
 import com.jjinmak.back.boundedContext.auction.in.dto.AuctionBidRequestDto;
@@ -98,5 +100,24 @@ public class AuctionApiController {
     public ResponseEntity<RsData<List<AuctionMyBidDto>>> myBids(@AuthenticationPrincipal AuthPrincipal principal) {
         List<AuctionMyBidDto> response = auctionFacade.myBids(principal.memberId());
         return ResponseEntity.ok(new RsData<>(true, "입찰 중인 경매 조회에 성공했습니다.", response));
+    }
+
+    @Operation(
+            summary = "경매 목록",
+            description = "status: IN_PROGRESS(기본) | ENDED / "
+                    + "category: CONSOLE, GAME_SOFTWARE, ACCESSORY, LIMITED_EDITION, ETC (생략 시 전체) / "
+                    + "sort: ENDING_SOON, RECENTLY_ENDED, NEWEST, MOST_BIDS, PRICE_ASC, PRICE_DESC "
+                    + "(생략 시 진행 중 ENDING_SOON, 종료 RECENTLY_ENDED)"
+    )
+    @GetMapping
+    public ResponseEntity<RsData<AuctionListResponseDto>> list(
+            @RequestParam(defaultValue = "IN_PROGRESS") AuctionListStatus status,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) AuctionSortType sort,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        AuctionListResponseDto response = auctionFacade.list(status, category, sort, page, size);
+        return ResponseEntity.ok(new RsData<>(true, "경매 목록 조회에 성공했습니다.", response));
     }
 }
