@@ -22,4 +22,11 @@ public interface AuctionRepository extends JpaRepository<Auction,Long> {
     )
     List<Long> findCloseTargetIds(@Param("status") AuctionStatus status,@Param("now") LocalDateTime now, Pageable pageable);
 
+    @Query("""
+            select a from Auction a
+            where a.status = :status
+              and a.id in (select b.auctionId from Bid b where b.bidderId = :bidderId)
+            order by a.endAt asc
+            """)
+    List<Auction> findMyBidding(@Param("bidderId") Long bidderId, @Param("status") AuctionStatus status);
 }

@@ -22,6 +22,7 @@ public class AuctionFacade {
     private final AuctionCloseUseCase auctionCloseUseCase;
     private final AuctionDetailUseCase auctionDetailUseCase;
     private final AuctionTradeResultUseCase auctionTradeResultUseCase;
+    private final AuctionMyBidsUseCase auctionMyBidsUseCase;
 
     @Transactional
     public AuctionMember syncMember(MemberDto dto){
@@ -62,4 +63,7 @@ public class AuctionFacade {
 
     @Transactional
     public void applyRefundAccepted(Long auctionId) {auctionTradeResultUseCase.applyRefundAccepted(auctionId, LocalDateTime.now());}
+
+    @Transactional(readOnly = true)
+    public List<AuctionMyBidDto> myBids(Long memberId){return auctionMyBidsUseCase.myBids(memberId);}
 }

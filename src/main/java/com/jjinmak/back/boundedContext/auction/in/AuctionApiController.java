@@ -1,10 +1,7 @@
 package com.jjinmak.back.boundedContext.auction.in;
 
 import com.jjinmak.back.boundedContext.auction.app.AuctionFacade;
-import com.jjinmak.back.boundedContext.auction.dto.AuctionBidHistoryResponseDto;
-import com.jjinmak.back.boundedContext.auction.dto.AuctionBidResponseDto;
-import com.jjinmak.back.boundedContext.auction.dto.AuctionDetailResponseDto;
-import com.jjinmak.back.boundedContext.auction.dto.AuctionInstantWinResponseDto;
+import com.jjinmak.back.boundedContext.auction.dto.*;
 import com.jjinmak.back.boundedContext.auction.exception.AuctionErrorCode;
 import com.jjinmak.back.boundedContext.auction.in.dto.AuctionBidRequestDto;
 import com.jjinmak.back.global.exception.BusinessException;
@@ -20,6 +17,8 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 
 @Tag(name = "경매", description = "입찰, 즉시낙찰, 경매 상세, 입찰 내역 조회 API")
@@ -89,5 +88,15 @@ public class AuctionApiController {
     public ResponseEntity<RsData<AuctionDetailResponseDto>> detail(@PathVariable Long auctionId,@AuthenticationPrincipal AuthPrincipal principal){
         AuctionDetailResponseDto response = auctionFacade.detail(auctionId,principal.memberId());
         return ResponseEntity.ok(new RsData<>(true,"경매 상세 조회에 성공했습니다.",response));
+    }
+
+    @Operation(
+            summary = "입찰 중인 경매",
+            description = "내가 입찰한 진행 중 경매를 마감 임박순으로 조회합니다. (최고 입찰자 여부 포함)"
+    )
+    @GetMapping("/me/bids")
+    public ResponseEntity<RsData<List<AuctionMyBidDto>>> myBids(@AuthenticationPrincipal AuthPrincipal principal) {
+        List<AuctionMyBidDto> response = auctionFacade.myBids(principal.memberId());
+        return ResponseEntity.ok(new RsData<>(true, "입찰 중인 경매 조회에 성공했습니다.", response));
     }
 }
