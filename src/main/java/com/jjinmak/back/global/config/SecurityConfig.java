@@ -44,6 +44,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_URLS).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/order/{orderId}/delivery/{deliveryId}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auctions").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint)
