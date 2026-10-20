@@ -4,6 +4,7 @@ import com.jjinmak.back.boundedContext.delivery.app.event.WebhookRegisterEvent;
 import com.jjinmak.back.boundedContext.delivery.domain.Delivery;
 import com.jjinmak.back.boundedContext.delivery.domain.DeliveryMember;
 import com.jjinmak.back.boundedContext.delivery.out.deliveryTracker.DeliveryTracker;
+import com.jjinmak.back.boundedContext.delivery.out.dto.DeliveryStatusResponseDto;
 import com.jjinmak.back.boundedContext.delivery.out.repository.DeliveryMemberRepository;
 import com.jjinmak.back.boundedContext.delivery.out.repository.DeliveryRepository;
 import com.jjinmak.back.global.security.JwtTokenProvider;
@@ -24,6 +25,8 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,8 +34,11 @@ import static com.jjinmak.back.shared.delivery.domain.CarrierType.CJ;
 import static com.jjinmak.back.shared.delivery.domain.CarrierType.HANJIN;
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.DELIVERED;
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.EXCEPTION;
+import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.IN_TRANSIT;
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.WAITING;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -130,6 +136,34 @@ class DeliveryApiControllerTest {
 
         assertThat(deliveryRepository.findById(deliveryId).orElseThrow().getWaybill()).isEqualTo("OLD-111");
         assertThat(events.stream(WebhookRegisterEvent.class)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("배송 현황 조회: 마지막 배송 상태와 함께 등록된 택배사와 운송장 번호를 돌려준다")
+    void getDeliveryStatus_withCarrierAndWaybill() throws Exception {
+        saveDelivery(100L, IN_TRANSIT);
+        when(deliveryTracker.trackLastStatus(CJ, "OLD-111")).thenReturn(
+                new DeliveryStatusResponseDto(
+                        new DeliveryStatusResponseDto.Data(
+                                new DeliveryStatusResponseDto.Track(
+                                        new DeliveryStatusResponseDto.LastEvent(
+                                                OffsetDateTime.of(2026, 10, 19, 15, 0, 0, 0, ZoneOffset.ofHours(9)),
+                                                new DeliveryStatusResponseDto.Status(IN_TRANSIT)
+                                        )
+                                )
+                        ),
+                        null
+                )
+        );
+
+        mockMvc.perform(get("/api/v1/order/{orderId}/delivery", 100L)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(1L)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.orderId").value(100))
+                .andExpect(jsonPath("$.data.carrier").value("CJ"))
+                .andExpect(jsonPath("$.data.waybill").value("OLD-111"))
+                .andExpect(jsonPath("$.data.code").value("IN_TRANSIT"))
+                .andExpect(jsonPath("$.data.message").value("이동 중"));
     }
 
     private Long saveDelivery(Long orderId, DeliveryStatusCode status) {

@@ -47,6 +47,8 @@ public class DeliveryTrackerUseCase {
 
         return new DeliveryStatusDto(
                 orderId,
+                delivery.getCarrier(),
+                delivery.getWaybill(),
                 lastEvent.status().code(),
                 lastEvent.status().code().getMessage(),
                 lastEvent.time() == null ? null : lastEvent.time().atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime()

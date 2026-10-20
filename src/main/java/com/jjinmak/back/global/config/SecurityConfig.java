@@ -1,5 +1,6 @@
 package com.jjinmak.back.global.config;
 
+import com.jjinmak.back.boundedContext.product.out.imageStorage.ProductImageProperties;
 import com.jjinmak.back.global.security.CustomAccessDeniedHandler;
 import com.jjinmak.back.global.security.CustomAuthenticationEntryPoint;
 import com.jjinmak.back.global.security.JwtAuthenticationFilter;
@@ -45,6 +46,8 @@ public class SecurityConfig {
                         .requestMatchers(PUBLIC_URLS).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/order/{orderId}/delivery/{deliveryId}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/auctions").permitAll()
+                        // 로컬 저장소 이미지 조회 (<img> 요청에는 토큰이 없다)
+                        .requestMatchers(HttpMethod.GET, ProductImageProperties.LOCAL_URL_PATH).permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint)

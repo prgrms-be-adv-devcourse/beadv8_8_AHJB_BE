@@ -39,7 +39,7 @@ public class OrderReadOrderUseCase {
                 (order) -> new OrderDto(
                         order.getId(), winner.getUuid(), order.getSeller().getUuid(),
                         order.getProductId(), order.getWinningPrice(), order.getDeliveryFee(),
-                        order.getState(), order.getCreatedAt(), order.getUpdatedAt()
+                        order.getState(), order.getConfirmExpiredAt(), order.getCreatedAt(), order.getUpdatedAt()
                 )
         ).toList();
     }
@@ -54,7 +54,7 @@ public class OrderReadOrderUseCase {
                 (order) -> new OrderDto(
                         order.getId(), order.getWinner().getUuid(), seller.getUuid(),
                         order.getProductId(), order.getWinningPrice(), order.getDeliveryFee(),
-                        order.getState(), order.getCreatedAt(), order.getUpdatedAt()
+                        order.getState(), order.getConfirmExpiredAt(), order.getCreatedAt(), order.getUpdatedAt()
                 )
         ).toList();
     }
@@ -71,7 +71,7 @@ public class OrderReadOrderUseCase {
         return new OrderDto(
                 order.getId(), order.getWinner().getUuid(), order.getSeller().getUuid(),
                 order.getProductId(), order.getWinningPrice(), order.getDeliveryFee(),
-                order.getState(), order.getCreatedAt(), order.getUpdatedAt()
+                order.getState(), order.getConfirmExpiredAt(), order.getCreatedAt(), order.getUpdatedAt()
         );
     }
 }

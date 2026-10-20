@@ -23,7 +23,13 @@ public enum ProductErrorCode implements ErrorCode {
     ALREADY_WISHED("PRODUCT013", "이미 찜한 상품입니다.", HttpStatus.BAD_REQUEST),
     WISH_NOT_FOUND("PRODUCT014", "찜하지 않은 상품입니다.", HttpStatus.NOT_FOUND),
     CANNOT_WISH_OWN_PRODUCT("PRODUCT015", "본인이 등록한 상품은 찜할 수 없습니다.", HttpStatus.BAD_REQUEST),
-    INVALID_CUSTOM_END_AT("PRODUCT016", "종료 시각은 경매 시작 후 1일부터 7일 사이로 지정해야 합니다.", HttpStatus.BAD_REQUEST)
+    INVALID_CUSTOM_END_AT("PRODUCT016", "종료 시각은 경매 시작 후 1일부터 7일 사이로 지정해야 합니다.", HttpStatus.BAD_REQUEST),
+    INVALID_IMAGE_FILE("PRODUCT017", "jpeg, png, webp 이미지만 업로드할 수 있습니다.", HttpStatus.BAD_REQUEST),
+    IMAGE_TOO_LARGE("PRODUCT018", "이미지는 10MB 이하만 업로드할 수 있습니다.", HttpStatus.BAD_REQUEST),
+    IMAGE_NOT_FOUND("PRODUCT019", "존재하지 않는 이미지가 포함되어 있습니다.", HttpStatus.NOT_FOUND),
+    NOT_IMAGE_UPLOADER("PRODUCT020", "본인이 업로드한 이미지만 사용할 수 있습니다.", HttpStatus.FORBIDDEN),
+    IMAGE_ALREADY_ATTACHED("PRODUCT021", "이미 다른 상품에 등록된 이미지입니다.", HttpStatus.BAD_REQUEST),
+    IMAGE_UPLOAD_FAILED("PRODUCT022", "이미지 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.", HttpStatus.INTERNAL_SERVER_ERROR)
     ;
     private final String code;
     private final String message;

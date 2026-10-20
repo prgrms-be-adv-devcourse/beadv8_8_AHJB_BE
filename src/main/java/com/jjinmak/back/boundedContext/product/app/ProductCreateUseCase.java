@@ -22,6 +22,7 @@ public class ProductCreateUseCase {
 
     private final ProductRepository productRepository;
     private final ProductMemberRepository productMemberRepository;
+    private final ProductImageAttachUseCase productImageAttachUseCase;
 
     public Product createProduct(Long sellerId, ProductCreateRequestDto request){
         // 판매자 등록 여부, 계정 정지/차단은 컨트롤러의 PERM_SELL 권한 검사에서 확인한다.
@@ -50,6 +51,11 @@ public class ProductCreateUseCase {
                 )
         );
 
-        return productRepository.save(product);
+        productRepository.save(product);
+
+        // 업로드 API로 먼저 올린 이미지를 요청 순서대로 연결한다. (첫 번째가 대표 이미지)
+        productImageAttachUseCase.attach(product, sellerId, request.imageIds());
+
+        return product;
     }
 }

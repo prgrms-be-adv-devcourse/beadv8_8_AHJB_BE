@@ -6,6 +6,9 @@ import com.jjinmak.back.shared.product.port.ProductReadPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
+import java.util.List;
+
 @Component
 @RequiredArgsConstructor
 public class ProductReadPortAdapter implements ProductReadPort {
@@ -15,5 +18,10 @@ public class ProductReadPortAdapter implements ProductReadPort {
     @Override
     public ProductSummaryDto getProductSummary(Long productId) {
         return productFacade.getProductSummary(productId);
+    }
+
+    @Override
+    public List<ProductSummaryDto> getProductSummaries(Collection<Long> productIds) {
+        return productFacade.getProductSummaries(productIds);
     }
 }

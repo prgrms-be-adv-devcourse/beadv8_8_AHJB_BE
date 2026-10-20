@@ -1,19 +1,24 @@
 package com.jjinmak.back.boundedContext.member.in;
 
 import com.jjinmak.back.boundedContext.member.app.AuthFacade;
+import com.jjinmak.back.boundedContext.member.app.AuthResult;
 import com.jjinmak.back.boundedContext.member.app.MemberLogoutUseCase;
 import com.jjinmak.back.boundedContext.member.app.MemberReadUseCase;
 import com.jjinmak.back.boundedContext.member.app.MemberSignUpUseCase;
+import com.jjinmak.back.boundedContext.member.exception.AuthErrorCode;
 import com.jjinmak.back.boundedContext.member.in.dto.*;
+import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.global.rsData.RsData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +33,8 @@ public class AuthController {
     private final MemberReadUseCase memberReadUseCase;
     private final MemberLogoutUseCase memberLogoutUseCase;
     private final AuthFacade authFacade;
+    private final RefreshTokenCookieManager refreshTokenCookieManager;
+    private final OriginValidator originValidator;
 
     @Operation(
             summary = "회원가입",
@@ -41,12 +48,12 @@ public class AuthController {
 
     @Operation(
             summary = "로그인",
-            description = "등록한 이메일, 비밀번호를 기반하여 로그인을 시도합니다."
+            description = "등록한 이메일, 비밀번호로 로그인합니다. 리프레시 토큰은 HttpOnly 쿠키로 전달됩니다."
     )
     @PostMapping("/login")
-    public ResponseEntity<RsData<MemberLoginResponseDto>> login(@Valid @RequestBody LoginRequestDto request){
-        MemberLoginResponseDto result = authFacade.login(request.email(), request.password());
-        return ResponseEntity.ok(new RsData<>(result));
+    public ResponseEntity<RsData<TokenResponseDto>> login(@Valid @RequestBody LoginRequestDto request){
+        AuthResult result = authFacade.login(request.email(), request.password());
+        return tokenResponse(result);
     }
 
     @Operation(
@@ -79,26 +86,38 @@ public class AuthController {
 
     @Operation(
             summary = "로그아웃",
-            description = "전달받은 RefreshToken을 revoke 처리합니다"
+            description = "쿠키의 리프레시 토큰을 무효화하고 쿠키를 삭제합니다."
     )
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(
-            @Valid @RequestBody RefreshTokenRequestDto request
-    ){
-        memberLogoutUseCase.revokeRefreshToken(request.refreshToken());
+    public ResponseEntity<Void> logout(HttpServletRequest request){
+        originValidator.validate(request);
 
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        refreshTokenCookieManager.resolve(request)
+                .ifPresent(memberLogoutUseCase::revokeRefreshToken);
+
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookieManager.expire().toString())
+                .build();
     }
 
     @Operation(
             summary = "토큰 재발급",
-            description = "RefreshToken을 재발급합니다."
+            description = "쿠키의 리프레시 토큰으로 액세스 토큰과 리프레시 토큰을 재발급합니다."
     )
     @PostMapping("/reissue")
-    public ResponseEntity<RsData<MemberLoginResponseDto>> reissue(
-            @Valid @RequestBody RefreshTokenRequestDto request
-    ){
-        MemberLoginResponseDto result = authFacade.reissue(request.refreshToken());
-        return ResponseEntity.ok(new RsData<>(result));
+    public ResponseEntity<RsData<TokenResponseDto>> reissue(HttpServletRequest request){
+        originValidator.validate(request);
+
+        String refreshToken = refreshTokenCookieManager.resolve(request)
+                .orElseThrow(() -> new BusinessException(AuthErrorCode.INVALID_REFRESH_TOKEN));
+
+        AuthResult result = authFacade.reissue(refreshToken);
+        return tokenResponse(result);
+    }
+
+    private ResponseEntity<RsData<TokenResponseDto>> tokenResponse(AuthResult result) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookieManager.create(result.refreshToken()).toString())
+                .body(new RsData<>(new TokenResponseDto(result.accessToken(), result.suspended())));
     }
 }

@@ -31,7 +31,7 @@ public record ProductCreateRequestDto(
         @Size(max = 50)
         String manufacturerEtc,
 
-        // TODO: presigned url 발급 API 구현 후 이미지 연결
+        // 이미지 업로드 API(POST /products/images)로 받은 id. 순서 = 노출 순서, 첫 번째가 대표 이미지
         @NotEmpty
         @Size(max = 10)
         @UniqueElements
