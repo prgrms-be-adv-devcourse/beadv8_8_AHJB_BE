@@ -1,7 +1,6 @@
 package com.jjinmak.back.boundedContext.member.app;
 
 import com.jjinmak.back.boundedContext.member.domain.Member;
-import com.jjinmak.back.boundedContext.member.in.dto.MemberLoginResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,7 +15,7 @@ public class AuthFacade {
     private final MemberSanctionReleaseUseCase memberSanctionReleaseUseCase;
 
     @Transactional
-    public MemberLoginResponseDto login(String email, String password){
+    public AuthResult login(String email, String password){
 
         Member member = memberAuthenticateUseCase.authenticate(email, password);
 
@@ -24,11 +23,11 @@ public class AuthFacade {
 
         TokenPair pair = memberTokenIssueUseCase.issue(member);
 
-        return new MemberLoginResponseDto(pair.accessToken(), pair.refreshToken(), member.getNickname(), member.isSuspended());
+        return new AuthResult(pair.accessToken(), pair.refreshToken(), member.isSuspended());
     }
 
     @Transactional
-    public MemberLoginResponseDto reissue(String refreshToken){
+    public AuthResult reissue(String refreshToken){
 
         Member member = memberReissueTokenUseCase.reissue(refreshToken);
 
@@ -36,6 +35,6 @@ public class AuthFacade {
 
         TokenPair pair = memberTokenIssueUseCase.issue(member);
 
-        return new MemberLoginResponseDto(pair.accessToken(), pair.refreshToken(), member.getNickname(), member.isSuspended());
+        return new AuthResult(pair.accessToken(), pair.refreshToken(), member.isSuspended());
     }
-}
+}
