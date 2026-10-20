@@ -48,7 +48,10 @@ public class ProductRequestAuctionUseCase {
                 auctionTerms.getStartPrice(),
                 auctionTerms.getInstantWinPrice(),
                 duration.getDays(),
-                auctionTerms.getCustomEndAt()
+                auctionTerms.getCustomEndAt(),
+                product.getName(),
+                product.getCategory().name(),
+                null
         ));
     }
 }
