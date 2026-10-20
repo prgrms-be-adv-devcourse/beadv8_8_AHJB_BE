@@ -63,6 +63,8 @@ class OrderReadOrderUseCaseTest {
 
     LocalDateTime createdAt = LocalDateTime.of(2026, 10, 15, 9, 0);
     LocalDateTime updatedAt = LocalDateTime.of(2026, 10, 16, 18, 30);
+    LocalDateTime shippedAt = LocalDateTime.of(2026, 10, 16, 18, 0);
+    LocalDateTime confirmExpiredAt = LocalDateTime.of(2026, 10, 23, 18, 0);
 
     @BeforeEach
     void setUp() {
@@ -72,9 +74,9 @@ class OrderReadOrderUseCaseTest {
     }
 
     @Test
-    @DisplayName("낙찰자의 주문 목록을 저장소가 준 순서 그대로 DTO로 돌려준다")
+    @DisplayName("낙찰자의 주문 목록을 저장소가 준 순서 그대로 DTO로 돌려주고, 배송이 끝난 주문에는 자동 구매확정 시각을 담는다")
     void readWinnerOrders_keepsRepositoryOrder() {
-        Order first = order(101L, 11L, 21L, 50_000L, 4_000L, SHIPPED);
+        Order first = shippedOrder(101L, 11L, 21L, 50_000L, 4_000L, SHIPPED);
         Order second = order(100L, 10L, 20L, 30_000L, 3_000L, PAID);
         when(orderSupport.getMember(1L)).thenReturn(winner);
         when(orderRepository.findAllByWinnerAndStateIn(eq(winner), anySet(), any(Pageable.class)))
@@ -83,8 +85,8 @@ class OrderReadOrderUseCaseTest {
         List<OrderDto> result = orderReadOrderUseCase.readWinnerOrders(1L, 0, 10);
 
         assertThat(result).containsExactly(
-                new OrderDto(101L, winner.getUuid(), seller.getUuid(), 21L, 50_000L, 4_000L, SHIPPED, createdAt, updatedAt),
-                new OrderDto(100L, winner.getUuid(), seller.getUuid(), 20L, 30_000L, 3_000L, PAID, createdAt, updatedAt)
+                new OrderDto(101L, winner.getUuid(), seller.getUuid(), 21L, 50_000L, 4_000L, SHIPPED, confirmExpiredAt, createdAt, updatedAt),
+                new OrderDto(100L, winner.getUuid(), seller.getUuid(), 20L, 30_000L, 3_000L, PAID, null, createdAt, updatedAt)
         );
     }
 
@@ -178,10 +180,10 @@ class OrderReadOrderUseCaseTest {
     }
 
     @Test
-    @DisplayName("판매자의 주문 목록을 저장소가 준 순서 그대로, 주문의 낙찰자를 담아 DTO로 돌려준다")
+    @DisplayName("판매자의 주문 목록을 저장소가 준 순서 그대로, 주문의 낙찰자와 자동 구매확정 시각을 담아 DTO로 돌려준다")
     void readSellerOrders_keepsRepositoryOrder() {
-        Order first = order(101L, 11L, 21L, 50_000L, 4_000L, REFUND_REQUESTED);
-        Order second = order(100L, 10L, 20L, 30_000L, 3_000L, CONFIRMED);
+        Order first = shippedOrder(101L, 11L, 21L, 50_000L, 4_000L, REFUND_REQUESTED);
+        Order second = shippedOrder(100L, 10L, 20L, 30_000L, 3_000L, CONFIRMED);
         when(orderSupport.getMember(2L)).thenReturn(seller);
         when(orderRepository.findAllBySellerAndStateIn(eq(seller), anySet(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(first, second)));
@@ -189,8 +191,8 @@ class OrderReadOrderUseCaseTest {
         List<OrderDto> result = orderReadOrderUseCase.readSellerOrders(2L, 0, 10);
 
         assertThat(result).containsExactly(
-                new OrderDto(101L, winner.getUuid(), seller.getUuid(), 21L, 50_000L, 4_000L, REFUND_REQUESTED, createdAt, updatedAt),
-                new OrderDto(100L, winner.getUuid(), seller.getUuid(), 20L, 30_000L, 3_000L, CONFIRMED, createdAt, updatedAt)
+                new OrderDto(101L, winner.getUuid(), seller.getUuid(), 21L, 50_000L, 4_000L, REFUND_REQUESTED, confirmExpiredAt, createdAt, updatedAt),
+                new OrderDto(100L, winner.getUuid(), seller.getUuid(), 20L, 30_000L, 3_000L, CONFIRMED, confirmExpiredAt, createdAt, updatedAt)
         );
     }
 
@@ -252,7 +254,7 @@ class OrderReadOrderUseCaseTest {
     }
 
     @Test
-    @DisplayName("낙찰자가 주문을 조회하면 주문 DTO를 돌려준다")
+    @DisplayName("낙찰자가 배송 중인 주문을 조회하면 자동 구매확정 시각 없이 주문 DTO를 돌려준다")
     void readOrder_byWinner() {
         Order order = order(100L, 10L, 20L, 30_000L, 3_000L, SHIPPING);
         when(orderSupport.getMember(1L)).thenReturn(winner);
@@ -261,21 +263,21 @@ class OrderReadOrderUseCaseTest {
         OrderDto result = orderReadOrderUseCase.readOrder(1L, 100L);
 
         assertThat(result).isEqualTo(
-                new OrderDto(100L, winner.getUuid(), seller.getUuid(), 20L, 30_000L, 3_000L, SHIPPING, createdAt, updatedAt)
+                new OrderDto(100L, winner.getUuid(), seller.getUuid(), 20L, 30_000L, 3_000L, SHIPPING, null, createdAt, updatedAt)
         );
     }
 
     @Test
-    @DisplayName("판매자가 주문을 조회하면 주문 DTO를 돌려준다")
+    @DisplayName("판매자가 배송이 끝난 주문을 조회하면 자동 구매확정 시각을 담아 주문 DTO를 돌려준다")
     void readOrder_bySeller() {
-        Order order = order(100L, 10L, 20L, 30_000L, 3_000L, REFUNDED);
+        Order order = shippedOrder(100L, 10L, 20L, 30_000L, 3_000L, REFUNDED);
         when(orderSupport.getMember(2L)).thenReturn(seller);
         when(orderRepository.findByIdAndStateInWithWinnerAndSeller(eq(100L), anySet())).thenReturn(Optional.of(order));
 
         OrderDto result = orderReadOrderUseCase.readOrder(2L, 100L);
 
         assertThat(result).isEqualTo(
-                new OrderDto(100L, winner.getUuid(), seller.getUuid(), 20L, 30_000L, 3_000L, REFUNDED, createdAt, updatedAt)
+                new OrderDto(100L, winner.getUuid(), seller.getUuid(), 20L, 30_000L, 3_000L, REFUNDED, confirmExpiredAt, createdAt, updatedAt)
         );
     }
 
@@ -335,6 +337,13 @@ class OrderReadOrderUseCaseTest {
         ReflectionTestUtils.setField(order, "id", id);
         ReflectionTestUtils.setField(order, "createdAt", createdAt);
         ReflectionTestUtils.setField(order, "updatedAt", updatedAt);
+        return order;
+    }
+
+    private Order shippedOrder(Long id, Long auctionId, Long productId, Long winningPrice, Long deliveryFee, OrderState state) {
+        Order order = order(id, auctionId, productId, winningPrice, deliveryFee, SHIPPING);
+        order.shipped(shippedAt);
+        order.updateState(state);
         return order;
     }
 

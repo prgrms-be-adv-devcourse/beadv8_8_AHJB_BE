@@ -13,6 +13,7 @@ public record OrderDto(
         Long winningPrice,
         Long deliveryFee,
         OrderState state,
+        LocalDateTime confirmExpiredAt,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
