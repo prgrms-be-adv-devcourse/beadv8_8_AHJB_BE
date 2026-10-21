@@ -1,6 +1,9 @@
 package com.jjinmak.back.boundedContext.product.out;
 
 import com.jjinmak.back.boundedContext.product.domain.Product;
+import com.jjinmak.back.boundedContext.product.domain.ProductCategory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -23,6 +26,22 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             order by p.id
             """)
     List<Long> findAuctionRequestTargetIds(LocalDateTime now);
+
+    // 곧 시작: 아직 경매로 넘어가지 않은 상품 (시작 임박순). category가 null이면 전체
+    @Query(value = """
+            select p from Product p
+            where p.auctionRequestedAt is null
+              and p.deletedAt is null
+              and (:category is null or p.category = :category)
+            order by p.auctionScheduledAt asc, p.id asc
+            """,
+            countQuery = """
+            select count(p) from Product p
+            where p.auctionRequestedAt is null
+              and p.deletedAt is null
+              and (:category is null or p.category = :category)
+            """)
+    Page<Product> findUpcoming(ProductCategory category, Pageable pageable);
 
     // 찜 수는 동시 요청과 @Version 충돌을 피하기 위해 DB에서 직접 증감한다.
     @Modifying

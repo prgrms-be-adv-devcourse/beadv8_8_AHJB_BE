@@ -46,6 +46,8 @@ public class SecurityConfig {
                         .requestMatchers(PUBLIC_URLS).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/order/{orderId}/delivery/{deliveryId}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/auctions").permitAll()
+                        // 경매 목록 화면의 "곧 시작" 탭 (경매 목록과 같이 비로그인 조회 가능)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/products/upcoming").permitAll()
                         // 로컬 저장소 이미지 조회 (<img> 요청에는 토큰이 없다)
                         .requestMatchers(HttpMethod.GET, ProductImageProperties.LOCAL_URL_PATH).permitAll()
                         .anyRequest().authenticated())
