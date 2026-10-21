@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 이벤트로 들어오는 지갑 내부 작업의 진입점 (PaymentEventListener 가 호출).
- * 회원 동기화·지갑 생성·환불·구매 확정·정산. 토스 호출이 없으므로 메서드 단위 @Transactional 로 충분하다.
+ * 회원 동기화·지갑 생성·환불·구매 확정·정산·주문 그룹 삭제에 따른 결제 종료. 토스 호출이 없으므로 메서드 단위 @Transactional 로 충분하다.
  *
  * 충전·주문 결제처럼 토스 호출이 끼는 흐름은 PaymentFacade 가 담당한다.
  */
@@ -37,6 +37,7 @@ public class WalletFacade {
     private final WalletGetHoldingsUseCase walletGetHoldingsUseCase;
     private final WalletWithdrawUseCase walletWithdrawUseCase;
     private final WalletGetWithdrawalsUseCase walletGetWithdrawalsUseCase;
+    private final PaymentCloseOnOrderDeletedUseCase paymentCloseOnOrderDeletedUseCase;
 
     @Transactional
     public WalletMember syncMember(MemberDto member) {
@@ -65,6 +66,12 @@ public class WalletFacade {
         return walletGetBalanceUseCase.getBalances(holderId);
     }
 
+    /** 주문 그룹 삭제(결제 기한 만료 등) → 그 그룹의 미완료 결제를 FAILED 로 닫는다 */
+    @Transactional
+    public void closePaymentByOrderGroupDeleted(Long orderGroupId) {
+        paymentCloseOnOrderDeletedUseCase.close(orderGroupId);
+    }
+
     @Transactional
     public void confirmHolding(Long orderId) {
         walletConfirmHoldingUseCase.confirm(orderId);
@@ -73,6 +80,12 @@ public class WalletFacade {
     @Transactional
     public void releaseHolding(Long orderId) {
         walletReleaseHoldingUseCase.release(orderId);
+    }
+
+    /** 정산 요청 이벤트로 들어오는 릴리즈. 요청에 실린 정산액·수수료를 홀딩과 대조한다 */
+    @Transactional
+    public void releaseHolding(Long orderId, Long expectedSettlementAmount, Long expectedFeeAmount) {
+        walletReleaseHoldingUseCase.release(orderId, expectedSettlementAmount, expectedFeeAmount);
     }
 
     @Transactional(readOnly = true)
