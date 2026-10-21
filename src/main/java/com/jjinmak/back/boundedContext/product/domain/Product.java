@@ -18,7 +18,8 @@ import java.time.LocalDateTime;
 public class Product extends BaseIdAndTime {
 
     // 등록 후 이 기간 동안은 판매자가 수정/삭제할 수 있고, 지나면 경매가 시작된다.
-    public static final Duration EDITABLE_PERIOD = Duration.ofHours(1);
+    // TODO: 프론트 연동 배포 테스트용으로 5분. 테스트 끝나면 Duration.ofHours(1)로 되돌리기
+    public static final Duration EDITABLE_PERIOD = Duration.ofMinutes(5);
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
