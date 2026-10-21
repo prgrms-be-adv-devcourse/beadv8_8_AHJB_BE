@@ -4,6 +4,7 @@ import com.jjinmak.back.boundedContext.product.domain.Product;
 import com.jjinmak.back.boundedContext.product.domain.ProductMember;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductCreateRequestDto;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductDetailDto;
+import com.jjinmak.back.boundedContext.product.in.dto.ProductUpcomingListResponseDto;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductUpdateRequestDto;
 import com.jjinmak.back.shared.auction.event.AuctionStartedEvent;
 import com.jjinmak.back.shared.member.dto.MemberDto;
@@ -27,6 +28,7 @@ public class ProductFacade {
     private final ProductRequestAuctionUseCase productRequestAuctionUseCase;
     private final ProductReadSummaryUseCase productReadSummaryUseCase;
     private final ProductReadDetailUseCase productReadDetailUseCase;
+    private final ProductReadUpcomingUseCase productReadUpcomingUseCase;
     private final ProductStartAuctionUseCase productStartAuctionUseCase;
 
     @Transactional
@@ -68,6 +70,11 @@ public class ProductFacade {
     @Transactional(readOnly = true)
     public List<ProductSummaryDto> getProductSummaries(Collection<Long> productIds){
         return productReadSummaryUseCase.getProductSummaries(productIds);
+    }
+
+    @Transactional(readOnly = true)
+    public ProductUpcomingListResponseDto readUpcoming(String category, int page, int size){
+        return productReadUpcomingUseCase.readUpcoming(category, page, size);
     }
 
     @Transactional(readOnly = true)

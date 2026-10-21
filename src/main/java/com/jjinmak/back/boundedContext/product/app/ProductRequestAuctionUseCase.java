@@ -19,6 +19,7 @@ import java.util.List;
 public class ProductRequestAuctionUseCase {
 
     private final ProductRepository productRepository;
+    private final ProductReadThumbnailUseCase productReadThumbnailUseCase;
     private final ApplicationEventPublisher eventPublisher;
 
     public List<Long> findTargetIds(LocalDateTime now){
@@ -51,7 +52,7 @@ public class ProductRequestAuctionUseCase {
                 auctionTerms.getCustomEndAt(),
                 product.getName(),
                 product.getCategory().name(),
-                null
+                productReadThumbnailUseCase.findThumbnailUrl(product.getId())   // 경매 목록 카드 썸네일
         ));
     }
 }
