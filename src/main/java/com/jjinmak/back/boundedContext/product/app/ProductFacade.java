@@ -4,9 +4,12 @@ import com.jjinmak.back.boundedContext.product.domain.Product;
 import com.jjinmak.back.boundedContext.product.domain.ProductMember;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductCreateRequestDto;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductDetailDto;
+import com.jjinmak.back.boundedContext.product.in.dto.ProductMyListResponseDto;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductUpcomingListResponseDto;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductUpdateRequestDto;
+import com.jjinmak.back.shared.auction.event.AuctionFailedEvent;
 import com.jjinmak.back.shared.auction.event.AuctionStartedEvent;
+import com.jjinmak.back.shared.auction.event.AuctionWonEvent;
 import com.jjinmak.back.shared.member.dto.MemberDto;
 import com.jjinmak.back.shared.product.dto.ProductSummaryDto;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +33,8 @@ public class ProductFacade {
     private final ProductReadDetailUseCase productReadDetailUseCase;
     private final ProductReadUpcomingUseCase productReadUpcomingUseCase;
     private final ProductStartAuctionUseCase productStartAuctionUseCase;
+    private final ProductAuctionResultUseCase productAuctionResultUseCase;
+    private final ProductReadMineUseCase productReadMineUseCase;
 
     @Transactional
     public ProductMember syncMember(MemberDto memberDto){
@@ -78,6 +83,11 @@ public class ProductFacade {
     }
 
     @Transactional(readOnly = true)
+    public ProductMyListResponseDto readMine(Long sellerId){
+        return productReadMineUseCase.readMine(sellerId);
+    }
+
+    @Transactional(readOnly = true)
     public ProductDetailDto readDetail(Long memberId, Long productId){
         return productReadDetailUseCase.readDetail(memberId, productId);
     }
@@ -85,5 +95,15 @@ public class ProductFacade {
     @Transactional
     public void startAuction(AuctionStartedEvent event){
         productStartAuctionUseCase.startAuction(event);
+    }
+
+    @Transactional
+    public void markAuctionSold(AuctionWonEvent event){
+        productAuctionResultUseCase.markSold(event);
+    }
+
+    @Transactional
+    public void markAuctionFailed(AuctionFailedEvent event){
+        productAuctionResultUseCase.markFailed(event);
     }
 }

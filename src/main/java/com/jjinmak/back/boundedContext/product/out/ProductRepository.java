@@ -43,6 +43,15 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             """)
     Page<Product> findUpcoming(ProductCategory category, Pageable pageable);
 
+    // 내 상품: 판매자가 등록한 상품 (삭제 제외, 최신 등록순)
+    @Query("""
+            select p from Product p
+            where p.seller.id = :sellerId
+              and p.deletedAt is null
+            order by p.id desc
+            """)
+    List<Product> findMine(Long sellerId);
+
     // 찜 수는 동시 요청과 @Version 충돌을 피하기 위해 DB에서 직접 증감한다.
     @Modifying
     @Query("update Product p set p.wishCount = p.wishCount + 1 where p.id = :productId")
