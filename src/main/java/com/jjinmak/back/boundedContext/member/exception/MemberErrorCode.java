@@ -15,6 +15,9 @@ public enum MemberErrorCode implements ErrorCode {
     EXIST_PROGRESSING_TRADE("MEMBER004", "진행중인 거래가 존재합니다.", HttpStatus.CONFLICT),
     DEPOSIT_BALANCE_EXISTS("MEMBER005", "예치금 잔액이 존재합니다.", HttpStatus.CONFLICT),
     SANCTION_NOT_FOUND("MEMBER007", "제재 정보를 확인할 수 없습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    DEFAULT_ADDRESS_NOT_FOUND("MEMBER008", "기본으로 설정된 주소가 없습니다", HttpStatus.NOT_FOUND),
+    SELLER_INFO_NOT_FOUND("MEMBER009", "판매자 정보를 찾을 수 없습니다", HttpStatus.NOT_FOUND),
+
     ;
 
 
