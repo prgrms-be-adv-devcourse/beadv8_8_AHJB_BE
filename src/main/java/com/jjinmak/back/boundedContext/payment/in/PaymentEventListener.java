@@ -6,6 +6,7 @@ import com.jjinmak.back.shared.member.event.MemberCreatedEvent;
 import com.jjinmak.back.shared.order.event.OrderConfirmPurchaseEvent;
 import com.jjinmak.back.shared.order.event.OrderGroupDeletedEvent;
 import com.jjinmak.back.shared.refund.event.RefundAcceptedEvent;
+import com.jjinmak.back.shared.settlement.event.SettlementRequestedEvent;
 import com.jjinmak.back.shared.payment.event.WalletMemberCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
@@ -45,8 +46,20 @@ public class PaymentEventListener {
     public void handle(OrderConfirmPurchaseEvent event) {
         walletFacade.confirmHolding(event.orderId());
     }
+    
+    /**
+     * 정산 요청 → 구매 확정된 홀딩의 대금을 ESCROW 에서 판매자 정산금·FEE 지갑으로 옮기고 WalletReleasedEvent 로 회신한다.
+     * 요청에 실린 정산액·수수료가 홀딩과 다르면 돈을 옮기지 않는다. 이미 릴리즈된 건은 회신만 다시 보낸다 (멱등).
+     */
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    @Transactional(propagation = REQUIRES_NEW)
+    public void handle(SettlementRequestedEvent event) {
+        walletFacade.releaseHolding(
+                event.settlement().orderId(),
+                event.settlement().settlementAmount(),
+                event.settlement().feeAmount());
+    }
 
-    /** 주문 스케줄러가 결제되지 않은 주문 그룹을 삭제하면 → 그 그룹의 미완료 결제를 FAILED 로 닫는다 */
     @TransactionalEventListener(phase = AFTER_COMMIT)
     @Transactional(propagation = REQUIRES_NEW)
     public void handle(OrderGroupDeletedEvent event) {

@@ -82,6 +82,12 @@ public class WalletFacade {
         walletReleaseHoldingUseCase.release(orderId);
     }
 
+    /** 정산 요청 이벤트로 들어오는 릴리즈. 요청에 실린 정산액·수수료를 홀딩과 대조한다 */
+    @Transactional
+    public void releaseHolding(Long orderId, Long expectedSettlementAmount, Long expectedFeeAmount) {
+        walletReleaseHoldingUseCase.release(orderId, expectedSettlementAmount, expectedFeeAmount);
+    }
+
     @Transactional(readOnly = true)
     public HoldingSettlementDto getSettlement(Long orderId) {
         return walletGetSettlementUseCase.get(orderId);

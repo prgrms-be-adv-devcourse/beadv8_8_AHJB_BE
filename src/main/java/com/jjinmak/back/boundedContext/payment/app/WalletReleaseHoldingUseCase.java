@@ -18,6 +18,7 @@ import java.util.UUID;
 import static com.jjinmak.back.boundedContext.payment.domain.enums.ReferenceType.ORDER;
 import static com.jjinmak.back.boundedContext.payment.domain.enums.WalletTransactionType.*;
 import static com.jjinmak.back.boundedContext.payment.exception.WalletErrorCode.HOLDING_NOT_FOUND;
+import static com.jjinmak.back.boundedContext.payment.exception.WalletErrorCode.SETTLEMENT_AMOUNT_MISMATCH;
 
 
 /**
@@ -26,6 +27,8 @@ import static com.jjinmak.back.boundedContext.payment.exception.WalletErrorCode.
  *
  * 멱등: 이미 RELEASED 면 돈을 다시 옮기지 않고 회신 이벤트만 다시 발행한다.
  *      (정산 쪽이 회신을 못 받아 재요청하는 경우를 위해)
+ * 금액 대조: 정산 요청(SettlementRequestedEvent)에 실린 정산액·수수료가 홀딩과 다르면 돈을 옮기지 않고 예외.
+ *      (정산이 우리 조회 포트로 계산한 값이므로 같아야 정상. 다르면 어느 한쪽 데이터가 바뀐 것)
  * 락 순서: 판매자 USER(낙관적) → ESCROW(비관적) → FEE(비관적). 다른 유스케이스와 같은 순서.
  */
 @Service
@@ -39,8 +42,15 @@ public class WalletReleaseHoldingUseCase {
     private final EventPublisher eventPublisher;
 
     public void release(Long orderId) {
+        release(orderId, null, null);
+    }
+
+    /** 정산 요청에 실린 금액과 대조한 뒤 릴리즈. 기대값이 null 이면 대조하지 않는다 */
+    public void release(Long orderId, Long expectedSettlementAmount, Long expectedFeeAmount) {
         Holding holding = holdingRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new BusinessException(HOLDING_NOT_FOUND));
+
+        validateAmounts(holding, expectedSettlementAmount, expectedFeeAmount);
 
         if (holding.isReleased()) {
             publishReleased(holding);
@@ -65,6 +75,15 @@ public class WalletReleaseHoldingUseCase {
         publishReleased(holding);
     }
 
+    private void validateAmounts(Holding holding, Long expectedSettlementAmount, Long expectedFeeAmount) {
+        if (expectedSettlementAmount != null && expectedSettlementAmount != holding.getSettlementAmount()) {
+            throw new BusinessException(SETTLEMENT_AMOUNT_MISMATCH);
+        }
+        if (expectedFeeAmount != null && expectedFeeAmount != holding.getFeeAmount()) {
+            throw new BusinessException(SETTLEMENT_AMOUNT_MISMATCH);
+        }
+    }
+
     private void publishReleased(Holding holding) {
         eventPublisher.publish(new WalletReleasedEvent(
                 holding.getOrderId(),
@@ -74,4 +93,4 @@ public class WalletReleaseHoldingUseCase {
                 holding.getSettlementAmount(),
                 holding.getReleasedAt()));
     }
-}
+}
