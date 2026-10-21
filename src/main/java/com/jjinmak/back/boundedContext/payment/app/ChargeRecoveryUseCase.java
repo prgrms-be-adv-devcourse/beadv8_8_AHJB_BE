@@ -40,6 +40,7 @@ import static com.jjinmak.back.boundedContext.payment.out.TossPaymentsClient.NOT
 public class ChargeRecoveryUseCase {
 
     public static final Duration STALE_AFTER = Duration.ofMinutes(40);
+    /** 토스 Idempotency-Key 접두사. 뒤에 pgOrderId 를 붙인다 (DB id 는 초기화 시 중복됨 — PgApprovalSupport 참고) */
     private static final String CANCEL_KEY_PREFIX = "charge-recover-cancel-";
 
     private final ChargeRepository chargeRepository;
@@ -82,7 +83,7 @@ public class ChargeRecoveryUseCase {
 
         if (remote.isDone()) {
             if (charge.isForPayment()) {
-                toss.cancel(remote.paymentKey(), "미완료 주문 결제 자동 취소", CANCEL_KEY_PREFIX + chargeId);
+                toss.cancel(remote.paymentKey(), "미완료 주문 결제 자동 취소", CANCEL_KEY_PREFIX + charge.getPgOrderId());
                 charge.markAborted(now, "RECOVERED_CANCELED", "승인 후 주문 결제가 완료되지 않아 취소");
             } else {
                 Wallet wallet = walletSupport.getWalletByHolderId(charge.getHolderId());

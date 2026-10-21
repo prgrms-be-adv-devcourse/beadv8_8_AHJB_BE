@@ -22,6 +22,11 @@ import static com.jjinmak.back.boundedContext.payment.out.TossPaymentsClient.ALR
 @RequiredArgsConstructor
 public class PgApprovalSupport {
 
+    /**
+     * 토스 Idempotency-Key 접두사. 뒤에는 DB id 가 아니라 pgOrderId(UUID 기반) 를 붙인다.
+     * 토스는 같은 키의 요청에 첫 응답을 15일간 그대로 돌려주는데, DB id 는 로컬·서버가 같은 테스트 상점을 쓰거나
+     * create-drop 으로 DB 가 초기화되면 다시 1부터 시작해 예전 결제의 응답이 돌아오는 사고가 난다.
+     */
     private static final String CONFIRM_KEY_PREFIX = "charge-confirm-";
     private static final String CANCEL_KEY_PREFIX = "charge-cancel-";
 
@@ -38,7 +43,7 @@ public class PgApprovalSupport {
     public TossPaymentResponse approve(Charge charge, String paymentKey) {
         TossPaymentResponse response;
         try {
-            response = toss.confirm(paymentKey, charge.getPgOrderId(), charge.getAmount(), CONFIRM_KEY_PREFIX + charge.getId());
+            response = toss.confirm(paymentKey, charge.getPgOrderId(), charge.getAmount(), CONFIRM_KEY_PREFIX + charge.getPgOrderId());
         } catch (PgApiException e) {
             if (e.isCode(ALREADY_PROCESSED_PAYMENT)) {
                 response = toss.findByPaymentKey(paymentKey);
@@ -77,7 +82,7 @@ public class PgApprovalSupport {
      */
     public void cancelApproved(Charge charge, String paymentKey, String reason) {
         try {
-            toss.cancel(paymentKey, reason, CANCEL_KEY_PREFIX + charge.getId());
+            toss.cancel(paymentKey, reason, CANCEL_KEY_PREFIX + charge.getPgOrderId());
         } catch (RuntimeException ex) {
             log.error("보상(토스 취소) 실패. chargeId={} paymentKey={} — 복구 스케줄러 대상", charge.getId(), paymentKey, ex);
         }
@@ -85,6 +90,6 @@ public class PgApprovalSupport {
 
     /** 사용자 요청 충전 취소 (전액). 실패하면 예외를 그대로 올린다 */
     public void cancel(Charge charge, String reason) {
-        toss.cancel(charge.getPaymentKey(), reason, CANCEL_KEY_PREFIX + charge.getId());
+        toss.cancel(charge.getPaymentKey(), reason, CANCEL_KEY_PREFIX + charge.getPgOrderId());
     }
 }
