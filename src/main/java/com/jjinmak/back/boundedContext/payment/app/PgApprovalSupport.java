@@ -50,11 +50,16 @@ public class PgApprovalSupport {
             }
         }
 
-        if (!response.isDone()
-                || !charge.getPgOrderId().equals(response.orderId())
-                || response.totalAmount() != charge.getAmount()) {
-            log.error("토스 승인 응답이 요청과 다름. chargeId={} status={} orderId={} amount={}",
-                    charge.getId(), response.status(), response.orderId(), response.totalAmount());
+        boolean statusMismatch = !response.isDone();
+        boolean orderIdMismatch = !charge.getPgOrderId().equals(response.orderId());
+        boolean amountMismatch = response.totalAmount() != charge.getAmount();
+        if (statusMismatch || orderIdMismatch || amountMismatch) {
+            // 어느 조건에서 걸렸는지와 비교 상대(DB 의 Charge 값)를 함께 남긴다. 토스 값만 찍으면 원인을 못 찾는다
+            log.error("토스 승인 응답이 요청과 다름. chargeId={} mismatch[status={} orderId={} amount={}] "
+                            + "toss[status={} orderId='{}' amount={} paymentKey={}] charge[status={} orderId='{}' amount={}]",
+                    charge.getId(), statusMismatch, orderIdMismatch, amountMismatch,
+                    response.status(), response.orderId(), response.totalAmount(), response.paymentKey(),
+                    charge.getStatus(), charge.getPgOrderId(), charge.getAmount());
             if (response.isDone()) {
                 cancelApproved(charge, response.paymentKey(), "승인 내용 불일치로 자동 취소");
             } else {
