@@ -155,40 +155,60 @@ class OrderDeliveryUseCaseTest {
     }
 
     @Test
-    @DisplayName("배송 완료로 바뀌면 배송 중인 주문이 SHIPPED가 되고, 구매 확정 기한은 배송 완료 시각 + 7일이다")
+    @DisplayName("배송 완료로 바뀌면 배송 중인 주문이 SHIPPED가 되고, 구매 확정 기한은 배송 완료를 반영한 시각 + 7일이다")
     void updateDeliveryStatus_delivered() {
         Order order = order(SHIPPING);
         when(orderSupport.getOrder(100L)).thenReturn(order);
 
+        LocalDateTime before = LocalDateTime.now();
         orderDeliveryUseCase.updateDeliveryStatus(new DeliveryStatusUpdatedEvent(100L, OUT_FOR_DELIVERY, DELIVERED, deliveredAt));
+        LocalDateTime after = LocalDateTime.now();
 
         assertThat(order.getState()).isEqualTo(SHIPPED);
-        assertThat(order.getConfirmExpiredAt()).isEqualTo(LocalDateTime.of(2026, 10, 23, 14, 0));
+        assertThat(order.getConfirmExpiredAt()).isBetween(before.plusDays(7), after.plusDays(7));
     }
 
     @Test
-    @DisplayName("수령 가능으로 바뀌어도 배송 중인 주문이 SHIPPED가 되고, 구매 확정 기한은 바뀐 시각 + 7일이다")
+    @DisplayName("택배사의 배송 완료 시각이 7일보다 오래전이어도, 구매 확정 기한은 배송 완료를 반영한 시각 + 7일이다")
+    void updateDeliveryStatus_deliveredLongAgo() {
+        Order order = order(SHIPPING);
+        when(orderSupport.getOrder(100L)).thenReturn(order);
+
+        LocalDateTime before = LocalDateTime.now();
+        orderDeliveryUseCase.updateDeliveryStatus(new DeliveryStatusUpdatedEvent(100L, OUT_FOR_DELIVERY, DELIVERED, before.minusDays(10)));
+        LocalDateTime after = LocalDateTime.now();
+
+        assertThat(order.getState()).isEqualTo(SHIPPED);
+        assertThat(order.getConfirmExpiredAt()).isBetween(before.plusDays(7), after.plusDays(7));
+    }
+
+    @Test
+    @DisplayName("수령 가능으로 바뀌어도 배송 중인 주문이 SHIPPED가 되고, 구매 확정 기한은 수령 가능을 반영한 시각 + 7일이다")
     void updateDeliveryStatus_availableForPickup() {
         Order order = order(SHIPPING);
         when(orderSupport.getOrder(100L)).thenReturn(order);
 
+        LocalDateTime before = LocalDateTime.now();
         orderDeliveryUseCase.updateDeliveryStatus(new DeliveryStatusUpdatedEvent(100L, OUT_FOR_DELIVERY, AVAILABLE_FOR_PICKUP, deliveredAt));
+        LocalDateTime after = LocalDateTime.now();
 
         assertThat(order.getState()).isEqualTo(SHIPPED);
-        assertThat(order.getConfirmExpiredAt()).isEqualTo(LocalDateTime.of(2026, 10, 23, 14, 0));
+        assertThat(order.getConfirmExpiredAt()).isBetween(before.plusDays(7), after.plusDays(7));
     }
 
     @ParameterizedTest(name = "배송 오류 주문, EXCEPTION → {0}")
     @EnumSource(value = DeliveryStatusCode.class, names = {"DELIVERED", "AVAILABLE_FOR_PICKUP"})
-    @DisplayName("배송 오류 주문의 배송이 EXCEPTION에서 바로 끝나도 SHIPPED가 되고, 구매 확정 기한은 바뀐 시각 + 7일이다")
+    @DisplayName("배송 오류 주문의 배송이 EXCEPTION에서 바로 끝나도 SHIPPED가 되고, 구매 확정 기한은 배송 완료를 반영한 시각 + 7일이다")
     void updateDeliveryStatus_completedRightAfterException(DeliveryStatusCode completed) {
         Order order = order(DELIVERY_ERROR);
         when(orderSupport.getOrder(100L)).thenReturn(order);
 
+        LocalDateTime before = LocalDateTime.now();
         orderDeliveryUseCase.updateDeliveryStatus(new DeliveryStatusUpdatedEvent(100L, EXCEPTION, completed, deliveredAt));
+        LocalDateTime after = LocalDateTime.now();
 
         assertThat(order.getState()).isEqualTo(SHIPPED);
-        assertThat(order.getConfirmExpiredAt()).isEqualTo(LocalDateTime.of(2026, 10, 23, 14, 0));
+        assertThat(order.getConfirmExpiredAt()).isBetween(before.plusDays(7), after.plusDays(7));
     }
 
     @Test
