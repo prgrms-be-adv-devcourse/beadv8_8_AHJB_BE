@@ -1,7 +1,9 @@
 package com.jjinmak.back.boundedContext.product.in;
 
 import com.jjinmak.back.boundedContext.product.app.ProductFacade;
+import com.jjinmak.back.shared.auction.event.AuctionFailedEvent;
 import com.jjinmak.back.shared.auction.event.AuctionStartedEvent;
+import com.jjinmak.back.shared.auction.event.AuctionWonEvent;
 import com.jjinmak.back.shared.member.event.MemberCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -23,10 +25,24 @@ public class ProductEventListener {
         productFacade.syncMember(event.member());
     }
 
-    // 경매가 시작되면 상품에 현재 회차의 경매 id를 기록한다.
+    // 경매가 시작되면 상품에 현재 회차의 경매 id와 진행 중 상태를 기록한다.
     @TransactionalEventListener(phase = AFTER_COMMIT)
     @Transactional(propagation = REQUIRES_NEW)
     public void handle(AuctionStartedEvent event){
         productFacade.startAuction(event);
+    }
+
+    // 낙찰되면 상품의 경매 상태를 낙찰로 바꾼다.
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    @Transactional(propagation = REQUIRES_NEW)
+    public void handle(AuctionWonEvent event){
+        productFacade.markAuctionSold(event);
+    }
+
+    // 무산되면(유찰·미결제·환불) 상품의 경매 상태를 무산으로 바꾸고 사유를 남긴다.
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    @Transactional(propagation = REQUIRES_NEW)
+    public void handle(AuctionFailedEvent event){
+        productFacade.markAuctionFailed(event);
     }
 }

@@ -5,6 +5,7 @@ import com.jjinmak.back.boundedContext.product.domain.Product;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductCreateRequestDto;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductCreateResponseDto;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductDetailDto;
+import com.jjinmak.back.boundedContext.product.in.dto.ProductMyListResponseDto;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductUpcomingListResponseDto;
 import com.jjinmak.back.boundedContext.product.in.dto.ProductUpdateRequestDto;
 import com.jjinmak.back.global.rsData.RsData;
@@ -31,6 +32,16 @@ public class ProductApiController {
                                                                               @RequestParam(defaultValue = "0") int page,
                                                                               @RequestParam(defaultValue = "20") int size){
         ProductUpcomingListResponseDto response = productFacade.readUpcoming(category, page, size);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new RsData<>(response));
+    }
+
+    // 내 상품: 내가 등록한 상품과 경매 상태·결과 (로그인 회원, 판매자 등록 전이면 빈 목록)
+    @GetMapping("/me")
+    public ResponseEntity<RsData<ProductMyListResponseDto>> readMine(@AuthenticationPrincipal AuthPrincipal principal){
+        ProductMyListResponseDto response = productFacade.readMine(principal.memberId());
 
         return ResponseEntity
                 .status(HttpStatus.OK)
