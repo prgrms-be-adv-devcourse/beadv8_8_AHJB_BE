@@ -11,6 +11,8 @@ import com.jjinmak.back.shared.order.event.OrderSendProductEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.*;
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.*;
 
@@ -55,7 +57,7 @@ public class OrderDeliveryUseCase {
             return;
 
         if (afterStatus.isCompleted())
-            order.shipped(event.updatedAt());
+            order.shipped(LocalDateTime.now());
         else if (afterStatus == EXCEPTION)
             order.updateState(DELIVERY_ERROR);
         else
