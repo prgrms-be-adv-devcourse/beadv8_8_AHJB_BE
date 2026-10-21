@@ -24,9 +24,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.DELIVERY_ERROR;
@@ -106,19 +107,20 @@ class DeliveryStatusSyncIntegrationTest {
     }
 
     @Test
-    @DisplayName("EXCEPTION이던 배송이 바로 배송 완료로 조회되면 배송 오류 주문은 SHIPPED가 되고, 구매 확정 기한은 배송 완료 시각 + 7일이다")
+    @DisplayName("EXCEPTION이던 배송이 바로 배송 완료로 조회되면 배송 오류 주문은 SHIPPED가 되고, 구매 확정 기한은 배송 완료를 반영한 시각 + 7일이다")
     void deliveredRightAfterException() {
         Long orderId = saveOrder(DELIVERY_ERROR);
         Long deliveryId = saveDelivery(orderId, EXCEPTION, "2222");
         tracked(CJ, "2222", DELIVERED);
 
+        LocalDateTime before = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         deliveryFacade.getDeliveryStatus(deliveryId);
+        LocalDateTime after = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS).plusSeconds(1);
 
         assertThat(deliveryRepository.findById(deliveryId).orElseThrow().getStatus()).isEqualTo(DELIVERED);
         Order order = orderRepository.findById(orderId).orElseThrow();
         assertThat(order.getState()).isEqualTo(SHIPPED);
-        assertThat(order.getConfirmExpiredAt())
-                .isEqualTo(eventTime.atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime().plusDays(7));
+        assertThat(order.getConfirmExpiredAt()).isBetween(before.plusDays(7), after.plusDays(7));
     }
 
     @Test

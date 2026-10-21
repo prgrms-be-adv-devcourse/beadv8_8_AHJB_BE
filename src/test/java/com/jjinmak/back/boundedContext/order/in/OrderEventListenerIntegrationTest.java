@@ -135,18 +135,19 @@ class OrderEventListenerIntegrationTest {
     }
 
     @Test
-    @DisplayName("배송 완료 이벤트를 받으면 배송 중인 주문이 SHIPPED가 되고, 구매 확정 기한은 배송 완료 시각 + 7일이다")
+    @DisplayName("배송 완료 이벤트를 받으면 배송 중인 주문이 SHIPPED가 되고, 구매 확정 기한은 배송 완료를 반영한 시각 + 7일이다")
     void deliveryStatusUpdated_delivered_shippingOrderBecomesShipped() {
         Long orderId = saveOrder(SHIPPING);
-        LocalDateTime updatedAt = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         DeliveryStatusUpdatedEvent event = new DeliveryStatusUpdatedEvent(
-                orderId, OUT_FOR_DELIVERY, DELIVERED, updatedAt);
+                orderId, OUT_FOR_DELIVERY, DELIVERED, LocalDateTime.now().minusDays(1));
 
+        LocalDateTime before = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         transactionTemplate.executeWithoutResult(status -> eventPublisher.publish(event));
+        LocalDateTime after = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS).plusSeconds(1);
 
         Order order = orderRepository.findById(orderId).orElseThrow();
         assertThat(order.getState()).isEqualTo(SHIPPED);
-        assertThat(order.getConfirmExpiredAt()).isEqualTo(updatedAt.plusDays(7));
+        assertThat(order.getConfirmExpiredAt()).isBetween(before.plusDays(7), after.plusDays(7));
     }
 
     @Test
@@ -178,18 +179,19 @@ class OrderEventListenerIntegrationTest {
     }
 
     @Test
-    @DisplayName("배송 오류 주문의 배송이 EXCEPTION에서 바로 끝났다는 이벤트를 받으면 SHIPPED가 되고, 구매 확정 기한은 배송 완료 시각 + 7일이다")
+    @DisplayName("배송 오류 주문의 배송이 EXCEPTION에서 바로 끝났다는 이벤트를 받으면 SHIPPED가 되고, 구매 확정 기한은 배송 완료를 반영한 시각 + 7일이다")
     void deliveryStatusUpdated_deliveredRightAfterException_deliveryErrorOrderBecomesShipped() {
         Long orderId = saveOrder(DELIVERY_ERROR);
-        LocalDateTime updatedAt = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         DeliveryStatusUpdatedEvent event = new DeliveryStatusUpdatedEvent(
-                orderId, EXCEPTION, DELIVERED, updatedAt);
+                orderId, EXCEPTION, DELIVERED, LocalDateTime.now().minusDays(1));
 
+        LocalDateTime before = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         transactionTemplate.executeWithoutResult(status -> eventPublisher.publish(event));
+        LocalDateTime after = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS).plusSeconds(1);
 
         Order order = orderRepository.findById(orderId).orElseThrow();
         assertThat(order.getState()).isEqualTo(SHIPPED);
-        assertThat(order.getConfirmExpiredAt()).isEqualTo(updatedAt.plusDays(7));
+        assertThat(order.getConfirmExpiredAt()).isBetween(before.plusDays(7), after.plusDays(7));
     }
 
     @Test
