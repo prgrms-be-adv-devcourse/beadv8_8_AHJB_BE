@@ -32,6 +32,7 @@ import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORD
 import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_NOT_FOUND;
 import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_STATE_BAD_REQUEST;
 import static com.jjinmak.back.global.exception.CommonErrorCode.USER_NOT_FOUND;
+import static com.jjinmak.back.shared.order.event.OrderRefundRequestedEvent.RefundType.WINNER_REQUEST;
 import static com.jjinmak.back.shared.refund.domain.RefundStatus.ACCEPTED;
 import static com.jjinmak.back.shared.refund.domain.RefundStatus.REJECTED;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -73,7 +74,7 @@ class OrderRefundUseCaseTest {
     }
 
     @Test
-    @DisplayName("배송 완료된 주문에 낙찰자가 환불을 요청하면 REFUND_REQUESTED가 되고, 환불 요청 이벤트를 발행한다")
+    @DisplayName("배송 완료된 주문에 낙찰자가 환불을 요청하면 REFUND_REQUESTED가 되고, 낙찰자가 요청한 환불 요청 이벤트(WINNER_REQUEST)를 발행한다")
     void requestRefund_requestsAndPublishes() {
         Order order = order(SHIPPED);
         when(orderSupport.getMember(1L)).thenReturn(winner);
@@ -82,7 +83,7 @@ class OrderRefundUseCaseTest {
         orderRefundUseCase.requestRefund(1L, 100L);
 
         assertThat(order.getState()).isEqualTo(REFUND_REQUESTED);
-        verify(eventPublisher).publish(new OrderRefundRequestedEvent(100L, 1L, 2L, 20L, 30_000L, 3_000L));
+        verify(eventPublisher).publish(new OrderRefundRequestedEvent(100L, 1L, 2L, 20L, 30_000L, 3_000L, WINNER_REQUEST));
     }
 
     @Test

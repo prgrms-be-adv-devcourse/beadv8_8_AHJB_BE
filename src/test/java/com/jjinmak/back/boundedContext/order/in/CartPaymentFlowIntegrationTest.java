@@ -32,6 +32,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -81,7 +82,7 @@ class CartPaymentFlowIntegrationTest {
     @MockitoBean
     PaymentPort paymentPort;
 
-    LocalDateTime paidAt = LocalDateTime.of(2026, 10, 19, 12, 0);
+    LocalDateTime paidAt = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
 
     @BeforeEach
     void setUp() {

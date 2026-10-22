@@ -9,10 +9,13 @@ import com.jjinmak.back.boundedContext.order.out.repository.OrderRepository;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.order.event.OrderConfirmPurchaseEvent;
+import com.jjinmak.back.shared.order.event.OrderRefundRequestedEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -25,12 +28,15 @@ import java.util.Set;
 import java.util.UUID;
 
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.CONFIRMED;
+import static com.jjinmak.back.boundedContext.order.domain.OrderState.PAID;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.REFUND_REQUESTED;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.SHIPPED;
 import static com.jjinmak.back.boundedContext.order.domain.OrderState.WAITING;
 import static com.jjinmak.back.boundedContext.order.exception.OrderErrorCode.ORDER_STATE_BAD_REQUEST;
+import static com.jjinmak.back.shared.order.event.OrderRefundRequestedEvent.RefundType.SYSTEM_REQUEST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -147,6 +153,50 @@ class OrderSchedulerUseCaseTest {
         orderSchedulerUseCase.deleteOverWaitingOrders();
 
         verify(orderGroupRepository).deleteAll(Set.of(groupA, groupB));
+    }
+
+    @Test
+    @DisplayName("결제 후 5일이 지나도록 발송되지 않은 주문을 찾는다")
+    void getNonShippedOrderIds_usesFiveDaysAgo() {
+        when(orderRepository.findNonShippedOrderIds(any(LocalDateTime.class))).thenReturn(List.of(100L, 101L));
+
+        LocalDateTime before = LocalDateTime.now().minusDays(5);
+        List<Long> ids = orderSchedulerUseCase.getNonShippedOrderIds();
+        LocalDateTime after = LocalDateTime.now().minusDays(5);
+
+        ArgumentCaptor<LocalDateTime> captor = ArgumentCaptor.forClass(LocalDateTime.class);
+        verify(orderRepository).findNonShippedOrderIds(captor.capture());
+
+        assertThat(captor.getValue()).isBetween(before, after);
+        assertThat(ids).containsExactly(100L, 101L);
+    }
+
+    @Test
+    @DisplayName("결제 완료 주문에 시스템 환불을 요청하면 REFUND_REQUESTED가 되고, 시스템이 요청한 환불 요청 이벤트(SYSTEM_REQUEST)를 발행한다")
+    void requestSystemRefund_requestsAndPublishes() {
+        Order order = order(new OrderGroup(33_000L), 100L, PAID);
+        when(orderSupport.getOrderWithParticipants(100L)).thenReturn(order);
+
+        orderSchedulerUseCase.requestSystemRefund(100L);
+
+        assertThat(order.getState()).isEqualTo(REFUND_REQUESTED);
+        verify(eventPublisher).publish(new OrderRefundRequestedEvent(100L, 1L, 2L, 20L, 30_000L, 3_000L, SYSTEM_REQUEST));
+    }
+
+    @ParameterizedTest(name = "{0} 주문에 시스템 환불 요청")
+    @EnumSource(value = OrderState.class, names = "PAID", mode = EXCLUDE)
+    @DisplayName("그 사이 발송이 시작됐거나 이미 환불을 요청한 주문처럼 결제 완료 상태가 아니면 ORDER_STATE_BAD_REQUEST, 상태가 바뀌지 않고 이벤트를 발행하지 않는다")
+    void requestSystemRefund_notPaid(OrderState state) {
+        Order order = order(new OrderGroup(33_000L), 100L, state);
+        when(orderSupport.getOrderWithParticipants(100L)).thenReturn(order);
+
+        assertThatThrownBy(() -> orderSchedulerUseCase.requestSystemRefund(100L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ORDER_STATE_BAD_REQUEST);
+
+        assertThat(order.getState()).isEqualTo(state);
+        verifyNoInteractions(eventPublisher);
     }
 
     private Order order(OrderGroup group, Long id, OrderState state) {
