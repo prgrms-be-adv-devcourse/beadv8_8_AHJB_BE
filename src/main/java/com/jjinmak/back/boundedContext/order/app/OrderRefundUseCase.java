@@ -36,7 +36,7 @@ public class OrderRefundUseCase {
 
         order.validateAndUpdateState(SHIPPED, REFUND_REQUESTED);
 
-        OrderRefundRequestedEvent event = new OrderRefundRequestedEvent(
+        OrderRefundRequestedEvent event = OrderRefundRequestedEvent.byWinner(
                 orderId, member.getId(), order.getSeller().getId(),
                 order.getProductId(), order.getWinningPrice(), order.getDeliveryFee()
         );

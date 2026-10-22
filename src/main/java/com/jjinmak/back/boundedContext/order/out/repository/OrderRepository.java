@@ -38,4 +38,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("select o from Order o where o.state = OrderState.WAITING and o.createdAt < :base")
     List<Order> findOverWaitedAll(LocalDateTime base);
+
+    @Query("select o.id from Order o where o.state = OrderState.PAID and o.paidAt < :shipDueAt")
+    List<Long> findNonShippedOrderIds(LocalDateTime shipDueAt);
 }

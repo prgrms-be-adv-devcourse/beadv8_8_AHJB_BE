@@ -48,6 +48,21 @@ public class OrderScheduler {
         }
     }
 
+    @Scheduled(fixedDelay = 60_000)
+    public void refundNonShippedOrder(){
+        List<Long> orderIds = orderFacade.getNonShippedOrderIds();
+
+        for (Long id : orderIds){
+            try{
+                orderFacade.requestSystemRefund(id);
+            } catch (BusinessException e){
+                log.error("오류가 발생해 자동 환불을 진행하지 못했습니다.\norderId: {}\nerrorCode: {}", id, e.getErrorCode());
+            } catch (Exception e){
+                log.error("알 수 없는 오류가 발생해 자동 환불을 진행하지 못했습니다.\norderId: {}", id, e);
+            }
+        }
+    }
+
     // TODO: 결제에 1시간이 넘게 걸려 주문이 제거되는 경우, 지갑도 이 사실을 알 필요가 있음.
     @Scheduled(fixedDelay = 3_600_000)
     public void deleteOverWaitingOrder(){
