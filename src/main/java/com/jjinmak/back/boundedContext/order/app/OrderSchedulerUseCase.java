@@ -7,6 +7,7 @@ import com.jjinmak.back.boundedContext.order.out.repository.OrderRepository;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.shared.order.event.OrderConfirmPurchaseEvent;
 import com.jjinmak.back.shared.order.event.OrderGroupDeletedEvent;
+import com.jjinmak.back.shared.order.event.OrderRefundRequestedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -15,8 +16,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.jjinmak.back.boundedContext.order.domain.OrderState.CONFIRMED;
-import static com.jjinmak.back.boundedContext.order.domain.OrderState.SHIPPED;
+import static com.jjinmak.back.boundedContext.order.domain.OrderState.*;
 
 @Service
 @RequiredArgsConstructor
@@ -56,5 +56,22 @@ public class OrderSchedulerUseCase {
         );
 
         orderGroupRepository.deleteAll(groups);
+    }
+
+    public List<Long> getNonShippedOrderIds(){
+        return orderRepository.findNonShippedOrderIds(LocalDateTime.now().minusDays(5));
+    }
+
+    public void requestSystemRefund(Long orderId){
+        Order order = orderSupport.getOrderWithParticipants(orderId);
+
+        order.validateAndUpdateState(PAID, REFUND_REQUESTED);
+
+        OrderRefundRequestedEvent event = OrderRefundRequestedEvent.bySystem(
+                orderId, order.getWinner().getId(), order.getSeller().getId(),
+                order.getProductId(), order.getWinningPrice(), order.getDeliveryFee()
+        );
+
+        eventPublisher.publish(event);
     }
 }

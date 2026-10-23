@@ -140,4 +140,14 @@ public class OrderFacade {
     public void paymentPaid(PaymentPaidEvent event){
         cartRequestPaymentUseCase.paymentPaid(event);
     }
+
+    @Transactional(readOnly = true)
+    public List<Long> getNonShippedOrderIds(){
+        return orderSchedulerUseCase.getNonShippedOrderIds();
+    }
+
+    @Transactional
+    public void requestSystemRefund(Long orderId){
+        orderSchedulerUseCase.requestSystemRefund(orderId);
+    }
 }

@@ -102,6 +102,42 @@ class OrderSchedulerTest {
     }
 
     @Test
+    @DisplayName("한 건이 업무 예외로 실패해도 나머지 미발송 주문에 계속 시스템 환불을 요청한다")
+    void refundNonShippedOrder_continuesAfterBusinessException() {
+        when(orderFacade.getNonShippedOrderIds()).thenReturn(List.of(1L, 2L, 3L));
+        lenient().doThrow(new BusinessException(ORDER_STATE_BAD_REQUEST)).when(orderFacade).requestSystemRefund(2L);
+
+        orderScheduler.refundNonShippedOrder();
+
+        verify(orderFacade).requestSystemRefund(1L);
+        verify(orderFacade).requestSystemRefund(2L);
+        verify(orderFacade).requestSystemRefund(3L);
+    }
+
+    @Test
+    @DisplayName("한 건이 예상하지 못한 예외로 실패해도 나머지 미발송 주문에 계속 시스템 환불을 요청한다")
+    void refundNonShippedOrder_continuesAfterUnexpectedException() {
+        when(orderFacade.getNonShippedOrderIds()).thenReturn(List.of(1L, 2L, 3L));
+        lenient().doThrow(new IllegalStateException("예상하지 못한 오류")).when(orderFacade).requestSystemRefund(2L);
+
+        orderScheduler.refundNonShippedOrder();
+
+        verify(orderFacade).requestSystemRefund(1L);
+        verify(orderFacade).requestSystemRefund(2L);
+        verify(orderFacade).requestSystemRefund(3L);
+    }
+
+    @Test
+    @DisplayName("미발송 주문이 없으면 아무것도 시스템 환불을 요청하지 않는다")
+    void refundNonShippedOrder_noTargets() {
+        when(orderFacade.getNonShippedOrderIds()).thenReturn(List.of());
+
+        orderScheduler.refundNonShippedOrder();
+
+        verify(orderFacade, never()).requestSystemRefund(anyLong());
+    }
+
+    @Test
     @DisplayName("결제 대기 시간이 지난 주문 삭제를 요청한다")
     void deleteOverWaitingOrder_deletesOverWaitingOrders() {
         orderScheduler.deleteOverWaitingOrder();

@@ -73,7 +73,7 @@ class OrderEventListenerIntegrationTest {
 
     LocalDateTime winAt = LocalDateTime.now();
 
-    LocalDateTime paidAt = LocalDateTime.of(2026, 10, 19, 12, 0);
+    LocalDateTime paidAt = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
 
     @AfterEach
     void tearDown() {

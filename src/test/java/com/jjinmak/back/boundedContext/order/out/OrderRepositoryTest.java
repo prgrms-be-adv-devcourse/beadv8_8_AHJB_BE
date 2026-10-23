@@ -188,6 +188,25 @@ class OrderRepositoryTest {
         assertThat(orders).extracting(Order::getAuctionId).containsExactly(10L);
     }
 
+    @Test
+    @DisplayName("미발송 주문: 결제 완료(PAID) 주문 중 결제 시각이 기준 시각보다 이전인 것만 나온다 (같은 시각, 발송을 시작했거나 환불을 요청한 주문은 제외)")
+    void findNonShippedOrderIds() {
+        LocalDateTime base = LocalDateTime.of(2026, 10, 16, 12, 0);
+        Order nonShipped = paid(10L, base.minusMinutes(1));
+        paid(11L, base);
+        paid(12L, base.plusMinutes(1));
+        Order shipping = paid(13L, base.minusDays(1));
+        shipping.updateState(SHIPPING);
+        Order refundRequested = paid(14L, base.minusDays(1));
+        refundRequested.updateState(REFUND_REQUESTED);
+        em.flush();
+        em.clear();
+
+        List<Long> ids = orderRepository.findNonShippedOrderIds(base);
+
+        assertThat(ids).containsExactly(nonShipped.getId());
+    }
+
     private Order save(OrderMember winner, OrderMember seller, Long auctionId, OrderState state) {
         Order order = new Order(group, winner, seller, auctionId, 20L, 30_000L, 3_000L);
         order.updateState(state);
@@ -203,6 +222,12 @@ class OrderRepositoryTest {
                 .setParameter("id", order.getId())
                 .executeUpdate();
         return order;
+    }
+
+    private Order paid(Long auctionId, LocalDateTime paidAt) {
+        Order order = new Order(group, a, b, auctionId, 20L, 30_000L, 3_000L);
+        order.paid(paidAt);
+        return orderRepository.save(order);
     }
 
     private Order shipped(Long auctionId, LocalDateTime shippedAt) {
