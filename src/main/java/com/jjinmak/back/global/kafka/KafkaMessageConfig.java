@@ -1,4 +1,4 @@
-package com.jjinmak.back.global.config;
+package com.jjinmak.back.global.kafka;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
