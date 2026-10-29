@@ -37,6 +37,16 @@ public class OrderEventListener {
         orderFacade.syncMember(member);
     }
 
+//    /*
+//     * kafka 전환 시 이벤트 구독 예시
+//     */
+//    @KafkaListener(topics = MemberEventTopics.MEMBER_CREATED, groupId = "order")
+//    public void handle(MemberCreatedEvent event){
+//        MemberDto member = event.member();
+//
+//        orderFacade.syncMember(member);
+//    }
+
     @TransactionalEventListener(phase = AFTER_COMMIT)
     @Transactional(propagation = REQUIRES_NEW)
     public void handle(DeliveryCreatedEvent event){
