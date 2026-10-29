@@ -1,5 +1,6 @@
 package com.jjinmak.back.boundedContext.refund.app;
 
+import com.jjinmak.back.boundedContext.refund.domain.RefundRetryResult;
 import com.jjinmak.back.shared.order.event.OrderRefundRequestedEvent;
 import com.jjinmak.back.shared.refund.dto.RefundDetailDto;
 import com.jjinmak.back.shared.refund.dto.RefundDto;
@@ -7,6 +8,9 @@ import com.jjinmak.back.shared.payment.event.WalletRefundedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +22,7 @@ public class RefundFacade {
     private final RefundAcceptRefundUseCase refundAcceptRefundUseCase;
     private final RefundGetRefundByOrderUseCase refundGetRefundByOrderUseCase;
     private final RefundCompleteRefundUseCase refundCompleteRefundUseCase;
+    private final RefundRetryRefundUseCase refundRetryRefundUseCase;
 
     @Transactional
     public void createRefund(OrderRefundRequestedEvent event) {
@@ -47,5 +52,15 @@ public class RefundFacade {
     @Transactional
     public void completeRefund(WalletRefundedEvent event) {
         refundCompleteRefundUseCase.completeRefund(event);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> findRetryTargetIds(LocalDateTime before) {
+        return refundRetryRefundUseCase.findRetryTargetIds(before);
+    }
+
+    @Transactional
+    public RefundRetryResult retryRefund(Long refundId) {
+        return refundRetryRefundUseCase.retryRefund(refundId);
     }
 }
