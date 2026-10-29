@@ -7,6 +7,20 @@ spring:
     name: back
   jpa:
     open-in-view: false
+  kafka:
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      acks: all
+      properties:
+        "[enable.idempotence]": true
+        "[spring.json.add.type.headers]": false   # 클래스 이름을 헤더에 싣지 않음
+    consumer:
+      group-id: ${spring.application.name}
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
 
 jwt:
   access-token-expiration: 900000

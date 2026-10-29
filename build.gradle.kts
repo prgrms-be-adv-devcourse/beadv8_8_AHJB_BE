@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.testImplementation
+
 plugins {
 	java
 	id("org.springframework.boot") version "4.1.1"
@@ -44,6 +46,16 @@ dependencies {
 	// 상품 이미지 S3 저장 (AWS SDK v2)
 	implementation(platform("software.amazon.awssdk:bom:2.57.0"))
 	implementation("software.amazon.awssdk:s3")
+
+	implementation("org.springframework.boot:spring-boot-starter-kafka")
+	implementation("org.springframework.boot:spring-boot-starter-jackson")
+
+	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	testImplementation("org.springframework.boot:spring-boot-starter-kafka-test")
+	testImplementation("org.springframework.boot:spring-boot-testcontainers")
+	testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+	testImplementation("org.testcontainers:testcontainers-kafka")
+	testImplementation("org.awaitility:awaitility")
 
 	mockitoAgent("org.mockito:mockito-core") { isTransitive = false }
 }
