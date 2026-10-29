@@ -1,4 +1,10 @@
 spring:
+  kafka:
+    admin:
+      auto-create: false
+    producer:
+      properties:
+        "[max.block.ms]": 0
   servlet:
     multipart:
       max-file-size: 10MB      # 파일 하나당 최대 크기
