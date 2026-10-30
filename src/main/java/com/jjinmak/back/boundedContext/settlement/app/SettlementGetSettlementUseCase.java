@@ -30,4 +30,4 @@ public class SettlementGetSettlementUseCase {
 
         return settlement;
     }
-}
+}

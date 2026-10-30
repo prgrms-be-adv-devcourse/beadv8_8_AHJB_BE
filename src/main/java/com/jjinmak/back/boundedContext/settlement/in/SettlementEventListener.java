@@ -22,4 +22,4 @@ public class SettlementEventListener {
     public void handle(WalletReleasedEvent event) {
         settlementFacade.completeSettlement(event);
     }
-}
+}

@@ -38,4 +38,4 @@ public class SettlementGetSettlementsUseCase {
         }
         return settlementRepository.findBySellerIdAndStatus(memberId, status, pageable);
     }
-}
+}

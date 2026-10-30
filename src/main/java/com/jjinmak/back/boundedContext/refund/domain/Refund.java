@@ -75,6 +75,10 @@ public class Refund extends BaseIdAndTime {
         return sellerId.equals(memberId);
     }
 
+    public boolean isAccepted() {
+        return status == RefundStatus.ACCEPTED;
+    }
+
     public void accept() {
         process(RefundStatus.ACCEPTED);
     }

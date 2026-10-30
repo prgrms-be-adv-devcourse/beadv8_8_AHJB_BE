@@ -48,4 +48,4 @@ public class SettlementRequestPayoutUseCase {
 
         return SettlementPayoutResult.REQUESTED;
     }
-}
+}
