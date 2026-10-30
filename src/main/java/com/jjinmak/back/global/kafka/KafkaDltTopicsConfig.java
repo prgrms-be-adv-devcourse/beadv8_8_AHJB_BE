@@ -1,5 +1,6 @@
 package com.jjinmak.back.global.kafka;
 
+import com.jjinmak.back.shared.delivery.event.DeliveryEventTopics;
 import com.jjinmak.back.shared.order.event.OrderEventTopics;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,7 +20,11 @@ public class KafkaDltTopicsConfig {
                 TopicBuilder.name(OrderEventTopics.ORDER_PAYMENT_SUCCEED + "-dlt").build(),
                 TopicBuilder.name(OrderEventTopics.ORDER_REFUND_ACCEPTED + "-dlt").build(),
                 TopicBuilder.name(OrderEventTopics.ORDER_SEND_PRODUCT + "-dlt").build(),
-                TopicBuilder.name(OrderEventTopics.CART_PAYMENT_DEFAULT + "-dlt").build()
+                TopicBuilder.name(OrderEventTopics.CART_PAYMENT_DEFAULT + "-dlt").build(),
+
+                // 배송
+                TopicBuilder.name(DeliveryEventTopics.DELIVERY_CREATED + "-dlt").build(),
+                TopicBuilder.name(DeliveryEventTopics.DELIVERY_STATUS_UPDATED + "-dlt").build()
         );
     }
 }
