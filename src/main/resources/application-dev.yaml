@@ -6,6 +6,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  kafka:
+    bootstrap-servers: kafka:19092
 
 jwt:
   secret: ${JWT_SECRET}
