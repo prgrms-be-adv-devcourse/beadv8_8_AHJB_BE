@@ -18,6 +18,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -40,6 +41,7 @@ import static com.jjinmak.back.boundedContext.order.domain.OrderState.PAID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -131,11 +133,47 @@ class CartPaymentFlowIntegrationTest {
         assertThat(orderGroupRepository.count()).isEqualTo(1);
     }
 
+    @Test
+    @DisplayName("부족분 충전이 필요해 결제창으로 간 뒤 같은 상품을 순서만 바꿔 다시 결제 요청하면, 같은 주문 그룹과 같은 주문으로 결제를 요청하고 주문 그룹과 주문을 더 만들지 않으며, 그 그룹의 결제 완료 이벤트로 주문이 한 번씩 PAID가 된다")
+    void needsCharge_retry_reusesGroupAndOrders() throws Exception {
+        doReturn(PaymentResultDto.needsCharge(7L, 87_000L, 37_000L, "CHG-1", "찐막 주문 결제 (부족분 충전)"))
+                .when(paymentPort).requestPayment(any());
+
+        mockMvc.perform(payment())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.isPaid").value(false));
+        mockMvc.perform(payment("[21, 20]"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.isPaid").value(false));
+
+        ArgumentCaptor<PaymentRequestDto> captor = ArgumentCaptor.forClass(PaymentRequestDto.class);
+        verify(paymentPort, times(2)).requestPayment(captor.capture());
+        PaymentRequestDto first = captor.getAllValues().get(0);
+        assertThat(captor.getAllValues().get(1)).isEqualTo(first);
+        assertThat(orderGroupRepository.count()).isEqualTo(1);
+        assertThat(orderRepository.count()).isEqualTo(2);
+
+        transactionTemplate.executeWithoutResult(status -> eventPublisher.publish(PaymentPaidEvent.of(
+                first.orderGroupId(), 7L, first.buyerId(), first.totalPrice(), paidAt)));
+
+        assertThat(orderRepository.findAll())
+                .extracting(Order::getAuctionId, Order::getState, Order::getPaidAt)
+                .containsExactlyInAnyOrder(tuple(10L, PAID, paidAt), tuple(11L, PAID, paidAt));
+        assertThat(cartItemRepository.count()).isZero();
+        assertThat(events.stream(OrderPaymentSucceedEvent.class))
+                .extracting(OrderPaymentSucceedEvent::auctionId)
+                .containsExactlyInAnyOrder(10L, 11L);
+    }
+
     private MockHttpServletRequestBuilder payment() {
+        return payment("[20, 21]");
+    }
+
+    private MockHttpServletRequestBuilder payment(String productIds) {
         return post("/api/v1/cart/payment")
                 .header(HttpHeaders.AUTHORIZATION, bearer(1L))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"productIds\": [20, 21]}");
+                .content("{\"productIds\": " + productIds + "}");
     }
 
     private Answer<PaymentResultDto> paidWithEventInsidePaymentTransaction() {

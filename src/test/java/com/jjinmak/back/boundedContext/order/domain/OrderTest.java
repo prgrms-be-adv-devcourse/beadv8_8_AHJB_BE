@@ -28,7 +28,7 @@ class OrderTest {
     OrderMember seller = new OrderMember(2L, UUID.randomUUID(), "판매자");
     OrderMember other = new OrderMember(3L, UUID.randomUUID(), "다른 회원");
 
-    OrderGroup group = new OrderGroup(33_000L);
+    OrderGroup group = new OrderGroup(winner, 33_000L);
 
     LocalDateTime shippedAt = LocalDateTime.of(2026, 10, 15, 12, 30);
 

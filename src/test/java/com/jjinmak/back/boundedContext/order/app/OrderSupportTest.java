@@ -134,6 +134,6 @@ class OrderSupportTest {
     private Order order() {
         OrderMember winner = new OrderMember(1L, UUID.randomUUID(), "낙찰자");
         OrderMember seller = new OrderMember(2L, UUID.randomUUID(), "판매자");
-        return new Order(new OrderGroup(33_000L), winner, seller, 10L, 20L, 30_000L, 3_000L);
+        return new Order(new OrderGroup(winner, 33_000L), winner, seller, 10L, 20L, 30_000L, 3_000L);
     }
 }
