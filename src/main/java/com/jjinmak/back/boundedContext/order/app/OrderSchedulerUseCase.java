@@ -48,7 +48,7 @@ public class OrderSchedulerUseCase {
     }
 
     public void deleteOverWaitingOrders(){
-        List<Order> orders = orderRepository.findOverWaitedAll(LocalDateTime.now().minusHours(1));
+        List<Order> orders = orderRepository.findOverWaitedAll(LocalDateTime.now());
         Set<OrderGroup> groups = orders.stream().map(Order::getGroup).collect(Collectors.toSet());
 
         groups.forEach(

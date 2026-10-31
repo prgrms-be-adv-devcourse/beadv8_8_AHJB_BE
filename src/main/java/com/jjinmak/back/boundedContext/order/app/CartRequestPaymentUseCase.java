@@ -1,10 +1,7 @@
 package com.jjinmak.back.boundedContext.order.app;
 
 import com.jjinmak.back.boundedContext.order.app.dto.PaymentResponseDto;
-import com.jjinmak.back.boundedContext.order.domain.CartItem;
-import com.jjinmak.back.boundedContext.order.domain.Order;
-import com.jjinmak.back.boundedContext.order.domain.OrderGroup;
-import com.jjinmak.back.boundedContext.order.domain.OrderMember;
+import com.jjinmak.back.boundedContext.order.domain.*;
 import com.jjinmak.back.boundedContext.order.out.payment.PaymentRequest;
 import com.jjinmak.back.boundedContext.order.out.repository.CartItemRepository;
 import com.jjinmak.back.boundedContext.order.out.repository.OrderGroupRepository;
@@ -60,9 +57,31 @@ public class CartRequestPaymentUseCase {
                 .mapToLong(i -> i.getWinningPrice() + i.getDeliveryFee())
                 .sum();
 
-        OrderGroup orderGroup = orderGroupRepository.save(new OrderGroup(totalPrice));
-
+        OrderGroup orderGroup = new OrderGroup(winner, totalPrice);
         List<PaymentRequestDto.Item> items = new ArrayList<>();
+
+        for (OrderGroup group : orderGroupRepository.findAllByWinnerAndLifeTime(winner, LocalDateTime.now())){
+            if (group.getOrders().getFirst().getState() != OrderState.WAITING)
+                continue;
+
+            List<Long> orderProductIds = group.getOrders().stream().map(Order::getProductId).toList();
+            if (productIdSet.size() == orderProductIds.size() && productIdSet.containsAll(orderProductIds)){
+                orderGroup = group;
+
+                group.getOrders().forEach(
+                        order -> items.add(
+                                new PaymentRequestDto.Item(order.getId(), order.getSeller().getId(), order.getWinningPrice(), order.getDeliveryFee())
+                        )
+                );
+
+                group.updateLifeTime();
+
+                return new PaymentRequestDto(orderGroup.getId(), winnerId, totalPrice, items);
+            }
+        }
+
+        orderGroupRepository.save(orderGroup);
+
 
         for (CartItem item : cartItems){
             OrderMember seller = item.getSeller();
