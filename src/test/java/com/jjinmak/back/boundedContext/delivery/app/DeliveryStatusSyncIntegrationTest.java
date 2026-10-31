@@ -146,7 +146,7 @@ class DeliveryStatusSyncIntegrationTest {
     }
 
     private Long saveOrder(OrderState state) {
-        OrderGroup group = orderGroupRepository.save(new OrderGroup(33_000L));
+        OrderGroup group = orderGroupRepository.save(new OrderGroup(winner, 33_000L));
         Order order = new Order(group, winner, seller, 10L, 20L, 30_000L, 3_000L);
         order.updateState(state);
         return orderRepository.save(order).getId();

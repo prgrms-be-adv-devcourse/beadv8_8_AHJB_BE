@@ -44,6 +44,7 @@ import static com.jjinmak.back.global.exception.CommonErrorCode.USER_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -103,6 +104,7 @@ class CartRequestPaymentUseCaseTest {
         ArgumentCaptor<OrderGroup> groupCaptor = ArgumentCaptor.forClass(OrderGroup.class);
         verify(orderGroupRepository).save(groupCaptor.capture());
         OrderGroup group = groupCaptor.getValue();
+        assertThat(group.getWinner()).isSameAs(winner);
         assertThat(group.getTotalPrice()).isEqualTo(87_000L);
 
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
@@ -232,6 +234,132 @@ class CartRequestPaymentUseCaseTest {
     }
 
     @Test
+    @DisplayName("재사용할 주문 그룹은 낙찰자와 지금 시각으로, lifeTime이 남은 그룹 중에서 찾는다")
+    void createOrder_findsReusableGroupsWithWinnerAndNow() {
+        when(orderSupport.getMember(1L)).thenReturn(winner);
+        when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L)))
+                .thenReturn(List.of(cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now())));
+        when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(50L));
+        when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(100L));
+
+        LocalDateTime before = LocalDateTime.now();
+        cartRequestPaymentUseCase.createOrder(1L, List.of(20L));
+        LocalDateTime after = LocalDateTime.now();
+
+        ArgumentCaptor<LocalDateTime> captor = ArgumentCaptor.forClass(LocalDateTime.class);
+        verify(orderGroupRepository).findAllByWinnerAndLifeTime(eq(winner), captor.capture());
+        assertThat(captor.getValue()).isBetween(before, after);
+    }
+
+    @Test
+    @DisplayName("lifeTime이 남은 WAITING 그룹이 요청 상품과 같은 조합이면(요청 순서는 달라도) 주문 그룹과 주문을 새로 저장하지 않고, 그 그룹 id와 기존 주문으로 결제 요청 정보를 돌려준다")
+    void createOrder_reusesWaitingGroupWithSameProducts() {
+        OrderGroup existing = group(50L, 87_000L);
+        order(existing, 100L, seller, 10L, 20L, 30_000L, 3_000L);
+        order(existing, 101L, otherSeller, 11L, 21L, 50_000L, 4_000L);
+        stubCartWithTwoItems();
+        when(orderGroupRepository.findAllByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(existing));
+
+        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(21L, 20L));
+
+        assertThat(request).isEqualTo(new PaymentRequestDto(50L, 1L, 87_000L, List.of(
+                new PaymentRequestDto.Item(100L, 2L, 30_000L, 3_000L),
+                new PaymentRequestDto.Item(101L, 4L, 50_000L, 4_000L))));
+        verify(orderGroupRepository, never()).save(any(OrderGroup.class));
+        verifyNoInteractions(orderRepository);
+    }
+
+    @Test
+    @DisplayName("주문 그룹을 재사용하면 그 그룹의 lifeTime을 재사용한 시각부터 1시간 뒤로 늘린다")
+    void createOrder_reuseExtendsLifeTime() {
+        OrderGroup existing = group(50L, 33_000L);
+        ReflectionTestUtils.setField(existing, "lifeTime", LocalDateTime.now().plusMinutes(1));
+        order(existing, 100L, seller, 10L, 20L, 30_000L, 3_000L);
+        when(orderSupport.getMember(1L)).thenReturn(winner);
+        when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L)))
+                .thenReturn(List.of(cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now())));
+        when(orderGroupRepository.findAllByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(existing));
+
+        LocalDateTime before = LocalDateTime.now();
+        cartRequestPaymentUseCase.createOrder(1L, List.of(20L));
+        LocalDateTime after = LocalDateTime.now();
+
+        assertThat(existing.getLifeTime()).isBetween(before.plusHours(1), after.plusHours(1));
+    }
+
+    @Test
+    @DisplayName("같은 조합이어도 WAITING이 아닌(결제가 끝난) 그룹은 건너뛰고, 그 뒤에 있는 같은 조합의 WAITING 그룹을 재사용한다")
+    void createOrder_skipsNonWaitingGroup() {
+        OrderGroup paidGroup = group(49L, 33_000L);
+        order(paidGroup, 90L, seller, 10L, 20L, 30_000L, 3_000L).updateState(PAID);
+        OrderGroup waitingGroup = group(50L, 33_000L);
+        order(waitingGroup, 100L, seller, 10L, 20L, 30_000L, 3_000L);
+        when(orderSupport.getMember(1L)).thenReturn(winner);
+        when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L)))
+                .thenReturn(List.of(cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now())));
+        when(orderGroupRepository.findAllByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(paidGroup, waitingGroup));
+
+        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(20L));
+
+        assertThat(request.orderGroupId()).isEqualTo(50L);
+        assertThat(request.items()).extracting(PaymentRequestDto.Item::orderId).containsExactly(100L);
+        verify(orderGroupRepository, never()).save(any(OrderGroup.class));
+    }
+
+    @Test
+    @DisplayName("요청 상품이 기존 WAITING 그룹 상품의 일부뿐이면(작은 조합) 재사용하지 않고 새 주문 그룹을 만든다")
+    void createOrder_subsetOfGroupMakesNewGroup() {
+        OrderGroup existing = group(50L, 87_000L);
+        order(existing, 100L, seller, 10L, 20L, 30_000L, 3_000L);
+        order(existing, 101L, otherSeller, 11L, 21L, 50_000L, 4_000L);
+        when(orderSupport.getMember(1L)).thenReturn(winner);
+        when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L)))
+                .thenReturn(List.of(cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now())));
+        when(orderGroupRepository.findAllByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(existing));
+        when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(51L));
+        when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(102L));
+
+        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(20L));
+
+        assertThat(request).isEqualTo(new PaymentRequestDto(51L, 1L, 33_000L, List.of(
+                new PaymentRequestDto.Item(102L, 2L, 30_000L, 3_000L))));
+    }
+
+    @Test
+    @DisplayName("요청 상품이 기존 WAITING 그룹 상품을 모두 포함하고 더 많으면(큰 조합) 재사용하지 않고 새 주문 그룹을 만든다")
+    void createOrder_supersetOfGroupMakesNewGroup() {
+        OrderGroup existing = group(50L, 33_000L);
+        order(existing, 100L, seller, 10L, 20L, 30_000L, 3_000L);
+        stubCartWithTwoItems();
+        when(orderGroupRepository.findAllByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(existing));
+        when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(51L));
+        when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(102L)).thenAnswer(savedWithId(103L));
+
+        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 21L));
+
+        assertThat(request).isEqualTo(new PaymentRequestDto(51L, 1L, 87_000L, List.of(
+                new PaymentRequestDto.Item(102L, 2L, 30_000L, 3_000L),
+                new PaymentRequestDto.Item(103L, 4L, 50_000L, 4_000L))));
+    }
+
+    @Test
+    @DisplayName("상품 개수가 같아도 상품이 다른 WAITING 그룹은 재사용하지 않고 새 주문 그룹을 만든다")
+    void createOrder_sameSizeDifferentProductsMakesNewGroup() {
+        OrderGroup existing = group(50L, 63_000L);
+        order(existing, 100L, seller, 10L, 20L, 30_000L, 3_000L);
+        order(existing, 101L, otherSeller, 12L, 22L, 27_000L, 3_000L);
+        stubCartWithTwoItems();
+        when(orderGroupRepository.findAllByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(existing));
+        when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(51L));
+        when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(102L)).thenAnswer(savedWithId(103L));
+
+        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 21L));
+
+        assertThat(request.orderGroupId()).isEqualTo(51L);
+        verify(orderRepository, times(2)).save(any(Order.class));
+    }
+
+    @Test
     @DisplayName("결제 요청은 결제 요청 정보를 그대로 결제 컨텍스트에 넘기고, 받은 결과를 그대로 돌려준다")
     void requestPayment_delegatesToPaymentRequest() {
         PaymentRequestDto request = new PaymentRequestDto(50L, 1L, 33_000L,
@@ -257,7 +385,7 @@ class CartRequestPaymentUseCaseTest {
     @Test
     @DisplayName("결제 완료 이벤트를 받으면 그룹의 모든 주문을 이벤트의 결제 시각으로 PAID 처리하고, 주문마다 장바구니 항목을 지우고 같은 결제 시각으로 결제 성공 이벤트를 발행한다")
     void paymentPaid_completesEveryOrder() {
-        OrderGroup group = new OrderGroup(87_000L);
+        OrderGroup group = new OrderGroup(winner, 87_000L);
         Order first = order(group, 100L, seller, 10L, 20L, 30_000L, 3_000L);
         Order second = order(group, 101L, otherSeller, 11L, 21L, 50_000L, 4_000L);
         CartItem firstItem = cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now());
@@ -298,7 +426,7 @@ class CartRequestPaymentUseCaseTest {
     @Test
     @DisplayName("결제 완료 이벤트의 구매자가 주문의 낙찰자가 아니면(판매자 id로 와도) ORDER_GROUP_FORBIDDEN, 주문은 WAITING 그대로이고 장바구니를 지우지 않고 이벤트를 발행하지 않는다")
     void paymentPaid_buyerIsNotWinner() {
-        OrderGroup group = new OrderGroup(33_000L);
+        OrderGroup group = new OrderGroup(winner, 33_000L);
         Order order = order(group, 100L, seller, 10L, 20L, 30_000L, 3_000L);
         when(orderGroupRepository.findByIdWithOrders(50L)).thenReturn(Optional.of(group));
 
@@ -315,7 +443,7 @@ class CartRequestPaymentUseCaseTest {
     @Test
     @DisplayName("결제 완료 이벤트를 받았는데 이미 결제된 주문이 있으면 ORDER_STATE_BAD_REQUEST, 장바구니를 지우지 않고 이벤트를 발행하지 않는다")
     void paymentPaid_orderNotWaiting() {
-        OrderGroup group = new OrderGroup(33_000L);
+        OrderGroup group = new OrderGroup(winner, 33_000L);
         Order order = order(group, 100L, seller, 10L, 20L, 30_000L, 3_000L);
         order.updateState(PAID);
         when(orderGroupRepository.findByIdWithOrders(50L)).thenReturn(Optional.of(group));
@@ -331,7 +459,7 @@ class CartRequestPaymentUseCaseTest {
     @Test
     @DisplayName("결제 완료 이벤트를 받았는데 주문의 장바구니 항목이 없으면 CART_ITEM_NOT_FOUND, 이벤트를 발행하지 않는다")
     void paymentPaid_cartItemNotFound() {
-        OrderGroup group = new OrderGroup(33_000L);
+        OrderGroup group = new OrderGroup(winner, 33_000L);
         order(group, 100L, seller, 10L, 20L, 30_000L, 3_000L);
         when(orderGroupRepository.findByIdWithOrders(50L)).thenReturn(Optional.of(group));
         when(cartItemRepository.findByAuctionId(10L)).thenReturn(Optional.empty());
@@ -361,8 +489,22 @@ class CartRequestPaymentUseCaseTest {
         return PaymentPaidEvent.of(orderGroupId, 7L, buyerId, 87_000L, paidAt);
     }
 
+    private void stubCartWithTwoItems() {
+        when(orderSupport.getMember(1L)).thenReturn(winner);
+        when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L, 21L)))
+                .thenReturn(List.of(
+                        cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now()),
+                        cartItem(otherSeller, 11L, 21L, 50_000L, 4_000L, LocalDateTime.now())));
+    }
+
     private CartItem cartItem(OrderMember seller, Long auctionId, Long productId, Long winningPrice, Long deliveryFee, LocalDateTime winAt) {
         return new CartItem(winner, seller, auctionId, productId, winningPrice, deliveryFee, winAt);
+    }
+
+    private OrderGroup group(Long id, Long totalPrice) {
+        OrderGroup group = new OrderGroup(winner, totalPrice);
+        ReflectionTestUtils.setField(group, "id", id);
+        return group;
     }
 
     private Order order(OrderGroup group, Long id, OrderMember seller, Long auctionId, Long productId, Long winningPrice, Long deliveryFee) {
