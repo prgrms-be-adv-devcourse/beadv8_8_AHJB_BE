@@ -332,7 +332,7 @@ class OrderReadOrderUseCaseTest {
     }
 
     private Order order(Long id, Long auctionId, Long productId, Long winningPrice, Long deliveryFee, OrderState state) {
-        Order order = new Order(new OrderGroup(winningPrice + deliveryFee), winner, seller, auctionId, productId, winningPrice, deliveryFee);
+        Order order = new Order(new OrderGroup(winner, winningPrice + deliveryFee), winner, seller, auctionId, productId, winningPrice, deliveryFee);
         order.updateState(state);
         ReflectionTestUtils.setField(order, "id", id);
         ReflectionTestUtils.setField(order, "createdAt", createdAt);

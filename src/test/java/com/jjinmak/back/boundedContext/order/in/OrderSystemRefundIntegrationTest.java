@@ -101,7 +101,7 @@ class OrderSystemRefundIntegrationTest {
     private Long savePaidOrder() {
         OrderMember winner = orderMemberRepository.save(new OrderMember(1L, UUID.randomUUID(), "낙찰자"));
         OrderMember seller = orderMemberRepository.save(new OrderMember(2L, UUID.randomUUID(), "판매자"));
-        OrderGroup group = orderGroupRepository.save(new OrderGroup(33_000L));
+        OrderGroup group = orderGroupRepository.save(new OrderGroup(winner, 33_000L));
         Order order = new Order(group, winner, seller, 10L, 20L, 30_000L, 3_000L);
         order.paid(LocalDateTime.now());
         return orderRepository.save(order).getId();

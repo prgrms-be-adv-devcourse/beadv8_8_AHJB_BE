@@ -17,6 +17,7 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -60,7 +61,7 @@ class OrderRepositoryTest {
         a = orderMemberRepository.save(new OrderMember(1L, UUID.randomUUID(), "회원A"));
         b = orderMemberRepository.save(new OrderMember(2L, UUID.randomUUID(), "회원B"));
         c = orderMemberRepository.save(new OrderMember(3L, UUID.randomUUID(), "회원C"));
-        group = orderGroupRepository.save(new OrderGroup(33_000L));
+        group = orderGroupRepository.save(new OrderGroup(a, 33_000L));
     }
 
     @Test
@@ -173,14 +174,14 @@ class OrderRepositoryTest {
     }
 
     @Test
-    @DisplayName("결제 대기 초과: 결제 대기(WAITING) 주문 중 생성 시각이 기준 시각보다 이전인 것만 나온다 (같은 시각, 다른 상태는 제외)")
+    @DisplayName("결제 대기 초과: 결제 대기(WAITING) 주문 중 주문 그룹의 lifeTime이 기준 시각보다 이전인 것만 나온다 (같은 시각은 제외, lifeTime이 남은 그룹은 주문이 오래전에 생성됐어도 제외, 다른 상태는 제외)")
     void findOverWaitedAll() {
         LocalDateTime base = LocalDateTime.of(2026, 10, 16, 12, 0);
-        save(a, b, 10L, WAITING, base.minusMinutes(1));
-        save(a, b, 11L, WAITING, base);
-        save(a, b, 12L, WAITING, base.plusMinutes(1));
-        save(a, b, 13L, PAID, base.minusDays(1));
-        em.flush();
+        save(groupWithLifeTime(base.minusMinutes(1)), 10L, WAITING);
+        save(groupWithLifeTime(base), 11L, WAITING);
+        Order createdLongAgo = save(groupWithLifeTime(base.plusMinutes(1)), 12L, WAITING);
+        save(groupWithLifeTime(base.minusDays(1)), 13L, PAID);
+        setCreatedAt(createdLongAgo, base.minusDays(1));
         em.clear();
 
         List<Order> orders = orderRepository.findOverWaitedAll(base);
@@ -215,13 +216,29 @@ class OrderRepositoryTest {
 
     private Order save(OrderMember winner, OrderMember seller, Long auctionId, OrderState state, LocalDateTime createdAt) {
         Order order = save(winner, seller, auctionId, state);
+        setCreatedAt(order, createdAt);
+        return order;
+    }
+
+    private Order save(OrderGroup group, Long auctionId, OrderState state) {
+        Order order = new Order(group, a, b, auctionId, 20L, 30_000L, 3_000L);
+        order.updateState(state);
+        return orderRepository.save(order);
+    }
+
+    private void setCreatedAt(Order order, LocalDateTime createdAt) {
         em.flush();
         em.getEntityManager()
                 .createQuery("update Order o set o.createdAt = :createdAt where o.id = :id")
                 .setParameter("createdAt", createdAt)
                 .setParameter("id", order.getId())
                 .executeUpdate();
-        return order;
+    }
+
+    private OrderGroup groupWithLifeTime(LocalDateTime lifeTime) {
+        OrderGroup group = new OrderGroup(a, 33_000L);
+        ReflectionTestUtils.setField(group, "lifeTime", lifeTime);
+        return orderGroupRepository.save(group);
     }
 
     private Order paid(Long auctionId, LocalDateTime paidAt) {

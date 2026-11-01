@@ -90,8 +90,8 @@ class OrderApiControllerTest {
         winner = orderMemberRepository.save(new OrderMember(1L, UUID.randomUUID(), "낙찰자"));
         seller = orderMemberRepository.save(new OrderMember(2L, UUID.randomUUID(), "판매자"));
         OrderMember other = orderMemberRepository.save(new OrderMember(3L, UUID.randomUUID(), "다른 회원"));
-        OrderGroup group = orderGroupRepository.save(new OrderGroup(152_000L));
-        OrderGroup otherGroup = orderGroupRepository.save(new OrderGroup(76_000L));
+        OrderGroup group = orderGroupRepository.save(new OrderGroup(winner, 152_000L));
+        OrderGroup otherGroup = orderGroupRepository.save(new OrderGroup(other, 76_000L));
 
         paidOrderId = saveOrder(group, winner, seller, 10L, 20L, 30_000L, 3_000L, PAID);
         shippedOrderId = saveOrder(group, winner, seller, 11L, 21L, 50_000L, 4_000L, SHIPPED);
@@ -407,7 +407,7 @@ class OrderApiControllerTest {
     }
 
     private Long saveDeliveryErrorOrder() {
-        OrderGroup group = orderGroupRepository.save(new OrderGroup(80_000L));
+        OrderGroup group = orderGroupRepository.save(new OrderGroup(winner, 80_000L));
         return saveOrder(group, winner, seller, 14L, 24L, 75_000L, 5_000L, DELIVERY_ERROR);
     }
 

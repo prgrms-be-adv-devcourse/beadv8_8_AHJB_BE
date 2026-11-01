@@ -229,7 +229,7 @@ class OrderRefundUseCaseTest {
     }
 
     private Order order(OrderState state) {
-        Order order = new Order(new OrderGroup(33_000L), winner, seller, 10L, 20L, 30_000L, 3_000L);
+        Order order = new Order(new OrderGroup(winner, 33_000L), winner, seller, 10L, 20L, 30_000L, 3_000L);
         order.updateState(state);
         return order;
     }

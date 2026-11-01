@@ -266,7 +266,7 @@ class OrderEventListenerIntegrationTest {
     private Long saveOrder(OrderState state) {
         OrderMember winner = orderMemberRepository.save(new OrderMember(1L, winnerUuid, "낙찰자"));
         OrderMember seller = orderMemberRepository.save(new OrderMember(2L, sellerUuid, "판매자"));
-        OrderGroup group = orderGroupRepository.save(new OrderGroup(33_000L));
+        OrderGroup group = orderGroupRepository.save(new OrderGroup(winner, 33_000L));
         Order order = new Order(group, winner, seller, 10L, 20L, 30_000L, 3_000L);
         order.updateState(state);
         return orderRepository.save(order).getId();
@@ -277,7 +277,7 @@ class OrderEventListenerIntegrationTest {
         OrderMember seller = orderMemberRepository.save(new OrderMember(2L, sellerUuid, "판매자"));
         cartItemRepository.save(new CartItem(winner, seller, 10L, 20L, 30_000L, 3_000L, winAt));
         cartItemRepository.save(new CartItem(winner, seller, 11L, 21L, 50_000L, 4_000L, winAt));
-        OrderGroup group = orderGroupRepository.save(new OrderGroup(87_000L));
+        OrderGroup group = orderGroupRepository.save(new OrderGroup(winner, 87_000L));
         orderRepository.save(new Order(group, winner, seller, 10L, 20L, 30_000L, 3_000L));
         orderRepository.save(new Order(group, winner, seller, 11L, 21L, 50_000L, 4_000L));
         return group.getId();

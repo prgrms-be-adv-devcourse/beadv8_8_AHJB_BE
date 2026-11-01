@@ -88,7 +88,7 @@ class OrderSchedulerUseCaseTest {
     @Test
     @DisplayName("배송 완료된 주문을 자동으로 구매 확정하면 CONFIRMED가 되고, 구매 확정 이벤트를 발행한다")
     void confirmPurchaseAuto_confirmsAndPublishes() {
-        Order order = order(new OrderGroup(33_000L), 100L, SHIPPED);
+        Order order = order(new OrderGroup(winner, 33_000L), 100L, SHIPPED);
         when(orderSupport.getOrderWithParticipants(100L)).thenReturn(order);
 
         LocalDateTime before = LocalDateTime.now();
@@ -113,7 +113,7 @@ class OrderSchedulerUseCaseTest {
     @Test
     @DisplayName("그 사이 낙찰자가 환불을 요청한 주문이면 ORDER_STATE_BAD_REQUEST, 상태가 바뀌지 않고 이벤트를 발행하지 않는다")
     void confirmPurchaseAuto_refundRequested() {
-        Order order = order(new OrderGroup(33_000L), 100L, REFUND_REQUESTED);
+        Order order = order(new OrderGroup(winner, 33_000L), 100L, REFUND_REQUESTED);
         when(orderSupport.getOrderWithParticipants(100L)).thenReturn(order);
 
         assertThatThrownBy(() -> orderSchedulerUseCase.confirmPurchaseAuto(100L))
@@ -126,13 +126,13 @@ class OrderSchedulerUseCaseTest {
     }
 
     @Test
-    @DisplayName("결제 대기가 1시간 넘게 지난 주문을 찾는다")
-    void deleteOverWaitingOrders_usesOneHourAgo() {
+    @DisplayName("결제 대기 주문 중 주문 그룹의 lifeTime이 지금보다 앞선 것을 찾는다")
+    void deleteOverWaitingOrders_usesNow() {
         when(orderRepository.findOverWaitedAll(any(LocalDateTime.class))).thenReturn(List.of());
 
-        LocalDateTime before = LocalDateTime.now().minusHours(1);
+        LocalDateTime before = LocalDateTime.now();
         orderSchedulerUseCase.deleteOverWaitingOrders();
-        LocalDateTime after = LocalDateTime.now().minusHours(1);
+        LocalDateTime after = LocalDateTime.now();
 
         ArgumentCaptor<LocalDateTime> captor = ArgumentCaptor.forClass(LocalDateTime.class);
         verify(orderRepository).findOverWaitedAll(captor.capture());
@@ -143,8 +143,8 @@ class OrderSchedulerUseCaseTest {
     @Test
     @DisplayName("결제 대기가 오래된 주문들의 주문 그룹을 중복 없이 삭제한다")
     void deleteOverWaitingOrders_deletesDistinctGroups() {
-        OrderGroup groupA = new OrderGroup(66_000L);
-        OrderGroup groupB = new OrderGroup(33_000L);
+        OrderGroup groupA = new OrderGroup(winner, 66_000L);
+        OrderGroup groupB = new OrderGroup(winner, 33_000L);
         Order a1 = order(groupA, 100L, WAITING);
         Order a2 = order(groupA, 101L, WAITING);
         Order b1 = order(groupB, 102L, WAITING);
@@ -174,7 +174,7 @@ class OrderSchedulerUseCaseTest {
     @Test
     @DisplayName("결제 완료 주문에 시스템 환불을 요청하면 REFUND_REQUESTED가 되고, 시스템이 요청한 환불 요청 이벤트(SYSTEM_REQUEST)를 발행한다")
     void requestSystemRefund_requestsAndPublishes() {
-        Order order = order(new OrderGroup(33_000L), 100L, PAID);
+        Order order = order(new OrderGroup(winner, 33_000L), 100L, PAID);
         when(orderSupport.getOrderWithParticipants(100L)).thenReturn(order);
 
         orderSchedulerUseCase.requestSystemRefund(100L);
@@ -187,7 +187,7 @@ class OrderSchedulerUseCaseTest {
     @EnumSource(value = OrderState.class, names = "PAID", mode = EXCLUDE)
     @DisplayName("그 사이 발송이 시작됐거나 이미 환불을 요청한 주문처럼 결제 완료 상태가 아니면 ORDER_STATE_BAD_REQUEST, 상태가 바뀌지 않고 이벤트를 발행하지 않는다")
     void requestSystemRefund_notPaid(OrderState state) {
-        Order order = order(new OrderGroup(33_000L), 100L, state);
+        Order order = order(new OrderGroup(winner, 33_000L), 100L, state);
         when(orderSupport.getOrderWithParticipants(100L)).thenReturn(order);
 
         assertThatThrownBy(() -> orderSchedulerUseCase.requestSystemRefund(100L))
