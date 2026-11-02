@@ -1,5 +1,6 @@
 package com.jjinmak.back.global.kafka;
 
+import com.jjinmak.back.shared.auction.event.AuctionEventTopics;
 import com.jjinmak.back.shared.delivery.event.DeliveryEventTopics;
 import com.jjinmak.back.shared.order.event.OrderEventTopics;
 import org.springframework.context.annotation.Bean;
@@ -24,7 +25,12 @@ public class KafkaDltTopicsConfig {
 
                 // 배송
                 TopicBuilder.name(DeliveryEventTopics.DELIVERY_CREATED + "-dlt").build(),
-                TopicBuilder.name(DeliveryEventTopics.DELIVERY_STATUS_UPDATED + "-dlt").build()
+                TopicBuilder.name(DeliveryEventTopics.DELIVERY_STATUS_UPDATED + "-dlt").build(),
+
+                // 경매
+                TopicBuilder.name(AuctionEventTopics.AUCTION_STARTED + "-dlt").build(),
+                TopicBuilder.name(AuctionEventTopics.AUCTION_WON + "-dlt").build(),
+                TopicBuilder.name(AuctionEventTopics.AUCTION_FAILED + "-dlt").build()
         );
     }
 }
