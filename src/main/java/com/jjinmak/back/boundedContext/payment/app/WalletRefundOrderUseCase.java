@@ -38,6 +38,7 @@ public class WalletRefundOrderUseCase {
 
         if (holding.isRefunded()) {
             publishRefunded(refundId, holding);
+            return;
         }
 
         Wallet buyer = holding.getBuyerWallet();
