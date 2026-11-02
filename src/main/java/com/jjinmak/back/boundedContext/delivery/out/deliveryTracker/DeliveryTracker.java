@@ -5,8 +5,6 @@ import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.shared.delivery.domain.CarrierType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -14,7 +12,6 @@ import org.springframework.web.client.RestClientException;
 import java.time.OffsetDateTime;
 
 import static com.jjinmak.back.boundedContext.delivery.exception.DeliveryErrorCode.*;
-import static com.jjinmak.back.boundedContext.delivery.out.dto.DeliveryTrackerExtension.NOT_FOUND;
 import static com.jjinmak.back.boundedContext.delivery.out.dto.DeliveryTrackerExtension.PASS;
 
 @Slf4j
@@ -24,8 +21,7 @@ public class DeliveryTracker {
 
     private final RestClient deliveryTrackerRestClient;
 
-    // TODO: Webhook을 받을 콜백 주소
-    private final String webhookCallbackUrl = "";
+    private static final String webhookCallbackUrl = "https://api.jjinmak.kro.kr/api/v1";
 
     private static final String TRACK_QUERY = """
         query Track($carrierId: ID!, $trackingNumber: String!) {
@@ -74,7 +70,7 @@ public class DeliveryTracker {
     }
 
     public void registerWebhook(Long deliveryId, Long orderId, CarrierType carrier, String waybill, int expirationDays){
-        String webhookCallback = webhookCallbackUrl + '/' + orderId + "/delivery/" + deliveryId;
+        String webhookCallback = webhookCallbackUrl + "/order/" + orderId + "/delivery/" + deliveryId;
         WebhookRegisterRequestDto requestDto = new WebhookRegisterRequestDto(
                 WEBHOOK_QUERY,
                 new WebhookRegisterRequestDto.Variables(new WebhookRegisterRequestDto.Input(carrier.getCarrierCode(), waybill, webhookCallback, OffsetDateTime.now().plusDays(expirationDays)))

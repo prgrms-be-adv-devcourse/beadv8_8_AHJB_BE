@@ -1,5 +1,7 @@
 package com.jjinmak.back.boundedContext.delivery.in;
 
+import com.jayway.jsonpath.JsonPath;
+import com.jjinmak.back.boundedContext.delivery.app.event.CallbackRequestedEvent;
 import com.jjinmak.back.boundedContext.delivery.app.event.WebhookRegisterEvent;
 import com.jjinmak.back.boundedContext.delivery.domain.Delivery;
 import com.jjinmak.back.boundedContext.delivery.domain.DeliveryMember;
@@ -19,16 +21,21 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.mock.http.client.MockClientHttpRequest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
+import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
 
+import java.net.URI;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.jjinmak.back.shared.delivery.domain.CarrierType.CJ;
 import static com.jjinmak.back.shared.delivery.domain.CarrierType.HANJIN;
@@ -38,7 +45,9 @@ import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.IN_TRAN
 import static com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode.WAITING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -166,10 +175,41 @@ class DeliveryApiControllerTest {
                 .andExpect(jsonPath("$.data.message").value("이동 중"));
     }
 
+    @Test
+    @DisplayName("Webhook 콜백: Webhook을 등록할 때 넘긴 콜백 주소로 인증 없이 콜백이 오면 202를 돌려주고, 그 배송의 콜백 요청 이벤트를 발행한다")
+    void webhookCallback_toRegisteredCallbackUrl() throws Exception {
+        Long deliveryId = saveDelivery(100L, IN_TRANSIT);
+        String registerRequest = registerWebhook(deliveryId, 100L);
+        String callbackUrl = JsonPath.read(registerRequest, "$.variables.input.callbackUrl");
+        String carrierId = JsonPath.read(registerRequest, "$.variables.input.carrierId");
+        String trackingNumber = JsonPath.read(registerRequest, "$.variables.input.trackingNumber");
+
+        mockMvc.perform(post(URI.create(callbackUrl))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"carrierId\": \"%s\", \"trackingNumber\": \"%s\"}".formatted(carrierId, trackingNumber)))
+                .andExpect(status().isAccepted());
+
+        assertThat(events.stream(CallbackRequestedEvent.class))
+                .containsExactly(new CallbackRequestedEvent(deliveryId));
+    }
+
     private Long saveDelivery(Long orderId, DeliveryStatusCode status) {
         Delivery delivery = new Delivery(orderId, winner, seller, CJ, "OLD-111");
         delivery.updateStatus(status);
         return deliveryRepository.save(delivery).getId();
+    }
+
+    private String registerWebhook(Long deliveryId, Long orderId) {
+        RestClient.Builder builder = RestClient.builder().baseUrl("https://apis.tracker.delivery/graphql");
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        AtomicReference<String> requestBody = new AtomicReference<>();
+        server.expect(request -> requestBody.set(((MockClientHttpRequest) request).getBodyAsString()))
+                .andRespond(withSuccess("{\"data\": {\"registerTrackWebhook\": true}}", MediaType.APPLICATION_JSON));
+
+        new DeliveryTracker(builder.build()).registerWebhook(deliveryId, orderId, CJ, "OLD-111", 2);
+
+        server.verify();
+        return requestBody.get();
     }
 
     private String bearer(Long memberId) {
