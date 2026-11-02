@@ -36,7 +36,10 @@ public class WalletRefundOrderUseCase {
         Holding holding = holdingRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new BusinessException(HOLDING_NOT_FOUND));
 
-        if (holding.isRefunded()) return;
+        if (holding.isRefunded()) {
+            publishRefunded(refundId, holding);
+            return;
+        }
 
         Wallet buyer = holding.getBuyerWallet();
         Wallet escrow = finder.escrowForUpdate();
@@ -50,7 +53,12 @@ public class WalletRefundOrderUseCase {
         ledgerRecorder.transfer(escrow, REFUND_PAY, buyer, REFUND_RECEIVE,
                 amount, UUID.randomUUID().toString(), ORDER, orderId);
 
+        publishRefunded(refundId, holding);
+    }
+
+    private void publishRefunded(Long refundId, Holding holding) {
         eventPublisher.publish(new WalletRefundedEvent(
-                refundId, orderId, holding.getPaymentId(), amount, holding.getRefundedAt()));
+                refundId, holding.getOrderId(), holding.getPaymentId(), holding.getAmount(), holding.getRefundedAt()
+        ));
     }
 }
