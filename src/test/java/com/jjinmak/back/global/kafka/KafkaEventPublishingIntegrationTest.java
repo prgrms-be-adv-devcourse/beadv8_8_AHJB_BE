@@ -17,6 +17,7 @@ import com.jjinmak.back.shared.order.event.OrderPaymentSucceedEvent;
 import com.jjinmak.back.shared.order.event.OrderRefundAcceptedEvent;
 import com.jjinmak.back.shared.order.event.OrderRefundRequestedEvent;
 import com.jjinmak.back.shared.order.event.OrderSendProductEvent;
+import com.jjinmak.back.shared.product.event.ProductRegisteredEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -84,7 +85,8 @@ class KafkaEventPublishingIntegrationTest {
                 new Published(new OrderSendProductEvent(1L, 2L, 3L, CJ, "1234567890"), "order.send-product", "1"),
                 new Published(new CartPaymentDefaultEvent(4L, 5L, 2L, 3L, 30_000L, 3_000L), "order.cart-payment-default", "4"),
                 new Published(new DeliveryCreatedEvent(1L), "delivery.created", "1"),
-                new Published(new DeliveryStatusUpdatedEvent(1L, IN_TRANSIT, DELIVERED, at), "delivery.status-updated", "1")
+                new Published(new DeliveryStatusUpdatedEvent(1L, IN_TRANSIT, DELIVERED, at), "delivery.status-updated", "1"),
+                new Published(new ProductRegisteredEvent(1L, 2L, 3_000L, 10_000L, 50_000L, 3, null, "상품", "DIGITAL", null), "product.registered", "1")
         );
     }
 
