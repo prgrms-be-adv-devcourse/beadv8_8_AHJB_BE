@@ -3,6 +3,7 @@ package com.jjinmak.back.global.kafka;
 import com.jjinmak.back.shared.auction.event.AuctionEventTopics;
 import com.jjinmak.back.shared.delivery.event.DeliveryEventTopics;
 import com.jjinmak.back.shared.order.event.OrderEventTopics;
+import com.jjinmak.back.shared.product.event.ProductEventTopics;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
@@ -30,7 +31,10 @@ public class KafkaDltTopicsConfig {
                 // 경매
                 TopicBuilder.name(AuctionEventTopics.AUCTION_STARTED + "-dlt").build(),
                 TopicBuilder.name(AuctionEventTopics.AUCTION_WON + "-dlt").build(),
-                TopicBuilder.name(AuctionEventTopics.AUCTION_FAILED + "-dlt").build()
+                TopicBuilder.name(AuctionEventTopics.AUCTION_FAILED + "-dlt").build(),
+
+                // 상품
+                TopicBuilder.name(ProductEventTopics.PRODUCT_REGISTERED + "-dlt").build()
         );
     }
 }
