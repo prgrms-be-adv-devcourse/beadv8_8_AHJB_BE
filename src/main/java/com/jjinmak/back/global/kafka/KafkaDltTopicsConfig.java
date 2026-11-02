@@ -2,6 +2,8 @@ package com.jjinmak.back.global.kafka;
 
 import com.jjinmak.back.shared.delivery.event.DeliveryEventTopics;
 import com.jjinmak.back.shared.order.event.OrderEventTopics;
+import com.jjinmak.back.shared.refund.event.RefundEventTopics;
+import com.jjinmak.back.shared.settlement.event.SettlementEventTopics;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
@@ -24,7 +26,16 @@ public class KafkaDltTopicsConfig {
 
                 // 배송
                 TopicBuilder.name(DeliveryEventTopics.DELIVERY_CREATED + "-dlt").build(),
-                TopicBuilder.name(DeliveryEventTopics.DELIVERY_STATUS_UPDATED + "-dlt").build()
+                TopicBuilder.name(DeliveryEventTopics.DELIVERY_STATUS_UPDATED + "-dlt").build(),
+
+                // 환불
+                TopicBuilder.name(RefundEventTopics.REFUND_ACCEPTED + "-dlt").build(),
+                TopicBuilder.name(RefundEventTopics.REFUND_REJECTED + "-dlt").build(),
+                TopicBuilder.name(RefundEventTopics.REFUND_RETRY_REQUESTED + "-dlt").build(),
+                TopicBuilder.name(RefundEventTopics.REFUND_COMPLETED + "-dlt").build(),
+
+                // 정산
+                TopicBuilder.name(SettlementEventTopics.SETTLEMENT_REQUESTED + "-dlt").build()
         );
     }
 }

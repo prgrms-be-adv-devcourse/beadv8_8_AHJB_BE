@@ -27,8 +27,10 @@ public class RefundCompleteRefundUseCase {
         Refund refund = refundRepository.findById(event.refundId())
                 .orElseThrow(() -> new BusinessException(RefundErrorCode.REFUND_NOT_FOUND));
 
-        refund.complete();
+        if (refund.isCompleted()) {
+            return;
+        }
 
-        eventPublisher.publish(new RefundCompletedEvent(refund.dto()));
+        refund.complete();
     }
-}
+}

@@ -44,7 +44,7 @@ public class SettlementRequestPayoutUseCase {
             return SettlementPayoutResult.SKIPPED;
         }
 
-        eventPublisher.publish(new SettlementRequestedEvent(settlement.dto()));
+        eventPublisher.publish(SettlementRequestedEvent.of(settlement.dto()));
 
         return SettlementPayoutResult.REQUESTED;
     }
