@@ -2,6 +2,7 @@ package com.jjinmak.back.global.kafka;
 
 import com.jjinmak.back.shared.delivery.event.DeliveryEventTopics;
 import com.jjinmak.back.shared.order.event.OrderEventTopics;
+import com.jjinmak.back.shared.product.event.ProductEventTopics;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,7 +59,7 @@ class KafkaTopicDeclarationTest {
     }
 
     private static List<String> eventTopics() {
-        return Stream.of(OrderEventTopics.class, DeliveryEventTopics.class)
+        return Stream.of(OrderEventTopics.class, DeliveryEventTopics.class, ProductEventTopics.class)
                 .flatMap(topics -> Arrays.stream(topics.getFields()))
                 .map(KafkaTopicDeclarationTest::constantValue)
                 .toList();

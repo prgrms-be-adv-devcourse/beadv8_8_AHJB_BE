@@ -4,7 +4,6 @@ import com.jjinmak.back.boundedContext.auction.domain.Auction;
 import com.jjinmak.back.boundedContext.auction.domain.AuctionCloseResult;
 import com.jjinmak.back.boundedContext.auction.domain.AuctionStatus;
 import com.jjinmak.back.boundedContext.auction.domain.FailureReason;
-import com.jjinmak.back.boundedContext.auction.out.AuctionEventPublisher;
 import com.jjinmak.back.boundedContext.auction.out.AuctionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;

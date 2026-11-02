@@ -1,4 +1,4 @@
-package com.jjinmak.back.boundedContext.auction.out;
+package com.jjinmak.back.boundedContext.auction.app;
 
 import com.jjinmak.back.boundedContext.auction.domain.Auction;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;

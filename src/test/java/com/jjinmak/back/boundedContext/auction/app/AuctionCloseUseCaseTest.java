@@ -3,7 +3,6 @@ package com.jjinmak.back.boundedContext.auction.app;
 import com.jjinmak.back.boundedContext.auction.domain.Auction;
 import com.jjinmak.back.boundedContext.auction.domain.ProductSnapshot;
 import com.jjinmak.back.boundedContext.auction.domain.AuctionCloseResult;
-import com.jjinmak.back.boundedContext.auction.out.AuctionEventPublisher;
 import com.jjinmak.back.boundedContext.auction.out.AuctionRepository;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -154,4 +153,4 @@ class AuctionCloseUseCaseTest {
             then(auctionEventPublisher).should(times(1)).publishWon(auction);
         }
     }
-}
+}
