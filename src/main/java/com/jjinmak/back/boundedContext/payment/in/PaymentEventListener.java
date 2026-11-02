@@ -6,6 +6,7 @@ import com.jjinmak.back.shared.member.event.MemberCreatedEvent;
 import com.jjinmak.back.shared.order.event.OrderConfirmPurchaseEvent;
 import com.jjinmak.back.shared.order.event.OrderGroupDeletedEvent;
 import com.jjinmak.back.shared.refund.event.RefundAcceptedEvent;
+import com.jjinmak.back.shared.refund.event.RefundRetryRequestedEvent;
 import com.jjinmak.back.shared.settlement.event.SettlementRequestedEvent;
 import com.jjinmak.back.shared.payment.event.WalletMemberCreatedEvent;
 import lombok.RequiredArgsConstructor;
@@ -43,10 +44,16 @@ public class PaymentEventListener {
 
     @TransactionalEventListener(phase = AFTER_COMMIT)
     @Transactional(propagation = REQUIRES_NEW)
+    public void handle(RefundRetryRequestedEvent event) {
+        walletFacade.refund(event.refund().refundId(), event.refund().orderId(), event.refund().amount());
+    }
+
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    @Transactional(propagation = REQUIRES_NEW)
     public void handle(OrderConfirmPurchaseEvent event) {
         walletFacade.confirmHolding(event.orderId());
     }
-    
+
     /**
      * 정산 요청 → 구매 확정된 홀딩의 대금을 ESCROW 에서 판매자 정산금·FEE 지갑으로 옮기고 WalletReleasedEvent 로 회신한다.
      * 요청에 실린 정산액·수수료가 홀딩과 다르면 돈을 옮기지 않는다. 이미 릴리즈된 건은 회신만 다시 보낸다 (멱등).
