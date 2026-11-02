@@ -37,7 +37,7 @@ public class KafkaDltTopicsConfig {
                 // 결제
                 TopicBuilder.name(PaymentEventTopics.PAYMENT_PAID_EVENT + "-dlt").build(),
                 TopicBuilder.name(PaymentEventTopics.PAYMENT_REFUND_EVENT + "-dlt").build(),
-                TopicBuilder.name(PaymentEventTopics.PAYMENT_RELEASED_EVENT + "-dlt").build()
+                TopicBuilder.name(PaymentEventTopics.PAYMENT_RELEASED_EVENT + "-dlt").build(),
           
                 // 상품
                 TopicBuilder.name(ProductEventTopics.PRODUCT_REGISTERED + "-dlt").build()
