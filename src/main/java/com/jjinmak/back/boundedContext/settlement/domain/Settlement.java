@@ -75,7 +75,7 @@ public class Settlement extends BaseIdAndTime {
     /**
      * 구매확정된 주문으로 정산서를 만든다. 수수료·정산 금액·지급일은 이 시점에 계산해서 고정한다.
      * orderId, sellerId, productId, winningPrice, deliveryFee, confirmedAt은 주문의 구매확정 이벤트 값이고,
-     * productName은 상품 도메인에서 조회한 구매확정 시점의 상품명이다.
+     * productName은 product.registered 이벤트로 받아 둔 복사본(SettlementProduct)의 상품명이다.
      */
     public Settlement(Long orderId, Long sellerId, Long productId, String productName,
                       Long winningPrice, Long deliveryFee, LocalDateTime confirmedAt) {

@@ -3,6 +3,7 @@ package com.jjinmak.back.boundedContext.settlement.app;
 import com.jjinmak.back.boundedContext.settlement.domain.Settlement;
 import com.jjinmak.back.boundedContext.settlement.domain.SettlementPayoutResult;
 import com.jjinmak.back.shared.order.event.OrderConfirmPurchaseEvent;
+import com.jjinmak.back.shared.product.event.ProductRegisteredEvent;
 import com.jjinmak.back.shared.settlement.domain.SettlementStatus;
 import com.jjinmak.back.shared.settlement.dto.SettlementDetailDto;
 import com.jjinmak.back.shared.settlement.dto.SettlementListDto;
@@ -23,6 +24,12 @@ public class SettlementFacade {
     private final SettlementCompleteSettlementUseCase settlementCompleteSettlementUseCase;
     private final SettlementGetSettlementsUseCase settlementGetSettlementsUseCase;
     private final SettlementGetSettlementUseCase settlementGetSettlementUseCase;
+    private final SettlementSaveProductUseCase settlementSaveProductUseCase;
+
+    @Transactional
+    public void saveProduct(ProductRegisteredEvent event) {
+        settlementSaveProductUseCase.saveProduct(event);
+    }
 
     @Transactional
     public void createSettlement(OrderConfirmPurchaseEvent event) {
