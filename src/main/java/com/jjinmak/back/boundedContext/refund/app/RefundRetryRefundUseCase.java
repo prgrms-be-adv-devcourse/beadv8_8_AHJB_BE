@@ -44,7 +44,7 @@ public class RefundRetryRefundUseCase {
             return RefundRetryResult.SKIPPED;
         }
 
-        eventPublisher.publish(new RefundRetryRequestedEvent(refund.dto()));
+        eventPublisher.publish(RefundRetryRequestedEvent.of(refund.dto()));
 
         return RefundRetryResult.REQUESTED;
     }

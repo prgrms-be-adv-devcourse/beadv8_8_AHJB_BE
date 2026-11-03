@@ -93,7 +93,7 @@ class OrderEventListenerTest {
         RefundDto refund = new RefundDto(7L, 100L, 1L, ACCEPTED, 33_000L,
                 LocalDateTime.of(2026, 10, 15, 12, 0), LocalDateTime.of(2026, 10, 16, 12, 0));
 
-        orderEventListener.handle(new RefundAcceptedEvent(refund));
+        orderEventListener.handle(RefundAcceptedEvent.of(refund));
 
         verify(orderFacade).acceptRefund(refund);
         verify(orderFacade, never()).rejectRefund(any());
@@ -105,7 +105,7 @@ class OrderEventListenerTest {
         RefundDto refund = new RefundDto(7L, 100L, 1L, REJECTED, 33_000L,
                 LocalDateTime.of(2026, 10, 15, 12, 0), LocalDateTime.of(2026, 10, 16, 12, 0));
 
-        orderEventListener.handle(new RefundRejectedEvent(refund));
+        orderEventListener.handle(RefundRejectedEvent.of(refund));
 
         verify(orderFacade).rejectRefund(refund);
         verify(orderFacade, never()).acceptRefund(any());

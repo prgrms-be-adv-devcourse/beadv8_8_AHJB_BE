@@ -93,7 +93,7 @@ class OrderSystemRefundIntegrationTest {
         orderFacade.requestSystemRefund(orderId);
 
         RefundDto refund = new RefundDto(7L, orderId, 1L, ACCEPTED, 33_000L, LocalDateTime.now(), LocalDateTime.now());
-        transactionTemplate.executeWithoutResult(status -> eventPublisher.publish(new RefundAcceptedEvent(refund)));
+        transactionTemplate.executeWithoutResult(status -> eventPublisher.publish(RefundAcceptedEvent.of(refund)));
 
         assertThat(orderRepository.findById(orderId).orElseThrow().getState()).isEqualTo(REFUNDED);
     }

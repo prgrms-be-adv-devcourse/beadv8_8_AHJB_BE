@@ -40,7 +40,7 @@ public class RefundRejectRefundUseCase {
             throw new BusinessException(RefundErrorCode.ALREADY_PROCESSED);
         }
 
-        eventPublisher.publish(new RefundRejectedEvent(refund.dto()));
+        eventPublisher.publish(RefundRejectedEvent.of(refund.dto()));
 
         return refund;
     }

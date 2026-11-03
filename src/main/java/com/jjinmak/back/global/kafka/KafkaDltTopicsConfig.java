@@ -5,6 +5,8 @@ import com.jjinmak.back.shared.delivery.event.DeliveryEventTopics;
 import com.jjinmak.back.shared.order.event.OrderEventTopics;
 import com.jjinmak.back.shared.payment.event.PaymentEventTopics;
 import com.jjinmak.back.shared.product.event.ProductEventTopics;
+import com.jjinmak.back.shared.refund.event.RefundEventTopics;
+import com.jjinmak.back.shared.settlement.event.SettlementEventTopics;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
@@ -38,9 +40,18 @@ public class KafkaDltTopicsConfig {
                 TopicBuilder.name(PaymentEventTopics.PAYMENT_PAID_EVENT + "-dlt").build(),
                 TopicBuilder.name(PaymentEventTopics.PAYMENT_REFUND_EVENT + "-dlt").build(),
                 TopicBuilder.name(PaymentEventTopics.PAYMENT_RELEASED_EVENT + "-dlt").build(),
-          
+
                 // 상품
-                TopicBuilder.name(ProductEventTopics.PRODUCT_REGISTERED + "-dlt").build()
+                TopicBuilder.name(ProductEventTopics.PRODUCT_REGISTERED + "-dlt").build(),
+
+                // 환불
+                TopicBuilder.name(RefundEventTopics.REFUND_ACCEPTED + "-dlt").build(),
+                TopicBuilder.name(RefundEventTopics.REFUND_REJECTED + "-dlt").build(),
+                TopicBuilder.name(RefundEventTopics.REFUND_RETRY_REQUESTED + "-dlt").build(),
+                TopicBuilder.name(RefundEventTopics.REFUND_COMPLETED + "-dlt").build(),
+
+                // 정산
+                TopicBuilder.name(SettlementEventTopics.SETTLEMENT_REQUESTED + "-dlt").build()
         );
     }
 }

@@ -79,6 +79,10 @@ public class Refund extends BaseIdAndTime {
         return status == RefundStatus.ACCEPTED;
     }
 
+    public boolean isCompleted() {
+        return status == RefundStatus.COMPLETED;
+    }
+
     public void accept() {
         process(RefundStatus.ACCEPTED);
     }
