@@ -1,8 +1,9 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/back
-    username: ${DB_USERNAME:back_user}
+    url: jdbc:postgresql://localhost:5432/embedding_db
+    username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:p@ssword}
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
