@@ -1,15 +1,16 @@
 package com.jjinmak.back.boundedContext.auction.app;
 
 import com.jjinmak.back.boundedContext.auction.domain.Auction;
-import com.jjinmak.back.boundedContext.auction.domain.AuctionStatus;
 import com.jjinmak.back.boundedContext.auction.domain.ProductSnapshot;
 import com.jjinmak.back.boundedContext.auction.dto.AuctionCreateDto;
 import com.jjinmak.back.boundedContext.auction.out.AuctionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuctionCreateUseCase {
@@ -17,7 +18,8 @@ public class AuctionCreateUseCase {
     private final AuctionEventPublisher auctionEventPublisher;
 
     public void createAuction(AuctionCreateDto dto){
-        if (auctionRepository.existsByProductIdAndStatus(dto.productId(), AuctionStatus.IN_PROGRESS)) {
+        if (auctionRepository.existsByProductId(dto.productId())) {
+            log.info("경매 생성 중복 수신, 무시: productId={}", dto.productId());
             return;
         }
         Auction auction = Auction.create(
