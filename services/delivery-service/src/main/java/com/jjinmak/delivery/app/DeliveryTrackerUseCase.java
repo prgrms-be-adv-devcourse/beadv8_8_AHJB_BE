@@ -1,0 +1,124 @@
+package com.jjinmak.delivery.app;
+
+import com.jjinmak.common.exception.BusinessException;
+import com.jjinmak.contracts.delivery.domain.CarrierType;
+import com.jjinmak.contracts.delivery.domain.DeliveryStatusCode;
+import com.jjinmak.contracts.delivery.event.DeliveryStatusUpdatedEvent;
+import com.jjinmak.delivery.app.dto.DeliveryStatusDto;
+import com.jjinmak.delivery.app.event.CallbackRequestedEvent;
+import com.jjinmak.delivery.app.event.WebhookRegisterEvent;
+import com.jjinmak.delivery.domain.Delivery;
+import com.jjinmak.delivery.domain.DeliveryMember;
+import com.jjinmak.delivery.out.deliveryTracker.DeliveryTracker;
+import com.jjinmak.delivery.out.dto.DeliveryStatusResponseDto;
+import com.jjinmak.delivery.out.eventPublisher.EventPublisher;
+import com.jjinmak.delivery.out.repository.DeliveryRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+
+import static com.jjinmak.common.exception.CommonErrorCode.BAD_REQUEST;
+import static com.jjinmak.contracts.delivery.domain.DeliveryStatusCode.UNKNOWN;
+import static com.jjinmak.contracts.delivery.domain.DeliveryStatusCode.WRONG;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class DeliveryTrackerUseCase {
+
+    private final TransactionTemplate transactionTemplate;
+    private final EventPublisher eventPublisher;
+
+    private final DeliverySupport deliverySupport;
+    private final DeliveryTracker deliveryTracker;
+    private final DeliveryRepository deliveryRepository;
+
+    public DeliveryStatusDto trackLastStatus(Long memberId, Long orderId){
+        Delivery delivery = deliverySupport.getDeliveryWithParticipant(orderId);
+        DeliveryMember member = deliverySupport.getMember(memberId);
+
+        delivery.validateParticipant(member);
+
+        DeliveryStatusResponseDto.LastEvent lastEvent = track(delivery);
+
+        applyStatus(delivery, lastEvent);
+
+        return new DeliveryStatusDto(
+                orderId,
+                delivery.getCarrier(),
+                delivery.getWaybill(),
+                lastEvent.status().code(),
+                lastEvent.status().code().getMessage(),
+                lastEvent.time() == null ? null : lastEvent.time().atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime()
+        );
+    }
+
+    public DeliveryStatusCode trackLastStatus(Long deliveryId){
+        Delivery delivery = deliverySupport.getDeliveryById(deliveryId);
+
+        DeliveryStatusResponseDto.LastEvent lastEvent = track(delivery);
+
+        applyStatus(delivery, lastEvent);
+
+        return lastEvent.status().code();
+    }
+
+    private DeliveryStatusResponseDto.LastEvent track(Delivery delivery){
+        return deliveryTracker
+                .trackLastStatus(delivery.getCarrier(), delivery.getWaybill())
+                .data().track().lastEvent();
+    }
+
+    public void registerWebhook(WebhookRegisterEvent event){
+        Long deliveryId = event.deliveryId();
+        Long orderId = event.orderId();
+        CarrierType carrier = event.carrier();
+        String waybill = event.waybill();
+
+        deliveryTracker.registerWebhook(deliveryId, orderId, carrier, waybill, 2);
+    }
+
+    public void webhookCallback(Long deliveryId, Long orderId, CarrierType carrier, String waybill){
+        if (carrier == null)
+            throw new BusinessException(BAD_REQUEST);
+
+        Delivery delivery = deliverySupport.getDeliveryById(deliveryId);
+
+        if (!delivery.getOrderId().equals(orderId) || !delivery.getCarrier().equals(carrier) || !delivery.getWaybill().equals(waybill)){
+            return;
+        }
+
+        eventPublisher.publish(new CallbackRequestedEvent(deliveryId));
+    }
+
+    private void applyStatus(Delivery delivery, DeliveryStatusResponseDto.LastEvent lastEvent){
+        DeliveryStatusCode beforeCode = delivery.getStatus();
+        DeliveryStatusCode afterCode = lastEvent.status().code();
+
+        if (beforeCode.equals(afterCode))
+            return;
+
+        if (afterCode.equals(WRONG)){
+            log.warn("Delivery Tracker 조회 결과 미식별 상태 코드를 응답받았습니다.\ndeliveryId: %d".formatted(delivery.getId()));
+            return;
+        }
+        else if (afterCode.equals(UNKNOWN)){
+            log.warn("Delivery Tracker 조회 결과 \"상태를 알 수 없음\"을 응답받았습니다.\ndeliveryId: %d".formatted(delivery.getId()));
+            return;
+        }
+
+        LocalDateTime updatedAt = lastEvent.time() == null ? LocalDateTime.now() : lastEvent.time().atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
+
+        transactionTemplate.executeWithoutResult(status -> {
+            int updated = deliveryRepository.updateStatus(delivery.getId(), delivery.getCarrier(), delivery.getWaybill(), beforeCode, afterCode);
+
+            if (updated == 1) {
+                eventPublisher.publish(new DeliveryStatusUpdatedEvent(delivery.getOrderId(), beforeCode, afterCode, updatedAt));
+            }
+        });
+    }
+}
