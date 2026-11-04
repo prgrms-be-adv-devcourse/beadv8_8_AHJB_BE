@@ -1,4 +1,4 @@
-package com.jjinmak.contracts.event;
+package com.jjinmak.contracts.order.event;
 
 public record OrderRefundRequestedEvent(
         Long orderId,

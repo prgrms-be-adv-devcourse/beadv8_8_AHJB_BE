@@ -1,4 +1,4 @@
-package com.jjinmak.contracts.event;
+package com.jjinmak.contracts.order.event;
 
 import java.time.LocalDateTime;
 
