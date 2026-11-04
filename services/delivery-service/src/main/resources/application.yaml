@@ -1,0 +1,36 @@
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB      # 파일 하나당 최대 크기
+      max-request-size: 12MB   # 요청 전체 최대 크기 (파일을 제외하고 2MB를 넉넉하게 할당함)
+  application:
+    name: delivery
+  jpa:
+    open-in-view: false
+  kafka:
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      acks: all
+      properties:
+        "[enable.idempotence]": true
+        "[spring.json.add.type.headers]": false   # 클래스 이름을 헤더에 싣지 않음
+    consumer:
+      group-id: ${spring.application.name}
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+server:
+  port: 8082
+
+delivery-tracker:
+  base-url: https://apis.tracker.delivery/graphql
+  rate-limit:
+    mode: local
+    capacity: 10
+    refill-tokens: 10
+    refill-period: 1s
+    max-wait: 10s
+  client-id: ${DELIVERY_TRACKER_CLIENT_ID}
+  client-secret: ${DELIVERY_TRACKER_CLIENT_SECRET}
