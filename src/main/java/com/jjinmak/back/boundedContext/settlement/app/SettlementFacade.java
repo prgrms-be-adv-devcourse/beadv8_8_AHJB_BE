@@ -2,11 +2,11 @@ package com.jjinmak.back.boundedContext.settlement.app;
 
 import com.jjinmak.back.boundedContext.settlement.domain.Settlement;
 import com.jjinmak.back.boundedContext.settlement.domain.SettlementPayoutResult;
+import com.jjinmak.back.boundedContext.settlement.in.dto.SettlementDetailDto;
+import com.jjinmak.back.boundedContext.settlement.in.dto.SettlementListDto;
 import com.jjinmak.back.shared.order.event.OrderConfirmPurchaseEvent;
 import com.jjinmak.back.shared.product.event.ProductRegisteredEvent;
 import com.jjinmak.back.shared.settlement.domain.SettlementStatus;
-import com.jjinmak.back.shared.settlement.dto.SettlementDetailDto;
-import com.jjinmak.back.shared.settlement.dto.SettlementListDto;
 import com.jjinmak.back.shared.payment.event.WalletReleasedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

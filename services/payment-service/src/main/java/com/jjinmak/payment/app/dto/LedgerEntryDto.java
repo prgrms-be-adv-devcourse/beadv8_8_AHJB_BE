@@ -1,0 +1,42 @@
+package com.jjinmak.payment.app.dto;
+
+import com.jjinmak.payment.domain.WalletTransaction;
+import com.jjinmak.payment.domain.enums.ReferenceType;
+import com.jjinmak.payment.domain.enums.WalletAccount;
+import com.jjinmak.payment.domain.enums.WalletTransactionType;
+
+import java.time.LocalDateTime;
+
+/**
+ * 원장(WalletTransaction) 한 줄. 사용자에게 보여주는 예치금·정산금 입출금 내역.
+ *
+ * - account       : DEPOSIT(예치금) / SETTLEMENT(정산금) 중 어느 주머니의 변동인지
+ * - amount        : 부호 있는 금액. 입금 +, 출금 -
+ * - balanceAfter  : 이 기록 직후의 해당 주머니 잔액
+ * - referenceType / referenceId : 이 기록을 만든 원인. PAYMENT 면 충전(Charge) id, ORDER 면 주문 id
+ */
+public record LedgerEntryDto(
+        Long id,
+        WalletAccount account,
+        WalletTransactionType type,
+        long amount,
+        long balanceAfter,
+        ReferenceType referenceType,
+        Long referenceId,
+        String transactionGroupId,
+        LocalDateTime createdAt
+) {
+    public static LedgerEntryDto from(WalletTransaction tx) {
+        return new LedgerEntryDto(
+                tx.getId(),
+                tx.getAccount(),
+                tx.getType(),
+                tx.getAmount(),
+                tx.getBalanceAfter(),
+                tx.getReferenceType(),
+                tx.getReferenceId(),
+                tx.getTransactionGroupId(),
+                tx.getCreatedAt()
+        );
+    }
+}
