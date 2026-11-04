@@ -2,7 +2,7 @@ package com.jjinmak.back.boundedContext.refund.app;
 
 import com.jjinmak.back.boundedContext.refund.domain.RefundRetryResult;
 import com.jjinmak.back.shared.order.event.OrderRefundRequestedEvent;
-import com.jjinmak.back.shared.refund.dto.RefundDetailDto;
+import com.jjinmak.back.boundedContext.refund.in.dto.RefundDetailDto;
 import com.jjinmak.back.shared.refund.dto.RefundDto;
 import com.jjinmak.back.shared.payment.event.WalletRefundedEvent;
 import lombok.RequiredArgsConstructor;
