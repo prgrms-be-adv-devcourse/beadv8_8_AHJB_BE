@@ -4,7 +4,7 @@ import com.jjinmak.back.boundedContext.refund.app.RefundFacade;
 import com.jjinmak.back.boundedContext.refund.domain.Refund;
 import com.jjinmak.back.global.rsData.RsData;
 import com.jjinmak.back.global.security.AuthPrincipal;
-import com.jjinmak.back.shared.refund.dto.RefundDetailDto;
+import com.jjinmak.back.boundedContext.refund.in.dto.RefundDetailDto;
 import com.jjinmak.back.shared.refund.dto.RefundDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

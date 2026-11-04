@@ -1,4 +1,4 @@
-package com.jjinmak.back.shared.settlement.dto;
+package com.jjinmak.back.boundedContext.settlement.in.dto;
 
 import com.jjinmak.back.shared.settlement.domain.SettlementStatus;
 

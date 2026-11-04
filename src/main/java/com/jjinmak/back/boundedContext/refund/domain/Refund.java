@@ -3,7 +3,7 @@ package com.jjinmak.back.boundedContext.refund.domain;
 import com.jjinmak.back.global.exception.BusinessException;
 import com.jjinmak.back.global.jpa.entity.BaseIdAndTime;
 import com.jjinmak.back.shared.refund.domain.RefundStatus;
-import com.jjinmak.back.shared.refund.dto.RefundDetailDto;
+import com.jjinmak.back.boundedContext.refund.in.dto.RefundDetailDto;
 import com.jjinmak.back.shared.refund.dto.RefundDto;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;

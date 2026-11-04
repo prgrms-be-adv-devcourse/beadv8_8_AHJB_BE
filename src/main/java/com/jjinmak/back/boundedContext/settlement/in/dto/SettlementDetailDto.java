@@ -1,6 +1,6 @@
-package com.jjinmak.contracts.settlement.dto;
+package com.jjinmak.back.boundedContext.settlement.in.dto;
 
-import com.jjinmak.contracts.settlement.domain.SettlementStatus;
+import com.jjinmak.back.shared.settlement.domain.SettlementStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
