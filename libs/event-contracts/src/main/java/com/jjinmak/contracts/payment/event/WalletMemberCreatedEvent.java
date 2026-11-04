@@ -1,6 +1,6 @@
 package com.jjinmak.contracts.payment.event;
 
-import com.jjinmak.back.shared.payment.dto.WalletMemberDto;
+import com.jjinmak.contracts.payment.dto.WalletMemberDto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

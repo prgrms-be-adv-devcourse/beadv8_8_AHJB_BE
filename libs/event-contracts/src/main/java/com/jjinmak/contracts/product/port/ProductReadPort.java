@@ -1,6 +1,6 @@
 package com.jjinmak.contracts.product.port;
 
-import com.jjinmak.back.shared.product.dto.ProductSummaryDto;
+import com.jjinmak.contracts.product.dto.ProductSummaryDto;
 
 import java.util.Collection;
 import java.util.List;

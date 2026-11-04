@@ -1,6 +1,6 @@
 package com.jjinmak.contracts.event;
 
-import com.jjinmak.back.shared.delivery.domain.CarrierType;
+import com.jjinmak.contracts.delivery.domain.CarrierType;
 
 public record OrderSendProductEvent(
         Long orderId,

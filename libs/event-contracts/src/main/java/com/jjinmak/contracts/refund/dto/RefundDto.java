@@ -1,6 +1,6 @@
 package com.jjinmak.contracts.refund.dto;
 
-import com.jjinmak.back.shared.refund.domain.RefundStatus;
+import com.jjinmak.contracts.refund.domain.RefundStatus;
 
 import java.time.LocalDateTime;
 

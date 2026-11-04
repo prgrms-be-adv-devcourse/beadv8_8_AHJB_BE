@@ -1,6 +1,6 @@
 package com.jjinmak.contracts.refund.event;
 
-import com.jjinmak.back.shared.refund.dto.RefundDto;
+import com.jjinmak.contracts.refund.dto.RefundDto;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

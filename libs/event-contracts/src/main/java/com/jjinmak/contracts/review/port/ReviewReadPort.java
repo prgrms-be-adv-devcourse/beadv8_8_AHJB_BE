@@ -1,6 +1,6 @@
 package com.jjinmak.contracts.review.port;
 
-import com.jjinmak.back.shared.review.dto.SellerRatingDto;
+import com.jjinmak.contracts.review.dto.SellerRatingDto;
 
 public interface ReviewReadPort {
 

@@ -1,6 +1,6 @@
 package com.jjinmak.contracts.delivery.event;
 
-import com.jjinmak.back.shared.delivery.domain.DeliveryStatusCode;
+import com.jjinmak.contracts.delivery.domain.DeliveryStatusCode;
 
 import java.time.LocalDateTime;
 

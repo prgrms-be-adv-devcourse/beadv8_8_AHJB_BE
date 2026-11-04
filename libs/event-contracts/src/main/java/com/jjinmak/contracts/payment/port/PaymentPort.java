@@ -1,8 +1,8 @@
 package com.jjinmak.contracts.payment.port;
 
-import com.jjinmak.back.shared.payment.dto.HoldingSettlementDto;
-import com.jjinmak.back.shared.payment.dto.PaymentRequestDto;
-import com.jjinmak.back.shared.payment.dto.PaymentResultDto;
+import com.jjinmak.contracts.payment.dto.HoldingSettlementDto;
+import com.jjinmak.contracts.payment.dto.PaymentRequestDto;
+import com.jjinmak.contracts.payment.dto.PaymentResultDto;
 
 /**
  * 주문 컨텍스트가 결제 컨텍스트를 동기 호출할 때 쓰는 포트. 구현체는 결제 컨텍스트의 in/PaymentPortAdapter.
