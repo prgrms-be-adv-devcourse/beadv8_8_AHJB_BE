@@ -1,0 +1,16 @@
+package com.jjinmak.contracts.refund.dto;
+
+import com.jjinmak.back.shared.refund.domain.RefundStatus;
+
+import java.time.LocalDateTime;
+
+public record RefundDto(
+        Long refundId,
+        Long orderId,
+        Long winnerId,
+        RefundStatus status,
+        Long amount,
+        LocalDateTime requestedAt,
+        LocalDateTime processedAt
+) {
+}

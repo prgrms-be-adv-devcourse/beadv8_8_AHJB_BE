@@ -1,0 +1,17 @@
+package com.jjinmak.contracts.cart.dto;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+public record CartItemDto(
+        Long id,
+        UUID winnerId,
+        UUID sellerId,
+        Long auctionId,
+        Long productId,
+        Long winningPrice,
+        Long deliveryFee,
+        LocalDateTime winAt,
+        LocalDateTime paymentDueAt
+) {
+}
