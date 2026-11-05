@@ -13,17 +13,14 @@ import com.jjinmak.back.boundedContext.payment.domain.enums.WalletTransactionTyp
 import com.jjinmak.back.boundedContext.payment.in.dto.BalanceResponseDto;
 import com.jjinmak.back.global.rsData.RsData;
 import com.jjinmak.back.global.security.AuthPrincipal;
+import com.jjinmak.back.shared.payment.dto.HoldingSettlementDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 
 @Tag(name = "지갑", description = "예치금 잔액·원장·홀딩(묶인 돈 / 정산 예정 금액) 조회")
@@ -100,6 +97,18 @@ public class WalletApiController {
             @RequestParam(defaultValue = "20") int size
     ) {
         PageDto<WithdrawalDto> response = walletFacade.listWithdrawals(principal.memberId(), page, size);
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
+
+    @Operation(
+            summary = "정산 정보 조회",
+            description = "주문 1건에 대한 정산 정보를 조회합니다. 정산에서 정산 전에 수수료/정산액을 확인할 때 사용합니다."
+    )
+    @GetMapping("/settlement/{orderId}")
+    public ResponseEntity<RsData<HoldingSettlementDto>> getSettlementInfo(
+            @PathVariable Long orderId
+    ) {
+        HoldingSettlementDto response = walletFacade.getSettlement(orderId);
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }
 }

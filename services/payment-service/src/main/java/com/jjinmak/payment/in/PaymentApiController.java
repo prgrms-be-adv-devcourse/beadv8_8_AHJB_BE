@@ -2,6 +2,7 @@ package com.jjinmak.payment.in;
 
 import com.jjinmak.common.rsData.RsData;
 import com.jjinmak.common.security.AuthPrincipal;
+import com.jjinmak.contracts.payment.dto.HoldingSettlementDto;
 import com.jjinmak.contracts.payment.dto.PaymentRequestDto;
 import com.jjinmak.contracts.payment.dto.PaymentResultDto;
 import com.jjinmak.payment.app.PaymentFacade;
@@ -156,6 +157,11 @@ public class PaymentApiController {
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }
 
+
+    @Operation(
+            summary = "주문 건 결제 요청",
+            description = "주문에 대한 결제를 처리합니다. 주문에서 호출합니다."
+    )
     @PostMapping("/request")
     public ResponseEntity<RsData<PaymentResultDto>> request(
             @RequestBody PaymentRequestDto dto
