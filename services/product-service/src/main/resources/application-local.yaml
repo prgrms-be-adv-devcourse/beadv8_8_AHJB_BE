@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/product_db
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:p@ssword}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+  kafka:
+    bootstrap-servers: localhost:9092
+
+# 로컬은 이미지를 파일로 저장한다. 조회 URL은 이 서비스 포트에 맞춘다.
+product-image:
+  public-base-url: http://localhost:8085/local-images
+
+logging:
+  level:
+    org.hibernate.SQL: debug
