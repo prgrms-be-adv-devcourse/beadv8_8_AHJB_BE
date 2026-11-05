@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: ${AUCTION_DB_URL}
+    username: ${AUCTION_DB_USERNAME}
+    password: ${AUCTION_DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+  kafka:
+    bootstrap-servers: kafka.infra.svc.cluster.local:19092
