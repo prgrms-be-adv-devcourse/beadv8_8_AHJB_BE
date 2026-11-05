@@ -43,3 +43,7 @@ tasks.withType<Test> {
     useJUnitPlatform()
     jvmArgs("-javaagent:${mockitoAgent.asPath}", "-Xshare:off")
 }
+
+tasks.bootJar {
+    archiveFileName.set("app.jar")
+}
