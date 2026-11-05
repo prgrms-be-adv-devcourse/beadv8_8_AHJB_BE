@@ -20,3 +20,14 @@ spring:
 
 server:
   port: 8085
+
+# 토스페이먼츠 (실제 키는 .env 로 주입, 파일에 적지 않음)
+toss:
+  payments:
+    base-url: ${TOSS_PAYMENTS_BASE_URL:https://api.tosspayments.com}
+    client-key: ${TOSS_PAYMENTS_CLIENT_KEY:}   # 프론트 결제창 호출용 (공개 키)
+    secret-key: ${TOSS_PAYMENTS_SECRET_KEY:}   # 서버 승인·취소 호출용 (비공개 키)
+
+# 지갑 정책
+wallet:
+  fee-rate-percent: 10   # 판매 수수료율 (%)
