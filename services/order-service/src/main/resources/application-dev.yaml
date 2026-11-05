@@ -8,3 +8,6 @@ spring:
       ddl-auto: update
   kafka:
     bootstrap-servers: kafka.infra.svc.cluster.local:19092
+
+payment-service:
+  base-url: http://payment-service.app.svc.cluster.local:8080

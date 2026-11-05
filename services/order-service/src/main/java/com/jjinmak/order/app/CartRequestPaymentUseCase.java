@@ -8,6 +8,7 @@ import com.jjinmak.contracts.payment.dto.PaymentResultDto;
 import com.jjinmak.contracts.payment.event.PaymentPaidEvent;
 import com.jjinmak.order.app.dto.PaymentResponseDto;
 import com.jjinmak.order.domain.*;
+import com.jjinmak.order.out.payment.PaymentRequest;
 import com.jjinmak.order.out.repository.CartItemRepository;
 import com.jjinmak.order.out.repository.OrderGroupRepository;
 import com.jjinmak.order.out.repository.OrderRepository;
@@ -27,7 +28,7 @@ import static com.jjinmak.order.exception.OrderErrorCode.*;
 public class CartRequestPaymentUseCase {
 
     private final EventPublisher eventPublisher;
-//    private final PaymentRequest paymentRequest;
+    private final PaymentRequest paymentRequest;
     private final OrderSupport orderSupport;
     private final CartItemRepository cartItemRepository;
     private final OrderRepository orderRepository;
@@ -102,9 +103,9 @@ public class CartRequestPaymentUseCase {
         return new PaymentRequestDto(orderGroup.getId(), winnerId, totalPrice, items);
     }
 
-//    public PaymentResultDto requestPayment(PaymentRequestDto request){
-//        return paymentRequest.requestPayment(request);
-//    }
+    public PaymentResultDto requestPayment(PaymentRequestDto request){
+        return paymentRequest.requestPayment(request);
+    }
 
     public PaymentResponseDto handlePaymentResult(Long orderGroupId, PaymentResultDto dto){
         if (dto.status() == PaymentResultDto.Status.PAID){

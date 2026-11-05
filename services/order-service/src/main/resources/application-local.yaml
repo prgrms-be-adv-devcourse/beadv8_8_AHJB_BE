@@ -18,3 +18,6 @@ spring:
 logging:
   level:
     org.hibernate.SQL: debug
+
+payment-service:
+  base-url: http://localhost:8085
