@@ -14,7 +14,7 @@ import java.util.Collection;
 import java.util.List;
 
 public interface AuctionRepository extends JpaRepository<Auction,Long> {
-    boolean existsByProductIdAndStatus(Long productId, AuctionStatus status);
+    boolean existsByProductId(Long productId);
 
     @Query(
             """

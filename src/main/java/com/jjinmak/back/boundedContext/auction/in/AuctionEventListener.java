@@ -9,6 +9,7 @@ import com.jjinmak.back.shared.order.event.OrderPaymentSucceedEvent;
 import com.jjinmak.back.shared.order.event.OrderRefundAcceptedEvent;
 import com.jjinmak.back.shared.product.event.ProductRegisteredEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -17,30 +18,20 @@ import java.time.LocalDateTime;
 
 import static org.springframework.transaction.annotation.Propagation.REQUIRES_NEW;
 import static org.springframework.transaction.event.TransactionPhase.AFTER_COMMIT;
-import static org.springframework.transaction.event.TransactionPhase.BEFORE_COMMIT;
+
+import static com.jjinmak.back.shared.order.event.OrderEventTopics.*;
+import static com.jjinmak.back.shared.product.event.ProductEventTopics.*;
+
 
 @Component
 @RequiredArgsConstructor
 public class AuctionEventListener {
-
     private final AuctionFacade auctionFacade;
 
-    @TransactionalEventListener(phase = BEFORE_COMMIT)
+    @KafkaListener(topics = PRODUCT_REGISTERED, groupId = "auction")
     public void handleProductRegistered(ProductRegisteredEvent event) {
-        AuctionCreateDto dto = new AuctionCreateDto(
-                event.productId(),
-                event.sellerId(),
-                event.startPrice(),
-                event.instantWinPrice(),
-                event.shippingFee(),
-                resolveEndAt(event, LocalDateTime.now()),
-                event.productName(),
-                event.category(),
-                event.thumbnailUrl()
-        );
-        auctionFacade.createAuction(dto);
+        auctionFacade.createAuction(toCreateDto(event, LocalDateTime.now()));
     }
-
     // 회원 생성 시 경매 회원을 복제한다. (입찰자 확인, 입찰 내역 닉네임)
     @TransactionalEventListener(phase = AFTER_COMMIT)
     @Transactional(propagation = REQUIRES_NEW)
@@ -49,22 +40,25 @@ public class AuctionEventListener {
     }
 
     //낙찰 이후 거래 결과
-    @TransactionalEventListener(phase = AFTER_COMMIT)
-    @Transactional(propagation = REQUIRES_NEW)
-    public void handleOrderPaymentSucceed(OrderPaymentSucceedEvent event) {auctionFacade.applyPaymentSucceeded(event.auctionId());}
+    @KafkaListener(topics = ORDER_PAYMENT_SUCCEED, groupId = "auction")
+    public void handleOrderPaymentSucceed(OrderPaymentSucceedEvent event) {
+        auctionFacade.applyPaymentSucceeded(event.auctionId());
+    }
 
-    @TransactionalEventListener(phase = AFTER_COMMIT)
-    @Transactional(propagation = REQUIRES_NEW)
-    public void handleCartPaymentDefault(CartPaymentDefaultEvent event) {auctionFacade.applyPaymentDefaulted(event.auctionId());}
+    @KafkaListener(topics = CART_PAYMENT_DEFAULT, groupId ="auction")
+    public void handleCartPaymentDefault(CartPaymentDefaultEvent event) {
+        auctionFacade.applyPaymentDefaulted(event.auctionId());
+    }
 
-    @TransactionalEventListener(phase = AFTER_COMMIT)
-    @Transactional(propagation = REQUIRES_NEW)
-    public void handleOrderConfirmPurchase(OrderConfirmPurchaseEvent event) {auctionFacade.applyPurchaseConfirmed(event.auctionId());}
+    @KafkaListener(topics = ORDER_CONFIRM_PURCHASE, groupId = "auction")
+    public void handleOrderConfirmPurchase(OrderConfirmPurchaseEvent event) {
+        auctionFacade.applyPurchaseConfirmed(event.auctionId());
+    }
 
-    @TransactionalEventListener(phase = AFTER_COMMIT)
-    @Transactional(propagation = REQUIRES_NEW)
-    public void handleOrderRefundAccepted(OrderRefundAcceptedEvent event) {auctionFacade.applyRefundAccepted(event.auctionId());}
-
+    @KafkaListener(topics = ORDER_REFUND_ACCEPTED, groupId = "auction")
+    public void handleOrderRefundAccepted(OrderRefundAcceptedEvent event) {
+        auctionFacade.applyRefundAccepted(event.auctionId());
+    }
     // 종료 시각 직접 지정 or 기간선택(1,3,7)
     private LocalDateTime resolveEndAt(ProductRegisteredEvent event, LocalDateTime now) {
         if (event.customEndAt() != null) {
@@ -73,5 +67,18 @@ public class AuctionEventListener {
         return now.plusDays(event.duration());
     }
 
+    private AuctionCreateDto toCreateDto(ProductRegisteredEvent event, LocalDateTime now) {
+        return new AuctionCreateDto(
+                event.productId(),
+                event.sellerId(),
+                event.startPrice(),
+                event.instantWinPrice(),
+                event.shippingFee(),
+                resolveEndAt(event, now),
+                event.productName(),
+                event.category(),
+                event.thumbnailUrl()
+        );
+    }
 
 }
