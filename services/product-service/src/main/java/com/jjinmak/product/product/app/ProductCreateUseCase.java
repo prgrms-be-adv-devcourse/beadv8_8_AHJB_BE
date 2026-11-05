@@ -1,0 +1,61 @@
+package com.jjinmak.product.product.app;
+
+import com.jjinmak.product.product.domain.Product;
+import com.jjinmak.product.product.domain.ProductAuctionTerms;
+import com.jjinmak.product.product.domain.ProductErrorCode;
+import com.jjinmak.product.product.domain.ProductMember;
+import com.jjinmak.product.product.in.dto.ProductCreateRequestDto;
+import com.jjinmak.product.product.in.dto.ProductCreateRequestDto.AuctionTerms;
+import com.jjinmak.product.product.in.dto.ProductCreateRequestDto.Shipping;
+import com.jjinmak.product.product.out.ProductMemberRepository;
+import com.jjinmak.product.product.out.ProductRepository;
+import com.jjinmak.common.exception.BusinessException;
+import com.jjinmak.common.exception.CommonErrorCode;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+
+@Service
+@RequiredArgsConstructor
+public class ProductCreateUseCase {
+
+    private final ProductRepository productRepository;
+    private final ProductMemberRepository productMemberRepository;
+    private final ProductImageAttachUseCase productImageAttachUseCase;
+
+    public Product createProduct(Long sellerId, ProductCreateRequestDto request){
+        // 판매자 등록 여부, 계정 정지/차단은 컨트롤러의 PERM_SELL 권한 검사에서 확인한다.
+        ProductMember seller = productMemberRepository.findById(sellerId)
+                .orElseThrow(() -> new BusinessException(CommonErrorCode.USER_NOT_FOUND));
+
+        // TODO: 정책 저장 방식이 정해지면 현재 정책 버전과 일치하는지도 검사
+        if (!request.policyAgreed()){
+            throw new BusinessException(ProductErrorCode.POLICY_NOT_AGREED);
+        }
+
+        AuctionTerms auctionTerms = request.auctionTerms();
+        Shipping shipping = request.shipping();
+        LocalDateTime now = LocalDateTime.now();
+
+        // 경매 조건은 수정 기간 동안 보관했다가, 수정 기간이 끝나면 경매 컨텍스트로 전달한다.
+        Product product = Product.create(
+                seller, request.name(), request.category(),
+                request.manufacturer(), request.manufacturerEtc(), request.description(),
+                shipping.feeType(), shipping.customFee(), shipping.bundleAllowed(),
+                request.policyVersion(), now,
+                ProductAuctionTerms.create(
+                        auctionTerms.startingPrice(), auctionTerms.instantWinPrice(),
+                        auctionTerms.duration(), auctionTerms.customEndAt(),
+                        Product.scheduleAuctionAt(now)
+                )
+        );
+
+        productRepository.save(product);
+
+        // 업로드 API로 먼저 올린 이미지를 요청 순서대로 연결한다. (첫 번째가 대표 이미지)
+        productImageAttachUseCase.attach(product, sellerId, request.imageIds());
+
+        return product;
+    }
+}

@@ -1,8 +1,8 @@
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/order_db
-    username: ${DB_USERNAME:order_svc}
-    password: ${DB_PASSWORD:order-db-secret}
+    username: ${ORDER_DB_USERNAME:order_svc}
+    password: ${ORDER_DB_PASSWORD:order-db-secret}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 5
