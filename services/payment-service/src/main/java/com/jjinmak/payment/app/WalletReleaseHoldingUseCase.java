@@ -4,7 +4,7 @@ import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.contracts.payment.event.WalletReleasedEvent;
 import com.jjinmak.payment.domain.Holding;
 import com.jjinmak.payment.domain.Wallet;
-import com.jjinmak.payment.eventPublisher.EventPublisher;
+import com.jjinmak.payment.out.eventPublisher.EventPublisher;
 import com.jjinmak.payment.out.HoldingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -6,7 +6,7 @@ import com.jjinmak.payment.app.dto.PaymentSummaryDto;
 import com.jjinmak.payment.domain.Charge;
 import com.jjinmak.payment.domain.Payment;
 import com.jjinmak.payment.domain.Wallet;
-import com.jjinmak.payment.eventPublisher.EventPublisher;
+import com.jjinmak.payment.out.eventPublisher.EventPublisher;
 import com.jjinmak.payment.out.ChargeRepository;
 import com.jjinmak.payment.out.PaymentRepository;
 import com.jjinmak.payment.out.dto.TossPaymentResponse;

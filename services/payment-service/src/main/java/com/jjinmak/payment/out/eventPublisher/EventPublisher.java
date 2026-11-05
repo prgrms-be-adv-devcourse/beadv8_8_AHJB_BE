@@ -1,4 +1,4 @@
-package com.jjinmak.payment.eventPublisher;
+package com.jjinmak.payment.out.eventPublisher;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;

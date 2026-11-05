@@ -18,6 +18,5 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
 
-cors:
-  allowed-origins:
-    - http://localhost:5173
+server:
+  port: 8085
