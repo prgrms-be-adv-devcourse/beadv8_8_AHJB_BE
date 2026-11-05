@@ -41,24 +41,23 @@ public class CartApiController {
                 .body(new RsData<>(response));
     }
 
-    // TODO: 결제 요청 방법이 수정되면 다시 활성화
-//    @Operation(
-//            summary = "결제 요청",
-//            description = "여러 상품을 묶어 한 번에 결제를 시도합니다."
-//    )
-//    @PostMapping("/payment")
-//    public ResponseEntity<RsData<PaymentResponseDto>> paymentCartItems(
-//            @AuthenticationPrincipal AuthPrincipal principal,
-//            @Valid @RequestBody CartPaymentRequestDto request
-//    ){
-//        PaymentRequestDto req = orderFacade.createOrder(principal.memberId(), request.productIds());
-//
-//        PaymentResultDto res = orderFacade.requestPayment(req);
-//
-//        PaymentResponseDto response = orderFacade.handlePaymentResult(req.orderGroupId(), res);
-//
-//        return ResponseEntity
-//                .status(HttpStatus.OK)
-//                .body(new RsData<>(response));
-//    }
+    @Operation(
+            summary = "결제 요청",
+            description = "여러 상품을 묶어 한 번에 결제를 시도합니다."
+    )
+    @PostMapping("/payment")
+    public ResponseEntity<RsData<PaymentResponseDto>> paymentCartItems(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @Valid @RequestBody CartPaymentRequestDto request
+    ){
+        PaymentRequestDto req = orderFacade.createOrder(principal.memberId(), request.productIds());
+
+        PaymentResultDto res = orderFacade.requestPayment(req);
+
+        PaymentResponseDto response = orderFacade.handlePaymentResult(req.orderGroupId(), res);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(new RsData<>(response));
+    }
 }

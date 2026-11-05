@@ -53,9 +53,9 @@ public class OrderFacade {
         return cartRequestPaymentUseCase.createOrder(winnerId, productIds);
     }
 
-//    public PaymentResultDto requestPayment(PaymentRequestDto request){
-//        return cartRequestPaymentUseCase.requestPayment(request);
-//    }
+    public PaymentResultDto requestPayment(PaymentRequestDto request){
+        return cartRequestPaymentUseCase.requestPayment(request);
+    }
 
     public PaymentResponseDto handlePaymentResult(Long orderGroupId, PaymentResultDto dto){
         return cartRequestPaymentUseCase.handlePaymentResult(orderGroupId, dto);
