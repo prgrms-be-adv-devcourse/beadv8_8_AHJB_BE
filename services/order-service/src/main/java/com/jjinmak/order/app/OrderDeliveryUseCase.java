@@ -1,5 +1,6 @@
 package com.jjinmak.order.app;
 
+import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.order.out.eventPublisher.EventPublisher;
 import com.jjinmak.contracts.delivery.domain.CarrierType;
 import com.jjinmak.contracts.delivery.domain.DeliveryStatusCode;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 
 import static com.jjinmak.contracts.delivery.domain.DeliveryStatusCode.EXCEPTION;
 import static com.jjinmak.order.domain.OrderState.*;
+import static com.jjinmak.order.exception.OrderErrorCode.ORDER_STATE_BAD_REQUEST;
 
 @Service
 @RequiredArgsConstructor
@@ -52,6 +54,9 @@ public class OrderDeliveryUseCase {
         DeliveryStatusCode afterStatus = event.afterStatus();
 
         Order order = orderSupport.getOrder(orderId);
+
+        if (order.getState() == PAID)
+            throw new BusinessException(ORDER_STATE_BAD_REQUEST);
 
         if (order.getState() != SHIPPING && order.getState() != DELIVERY_ERROR)
             return;
