@@ -1,11 +1,15 @@
 package com.jjinmak.order.app;
 
+import com.jjinmak.common.exception.BusinessException;
+import com.jjinmak.contracts.order.event.OrderRemindPaymentEvent;
+import com.jjinmak.order.domain.CartItem;
 import com.jjinmak.order.out.eventPublisher.EventPublisher;
 import com.jjinmak.contracts.order.event.OrderConfirmPurchaseEvent;
 import com.jjinmak.contracts.order.event.OrderGroupDeletedEvent;
 import com.jjinmak.contracts.order.event.OrderRefundRequestedEvent;
 import com.jjinmak.order.domain.Order;
 import com.jjinmak.order.domain.OrderGroup;
+import com.jjinmak.order.out.repository.CartItemRepository;
 import com.jjinmak.order.out.repository.OrderGroupRepository;
 import com.jjinmak.order.out.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +21,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.jjinmak.order.domain.OrderState.*;
+import static com.jjinmak.order.exception.OrderErrorCode.CART_ITEM_NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +32,7 @@ public class OrderSchedulerUseCase {
     private final OrderRepository orderRepository;
     private final OrderGroupRepository orderGroupRepository;
     private final OrderSupport orderSupport;
+    private final CartItemRepository cartItemRepository;
 
     public List<Long> getExpiredOrderIds(){
         return orderRepository.findExpiredOrderIds(LocalDateTime.now());
@@ -71,6 +77,25 @@ public class OrderSchedulerUseCase {
                 orderId, order.getWinner().getId(), order.getSeller().getId(),
                 order.getProductId(), order.getWinningPrice(), order.getDeliveryFee()
         );
+
+        eventPublisher.publish(event);
+    }
+
+    public List<Long> findPaymentDueSoonItemIds(){
+        return cartItemRepository.findPaymentDueSoonItemIds(LocalDateTime.now().plusHours(2));
+    }
+
+    public void sendPaymentDueSoonReminder(Long itemId){
+        CartItem item = cartItemRepository.findByIdWithParticipant(itemId)
+                .orElseThrow(() -> new BusinessException(CART_ITEM_NOT_FOUND));
+
+        OrderRemindPaymentEvent event = new OrderRemindPaymentEvent(
+                item.getId(), item.getWinner().getId(),
+                item.getWinningPrice(), item.getDeliveryFee(),
+                item.getPaymentDueAt()
+        );
+
+        item.sendPaymentReminder();
 
         eventPublisher.publish(event);
     }

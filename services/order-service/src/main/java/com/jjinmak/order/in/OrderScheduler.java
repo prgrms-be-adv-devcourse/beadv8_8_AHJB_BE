@@ -18,6 +18,22 @@ public class OrderScheduler {
 
     // TODO: 서버를 늘리면 모든 JVM에서 스케줄러가 돌아감
     @Scheduled(fixedDelay = 60_000)
+    public void remindPayment(){
+        List<Long> itemIds = orderFacade.findPaymentDueSoonItemIds();
+
+        for (Long id : itemIds){
+            try {
+                orderFacade.sendPaymentDueSoonReminder(id);
+            } catch (BusinessException e){
+                log.error("오류가 발생해 결제 임박 알림을 전송하지 못했습니다.\ncartId: {}\nerrorCode: {}", id, e.getErrorCode());
+            } catch (Exception e){
+                log.error("결제 임박 알림 전송 실패.\ncartId: {}", id, e);
+            }
+        }
+    }
+
+    // TODO: 서버를 늘리면 모든 JVM에서 스케줄러가 돌아감
+    @Scheduled(fixedDelay = 60_000)
     public void deleteDefaultPayment(){
         List<Long> itemIds = orderFacade.findExpiredItemIds();
 
