@@ -66,6 +66,29 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # Elasticsearch (상품 검색, nori 한국어 분석기 포함)
+  elasticsearch:
+    build: ./infra/elasticsearch
+    image: jjinmak-elasticsearch:9.4.5
+    container_name: elasticsearch
+    ports:
+      - "127.0.0.1:9200:9200"
+    environment:
+      discovery.type: single-node
+      # 로컬 전용: 보안(로그인·HTTPS) 끔. 운영은 배포 이슈에서 따로 설정
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health > /dev/null" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
 volumes:
   pgdata:
   kafka-data:
+  es-data:
