@@ -142,7 +142,8 @@ public class CartRequestPaymentUseCase {
             cartItemRepository.delete(item);
 
             eventPublisher.publish(new OrderPaymentSucceedEvent(
-                    order.getId(), order.getAuctionId(), order.getProductId(), paidAt
+                    order.getId(), order.getAuctionId(), order.getProductId(),
+                    order.getWinner().getId(), order.getSeller().getId(), paidAt
             ));
         }
     }
