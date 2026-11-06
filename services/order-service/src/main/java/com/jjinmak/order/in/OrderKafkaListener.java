@@ -1,78 +1,63 @@
 package com.jjinmak.order.in;
 
+import com.jjinmak.contracts.auction.event.AuctionEventTopics;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
 import com.jjinmak.contracts.delivery.event.DeliveryCreatedEvent;
+import com.jjinmak.contracts.delivery.event.DeliveryEventTopics;
 import com.jjinmak.contracts.delivery.event.DeliveryStatusUpdatedEvent;
 import com.jjinmak.contracts.member.dto.MemberDto;
 import com.jjinmak.contracts.member.event.MemberCreatedEvent;
+import com.jjinmak.contracts.member.event.MemberEventTopics;
+import com.jjinmak.contracts.payment.event.PaymentEventTopics;
 import com.jjinmak.contracts.payment.event.PaymentPaidEvent;
 import com.jjinmak.contracts.refund.event.RefundAcceptedEvent;
+import com.jjinmak.contracts.refund.event.RefundEventTopics;
 import com.jjinmak.contracts.refund.event.RefundRejectedEvent;
 import com.jjinmak.order.app.OrderFacade;
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionalEventListener;
-
-import static org.springframework.transaction.annotation.Propagation.REQUIRES_NEW;
-import static org.springframework.transaction.event.TransactionPhase.AFTER_COMMIT;
 
 @Component
 @RequiredArgsConstructor
-public class OrderEventListener {
+public class OrderKafkaListener {
 
     private final OrderFacade orderFacade;
+    private final String groupId = "order";
 
-    @TransactionalEventListener(phase = AFTER_COMMIT)
-    @Transactional(propagation = REQUIRES_NEW)
+    @KafkaListener(topics = AuctionEventTopics.AUCTION_WON, groupId = groupId)
     public void handle(AuctionWonEvent event){
         orderFacade.createCartItem(event);
     }
 
-    @TransactionalEventListener(phase = AFTER_COMMIT)
-    @Transactional(propagation = REQUIRES_NEW)
+    @KafkaListener(topics = MemberEventTopics.MEMBER_CREATED, groupId = groupId)
     public void handle(MemberCreatedEvent event){
         MemberDto member = event.member();
 
         orderFacade.syncMember(member);
     }
 
-//    /*
-//     * kafka 전환 시 이벤트 구독 예시
-//     */
-//    @KafkaListener(topics = MemberEventTopics.MEMBER_CREATED, groupId = "order")
-//    public void handle(MemberCreatedEvent event){
-//        MemberDto member = event.member();
-//
-//        orderFacade.syncMember(member);
-//    }
-
-    @TransactionalEventListener(phase = AFTER_COMMIT)
-    @Transactional(propagation = REQUIRES_NEW)
+    @KafkaListener(topics = DeliveryEventTopics.DELIVERY_CREATED, groupId = groupId)
     public void handle(DeliveryCreatedEvent event){
         orderFacade.startDelivery(event);
     }
 
-    @TransactionalEventListener(phase = AFTER_COMMIT)
-    @Transactional(propagation = REQUIRES_NEW)
+    @KafkaListener(topics = RefundEventTopics.REFUND_ACCEPTED, groupId = groupId)
     public void handle(RefundAcceptedEvent event){
         orderFacade.acceptRefund(event.refund());
     }
 
-    @TransactionalEventListener(phase = AFTER_COMMIT)
-    @Transactional(propagation = REQUIRES_NEW)
+    @KafkaListener(topics = RefundEventTopics.REFUND_REJECTED, groupId = groupId)
     public void handle(RefundRejectedEvent event){
         orderFacade.rejectRefund(event.refund());
     }
 
-    @TransactionalEventListener(phase = AFTER_COMMIT)
-    @Transactional(propagation = REQUIRES_NEW)
+    @KafkaListener(topics = DeliveryEventTopics.DELIVERY_STATUS_UPDATED, groupId = groupId)
     public void handle(DeliveryStatusUpdatedEvent event){
         orderFacade.updateDeliveryStatus(event);
     }
 
-    @TransactionalEventListener(phase = AFTER_COMMIT)
-    @Transactional(propagation = REQUIRES_NEW)
+    @KafkaListener(topics = PaymentEventTopics.PAYMENT_PAID_EVENT, groupId = groupId)
     public void handle(PaymentPaidEvent event){
         orderFacade.paymentPaid(event);
     }
