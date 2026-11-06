@@ -8,6 +8,7 @@ import com.jjinmak.product.product.in.dto.ProductCreateRequestDto.Shipping;
 import com.jjinmak.product.product.in.dto.ProductUpdateRequestDto;
 import com.jjinmak.product.product.out.ProductRepository;
 import com.jjinmak.common.exception.BusinessException;
+import com.jjinmak.contracts.product.event.ProductChangeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,7 @@ public class ProductUpdateUseCase {
 
     private final ProductRepository productRepository;
     private final ProductImageAttachUseCase productImageAttachUseCase;
+    private final ProductPublishChangedUseCase productPublishChangedUseCase;
 
     public Product updateProduct(Long sellerId, Long productId, ProductUpdateRequestDto request){
         Product product = productRepository.findByIdAndDeletedAtIsNull(productId)
@@ -47,6 +49,8 @@ public class ProductUpdateUseCase {
         if (request.imageIds() != null){
             productImageAttachUseCase.replace(product, sellerId, request.imageIds());
         }
+
+        productPublishChangedUseCase.publish(product, ProductChangeType.UPDATED);
 
         return product;
     }

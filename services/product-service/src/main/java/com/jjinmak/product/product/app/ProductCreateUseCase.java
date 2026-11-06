@@ -11,6 +11,7 @@ import com.jjinmak.product.product.out.ProductMemberRepository;
 import com.jjinmak.product.product.out.ProductRepository;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.exception.CommonErrorCode;
+import com.jjinmak.contracts.product.event.ProductChangeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,7 @@ public class ProductCreateUseCase {
     private final ProductRepository productRepository;
     private final ProductMemberRepository productMemberRepository;
     private final ProductImageAttachUseCase productImageAttachUseCase;
+    private final ProductPublishChangedUseCase productPublishChangedUseCase;
 
     public Product createProduct(Long sellerId, ProductCreateRequestDto request){
         // 판매자 등록 여부, 계정 정지/차단은 컨트롤러의 PERM_SELL 권한 검사에서 확인한다.
@@ -55,6 +57,9 @@ public class ProductCreateUseCase {
 
         // 업로드 API로 먼저 올린 이미지를 요청 순서대로 연결한다. (첫 번째가 대표 이미지)
         productImageAttachUseCase.attach(product, sellerId, request.imageIds());
+
+        // 등록 즉시 검색에 노출되도록 알린다. (곧 시작 상품도 검색·찜 가능)
+        productPublishChangedUseCase.publish(product, ProductChangeType.CREATED);
 
         return product;
     }

@@ -18,6 +18,7 @@ public class ProductKafkaDltTopicsConfig {
         return new KafkaAdmin.NewTopics(
                 // 발행: 구독 측이 처리에 실패하면 여기로 간다
                 TopicBuilder.name(ProductEventTopics.PRODUCT_REGISTERED + "-dlt").build(),
+                TopicBuilder.name(ProductEventTopics.PRODUCT_CHANGED + "-dlt").build(),
 
                 // 구독: 상품·후기가 처리에 실패하면 여기로 간다
                 TopicBuilder.name(AuctionEventTopics.AUCTION_STARTED + "-dlt").build(),
