@@ -12,7 +12,8 @@ public class ProductKafkaConfig {
     @Bean
     KafkaAdmin.NewTopics productTopics() {
         return new KafkaAdmin.NewTopics(
-                TopicBuilder.name(ProductEventTopics.PRODUCT_REGISTERED).build()
+                TopicBuilder.name(ProductEventTopics.PRODUCT_REGISTERED).build(),
+                TopicBuilder.name(ProductEventTopics.PRODUCT_CHANGED).build()
         );
     }
 }
