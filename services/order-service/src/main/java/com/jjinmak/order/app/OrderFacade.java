@@ -160,4 +160,14 @@ public class OrderFacade {
     public void sendPaymentDueSoonReminder(Long itemId){
         orderSchedulerUseCase.sendPaymentDueSoonReminder(itemId);
     }
+
+    @Transactional(readOnly = true)
+    public List<Long> findExpiredSoonOrderIds(){
+        return orderSchedulerUseCase.findExpiredSoonOrderIds();
+    }
+
+    @Transactional
+    public void sendAutoConfirmReminder(Long orderId){
+        orderSchedulerUseCase.sendAutoConfirmReminder(orderId);
+    }
 }

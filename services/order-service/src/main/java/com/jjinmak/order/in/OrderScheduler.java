@@ -50,6 +50,22 @@ public class OrderScheduler {
 
     // TODO: 서버를 늘리면 모든 JVM에서 스케줄러가 돌아감
     @Scheduled(fixedDelay = 60_000)
+    public void remindAutoConfirm(){
+        List<Long> orderIds = orderFacade.findExpiredSoonOrderIds();
+
+        for (Long id : orderIds){
+            try {
+                orderFacade.sendAutoConfirmReminder(id);
+            } catch (BusinessException e){
+                log.error("오류가 발생해 구매 확정 알림을 전송하지 못했습니다.\norderId: {}\nerrorCode: {}", id, e.getErrorCode());
+            } catch (Exception e){
+                log.error("구매 확정 알림 전송 실패.\norderId: {}", id, e);
+            }
+        }
+    }
+
+    // TODO: 서버를 늘리면 모든 JVM에서 스케줄러가 돌아감
+    @Scheduled(fixedDelay = 60_000)
     public void confirmPurchaseAuto(){
         List<Long> orderIds = orderFacade.getExpiredOrderIds();
 

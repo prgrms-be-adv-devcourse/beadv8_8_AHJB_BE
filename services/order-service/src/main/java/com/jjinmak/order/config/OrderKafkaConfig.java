@@ -20,7 +20,8 @@ public class OrderKafkaConfig {
                 TopicBuilder.name(ORDER_REFUND_ACCEPTED).build(),
                 TopicBuilder.name(ORDER_SEND_PRODUCT).build(),
                 TopicBuilder.name(CART_PAYMENT_DEFAULT).build(),
-                TopicBuilder.name(ORDER_REMIND_PAYMENT_DEFAULT).build()
+                TopicBuilder.name(ORDER_REMIND_PAYMENT_DEFAULT).build(),
+                TopicBuilder.name(ORDER_REMIND_AUTO_CONFIRM).build()
         );
     }
 }

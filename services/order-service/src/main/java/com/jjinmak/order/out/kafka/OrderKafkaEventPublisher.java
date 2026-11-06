@@ -55,4 +55,9 @@ public class OrderKafkaEventPublisher {
     public void publish(OrderRemindPaymentEvent event){
         kafkaTemplate.send(ORDER_REMIND_PAYMENT_DEFAULT, String.valueOf(event.cartItemId()), event);
     }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void publish(OrderRemindAutoConfirmEvent event){
+        kafkaTemplate.send(ORDER_REMIND_AUTO_CONFIRM, String.valueOf(event.orderId()), event);
+    }
 }
