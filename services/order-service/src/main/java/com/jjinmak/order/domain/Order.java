@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -56,6 +57,10 @@ public class Order extends BaseIdAndTime {
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(length = 30)
     OrderState state;
+
+    @NotNull
+    @ColumnDefault("false")
+    Boolean autoConfirmAlarmed = false;
 
     public Order(OrderGroup group, OrderMember winner, OrderMember seller, Long auctionId, Long productId, Long winningPrice, Long deliveryFee){
         this.group = group;
@@ -110,5 +115,9 @@ public class Order extends BaseIdAndTime {
     public void paid(LocalDateTime paidAt){
         validateAndUpdateState(WAITING, PAID);
         this.paidAt = paidAt;
+    }
+
+    public void sendAutoConfirmReminder(){
+        autoConfirmAlarmed = true;
     }
 }

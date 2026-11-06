@@ -25,4 +25,7 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 
     @Query("select ci.id from CartItem ci where ci.paymentDueAt < :now")
     List<Long> findExpiredItemIds(LocalDateTime now);
+
+    @Query("select ci.id from CartItem ci where ci.paymentDefaultAlarmed = false and ci.paymentDueAt < :time")
+    List<Long> findPaymentDueSoonItemIds(LocalDateTime time);
 }

@@ -9,6 +9,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
 
@@ -42,6 +43,10 @@ public class CartItem extends BaseIdAndTime {
     @NotNull
     private LocalDateTime paymentDueAt;
 
+    @NotNull
+    @ColumnDefault("false")
+    private Boolean paymentDefaultAlarmed = false;
+
     public CartItem(OrderMember winner, OrderMember seller, Long auctionId, Long productId, Long winningPrice, Long deliveryFee, LocalDateTime winAt){
         this.winner = winner;
         this.seller = seller;
@@ -59,6 +64,10 @@ public class CartItem extends BaseIdAndTime {
                 auctionId, productId, winningPrice, deliveryFee,
                 winAt, paymentDueAt
         );
+    }
+
+    public void sendPaymentReminder(){
+        paymentDefaultAlarmed = true;
     }
 
 }

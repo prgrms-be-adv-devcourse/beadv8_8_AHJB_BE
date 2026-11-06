@@ -41,4 +41,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("select o.id from Order o where o.state = OrderState.PAID and o.paidAt < :shipDueAt")
     List<Long> findNonShippedOrderIds(LocalDateTime shipDueAt);
+
+    @Query("select o.id from Order o where o.state = OrderState.SHIPPED and o.autoConfirmAlarmed = false and o.confirmExpiredAt < :time")
+    List<Long> findExpiredSoonOrderIds(LocalDateTime time);
 }

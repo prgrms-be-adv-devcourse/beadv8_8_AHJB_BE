@@ -117,7 +117,10 @@ public class DeliveryTrackerUseCase {
             int updated = deliveryRepository.updateStatus(delivery.getId(), delivery.getCarrier(), delivery.getWaybill(), beforeCode, afterCode);
 
             if (updated == 1) {
-                eventPublisher.publish(new DeliveryStatusUpdatedEvent(delivery.getOrderId(), beforeCode, afterCode, updatedAt));
+                eventPublisher.publish(new DeliveryStatusUpdatedEvent(
+                        delivery.getOrderId(), delivery.getWinner().getId(), delivery.getSeller().getId(),
+                        beforeCode, afterCode, updatedAt
+                ));
             }
         });
     }

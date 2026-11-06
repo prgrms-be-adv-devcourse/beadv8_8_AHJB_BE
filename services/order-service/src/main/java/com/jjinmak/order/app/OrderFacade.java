@@ -150,4 +150,24 @@ public class OrderFacade {
     public void requestSystemRefund(Long orderId){
         orderSchedulerUseCase.requestSystemRefund(orderId);
     }
+
+    @Transactional(readOnly = true)
+    public List<Long> findPaymentDueSoonItemIds(){
+        return orderSchedulerUseCase.findPaymentDueSoonItemIds();
+    }
+
+    @Transactional
+    public void sendPaymentDueSoonReminder(Long itemId){
+        orderSchedulerUseCase.sendPaymentDueSoonReminder(itemId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> findExpiredSoonOrderIds(){
+        return orderSchedulerUseCase.findExpiredSoonOrderIds();
+    }
+
+    @Transactional
+    public void sendAutoConfirmReminder(Long orderId){
+        orderSchedulerUseCase.sendAutoConfirmReminder(orderId);
+    }
 }
