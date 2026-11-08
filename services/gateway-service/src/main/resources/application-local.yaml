@@ -1,3 +1,13 @@
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowed-origins: http://localhost:5173
+
 service-uri:
   member: http://localhost:8083
 
