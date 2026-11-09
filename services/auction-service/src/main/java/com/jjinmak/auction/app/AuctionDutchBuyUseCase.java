@@ -1,9 +1,7 @@
 package com.jjinmak.auction.app;
 
-import com.jjinmak.auction.domain.Auction;
 import com.jjinmak.auction.domain.DutchAuction;
 import com.jjinmak.auction.dto.DutchBuyResponseDto;
-import com.jjinmak.auction.out.AuctionRepository;
 import com.jjinmak.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,17 +13,12 @@ import static com.jjinmak.auction.exception.AuctionErrorCode.*;
 @Service
 @RequiredArgsConstructor
 public class AuctionDutchBuyUseCase {
-    private final AuctionRepository auctionRepository;
+    private final AuctionReader auctionReader;
     private final AuctionEventPublisher auctionEventPublisher;
 
     public DutchBuyResponseDto buy(Long auctionId, Long memberId, Long expectedPrice, LocalDateTime now) {
-        Auction found = auctionRepository.findById(auctionId)
-                .orElseThrow(() -> new BusinessException(AUCTION_NOT_FOUND));
-        if (!(found instanceof DutchAuction auction)) {
-            throw new BusinessException(AUCTION_TYPE_MISMATCH);
-        }
+        DutchAuction auction = auctionReader.getDutch(auctionId);
         validateBuy(auction, memberId, expectedPrice, now);
-
         auction.buy(memberId, expectedPrice, now);
         auctionEventPublisher.publishWon(auction);   // AFTER_COMMIT: 락 충돌로 롤백되면 발행 안 됨
 

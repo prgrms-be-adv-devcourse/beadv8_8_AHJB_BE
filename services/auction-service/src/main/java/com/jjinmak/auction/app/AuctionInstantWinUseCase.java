@@ -5,7 +5,6 @@ import com.jjinmak.auction.domain.Bid;
 import com.jjinmak.auction.domain.EnglishAuction;
 import com.jjinmak.auction.dto.AuctionInstantWinResponseDto;
 import com.jjinmak.auction.exception.AuctionErrorCode;
-import com.jjinmak.auction.out.AuctionRepository;
 import com.jjinmak.auction.out.BidRepository;
 import com.jjinmak.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -17,15 +16,12 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class AuctionInstantWinUseCase {
     private final BidRepository bidRepository;
-    private final AuctionRepository auctionRepository;
+    private final AuctionReader auctionReader;
     private final AuctionEventPublisher auctionEventPublisher;
 
     public AuctionInstantWinResponseDto instantWin(Long auctionId,Long bidderId, LocalDateTime now){
 
-        EnglishAuction auction = auctionRepository.findById(auctionId)
-                .filter(EnglishAuction.class::isInstance)
-                .map(EnglishAuction.class::cast)
-                .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
+        EnglishAuction auction = auctionReader.getEnglish(auctionId);
         // 공통검증
         validateInstantWin(auction,bidderId,now);
         auction.winInstantly(bidderId,now);

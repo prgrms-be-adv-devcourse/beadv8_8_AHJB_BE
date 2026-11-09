@@ -1,5 +1,6 @@
 package com.jjinmak.auction.app;
 
+import com.jjinmak.auction.domain.DutchAuction;
 import com.jjinmak.auction.domain.EnglishAuction;
 import com.jjinmak.auction.domain.ProductSnapshot;
 import com.jjinmak.auction.domain.Bid;
@@ -7,11 +8,11 @@ import com.jjinmak.auction.exception.AuctionErrorCode;
 import com.jjinmak.auction.out.AuctionRepository;
 import com.jjinmak.auction.out.BidRepository;
 import com.jjinmak.common.exception.BusinessException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -43,7 +44,14 @@ class AuctionBidUseCaseTest {
     @Mock BidRepository bidRepository;
     @Mock AuctionEventPublisher auctionEventPublisher;
 
-    @InjectMocks AuctionBidUseCase auctionBidUseCase;
+    AuctionBidUseCase auctionBidUseCase;
+
+    // AuctionReader는 mock이 아니라 실제 객체로 조립해 findById mock을 그대로 쓴다
+    @BeforeEach
+    void setUp() {
+        auctionBidUseCase = new AuctionBidUseCase(
+                bidRepository, auctionEventPublisher, new AuctionReader(auctionRepository));
+    }
 
     // ── 경매 만들기 ──
     private EnglishAuction 경매(Long instantWinPrice, LocalDateTime endAt) {
@@ -167,6 +175,15 @@ class AuctionBidUseCaseTest {
             given(auctionRepository.findById(AUCTION_ID)).willReturn(Optional.empty());
 
             입찰이_거부된다(BIDDER_ID, 10_000L, AuctionErrorCode.AUCTION_NOT_FOUND);
+        }
+
+        @Test
+        void 하향식_경매에는_입찰할_수_없다() {
+            DutchAuction dutch = DutchAuction.create(1L, SELLER_ID, 300_000L, 150_000L, 2, 60,
+                    3_000L, SNAPSHOT, NOW.minusMinutes(1));
+            given(auctionRepository.findById(AUCTION_ID)).willReturn(Optional.of(dutch));
+
+            입찰이_거부된다(BIDDER_ID, 310_000L, AuctionErrorCode.AUCTION_TYPE_MISMATCH);
         }
 
         @Test

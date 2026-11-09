@@ -3,7 +3,6 @@ package com.jjinmak.auction.app;
 import com.jjinmak.auction.domain.*;
 import com.jjinmak.auction.dto.AuctionBidResponseDto;
 import com.jjinmak.auction.exception.AuctionErrorCode;
-import com.jjinmak.auction.out.AuctionRepository;
 import com.jjinmak.auction.out.BidRepository;
 import com.jjinmak.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -15,15 +14,12 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 public class AuctionBidUseCase {
-    private final AuctionRepository auctionRepository;
     private final BidRepository bidRepository;
     private final AuctionEventPublisher auctionEventPublisher;
+    private final AuctionReader auctionReader;
 
     public AuctionBidResponseDto bid(Long auctionId, Long bidderId, Long bidPrice, LocalDateTime now){
-        EnglishAuction auction = auctionRepository.findById(auctionId)
-                .filter(EnglishAuction.class::isInstance)
-                .map(EnglishAuction.class::cast)
-                .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
+        EnglishAuction auction = auctionReader.getEnglish(auctionId);
         // 공통검증
         validateBid(auction,bidderId,now);
         // 즉시낙찰 저장
