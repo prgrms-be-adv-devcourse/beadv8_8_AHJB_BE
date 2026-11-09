@@ -1,5 +1,7 @@
 package com.jjinmak.search.in.dto;
 
+import com.jjinmak.contracts.product.domain.Manufacturer;
+import com.jjinmak.contracts.product.domain.ProductCategory;
 import com.jjinmak.search.domain.ProductSearchSort;
 import com.jjinmak.search.domain.ProductSearchStatus;
 import jakarta.validation.constraints.AssertTrue;
@@ -8,12 +10,11 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.PositiveOrZero;
 
 // 검색 조건 (쿼리 스트링으로 받는다). 모든 값은 선택이고, 비어 있으면 그 조건으로는 거르지 않는다.
-// - category, manufacturer는 상품 서비스의 enum 이름(CONSOLE, SONY 등)을 그대로 받는다.
-//   검색 서비스엔 그 enum이 없어서 문자열로 받고, 없는 값이면 결과가 비어서 나온다.
+// - enum 값(category, manufacturer, status, sort)이 목록에 없으면 400을 돌려준다.
 public record ProductSearchRequestDto(
         String keyword,
-        String category,
-        String manufacturer,
+        ProductCategory category,
+        Manufacturer manufacturer,
         ProductSearchStatus status,
         @PositiveOrZero Long minPrice,
         @PositiveOrZero Long maxPrice,
@@ -27,8 +28,6 @@ public record ProductSearchRequestDto(
 
     public ProductSearchRequestDto {
         keyword = (keyword == null || keyword.isBlank()) ? null : keyword.strip();
-        category = blankToNull(category);
-        manufacturer = blankToNull(manufacturer);
         page = (page == null) ? DEFAULT_PAGE : page;
         size = (size == null) ? DEFAULT_SIZE : size;
         // 정렬을 안 정했으면 검색어가 있을 땐 정확도순, 없을 땐 최신순
@@ -44,9 +43,5 @@ public record ProductSearchRequestDto(
 
     public boolean hasKeyword() {
         return keyword != null;
-    }
-
-    private static String blankToNull(String value) {
-        return (value == null || value.isBlank()) ? null : value.strip();
     }
 }

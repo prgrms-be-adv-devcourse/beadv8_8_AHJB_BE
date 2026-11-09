@@ -1,5 +1,7 @@
 package com.jjinmak.search.in.dto;
 
+import com.jjinmak.contracts.product.domain.Manufacturer;
+import com.jjinmak.contracts.product.domain.ProductCategory;
 import com.jjinmak.search.domain.ProductSearchDocument;
 import com.jjinmak.search.domain.ProductSearchStatus;
 
@@ -9,8 +11,8 @@ import java.time.LocalDateTime;
 public record ProductSearchItemDto(
         Long productId,
         String productName,
-        String category,
-        String manufacturer,
+        ProductCategory category,
+        Manufacturer manufacturer,
         String manufacturerName,
         String thumbnailUrl,                // 대표 이미지 (없으면 null)
         Long startPrice,
@@ -27,8 +29,8 @@ public record ProductSearchItemDto(
         return new ProductSearchItemDto(
                 document.getProductId(),
                 document.getProductName(),
-                document.getCategory(),
-                document.getManufacturer(),
+                toEnum(ProductCategory.class, document.getCategory()),
+                toEnum(Manufacturer.class, document.getManufacturer()),
                 document.getManufacturerName(),
                 document.getThumbnailUrl(),
                 document.getStartPrice(),
@@ -41,5 +43,10 @@ public record ProductSearchItemDto(
                 document.getWinningPrice(),
                 document.getRegisteredAt()
         );
+    }
+
+    // 검색 문서엔 enum 이름(문자열)으로 저장돼 있다.
+    private static <E extends Enum<E>> E toEnum(Class<E> type, String name) {
+        return name == null ? null : Enum.valueOf(type, name);
     }
 }

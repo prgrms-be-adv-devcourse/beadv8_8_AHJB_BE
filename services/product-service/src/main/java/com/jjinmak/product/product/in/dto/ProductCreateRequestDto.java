@@ -1,8 +1,8 @@
 package com.jjinmak.product.product.in.dto;
 
 import com.jjinmak.product.product.domain.AuctionDuration;
-import com.jjinmak.product.product.domain.Manufacturer;
-import com.jjinmak.product.product.domain.ProductCategory;
+import com.jjinmak.contracts.product.domain.Manufacturer;
+import com.jjinmak.contracts.product.domain.ProductCategory;
 import com.jjinmak.product.product.domain.ShippingFeeType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
