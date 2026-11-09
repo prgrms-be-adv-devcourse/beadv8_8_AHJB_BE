@@ -1,5 +1,6 @@
-package com.jjinmak.payment.app;
+package com.jjinmak.payment.app.facade;
 
+import com.jjinmak.payment.app.usecase.TossWebhookReceiveUseCase;
 import com.jjinmak.payment.app.dto.TossWebhookReceiveDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

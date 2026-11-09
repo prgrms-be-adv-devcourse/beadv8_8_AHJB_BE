@@ -1,4 +1,4 @@
-package com.jjinmak.payment.app;
+package com.jjinmak.payment.app.usecase;
 
 import com.jjinmak.payment.app.dto.TossWebhookReceiveDto;
 import com.jjinmak.payment.domain.TossWebhookEvent;

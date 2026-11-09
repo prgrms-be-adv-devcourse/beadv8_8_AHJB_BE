@@ -1,6 +1,6 @@
 package com.jjinmak.payment.in;
 
-import com.jjinmak.payment.app.TossWebhookFacade;
+import com.jjinmak.payment.app.facade.TossWebhookFacade;
 import com.jjinmak.payment.app.dto.TossWebhookReceiveDto;
 import com.jjinmak.payment.in.support.TossWebhookPayloadParser;
 import io.swagger.v3.oas.annotations.Operation;
