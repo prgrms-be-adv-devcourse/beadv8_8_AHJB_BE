@@ -3,7 +3,6 @@ package com.jjinmak.auction.app;
 import com.jjinmak.auction.domain.Auction;
 import com.jjinmak.auction.domain.AuctionCloseResult;
 import com.jjinmak.auction.domain.AuctionStatus;
-import com.jjinmak.auction.domain.FailureReason;
 import com.jjinmak.auction.out.AuctionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -22,19 +21,17 @@ public class AuctionCloseUseCase {
         return auctionRepository.findCloseTargetIds(
                 AuctionStatus.IN_PROGRESS,now, PageRequest.of(0,batchsize));
     }
-    public AuctionCloseResult closeAuction(Long auctionId,LocalDateTime now){
+    public AuctionCloseResult closeAuction(Long auctionId, LocalDateTime now) {
         Auction auction = auctionRepository.findById(auctionId).orElse(null);
-        if(auction==null|| auction.getStatus()!=AuctionStatus.IN_PROGRESS||!auction.isEnded(now)){
+        if (auction == null || !auction.isInProgress() || !auction.isEnded(now)) {
             return AuctionCloseResult.SKIPPED;
         }
-        //로그
-        if(auction.hasBids()){
-            auction.win(auction.getHighestBidderId(),auction.getHighestBidPrice(),now);
+        AuctionCloseResult result = auction.close(now);
+        if (result == AuctionCloseResult.WON) {
             auctionEventPublisher.publishWon(auction);
-            return AuctionCloseResult.WON;
+        } else {
+            auctionEventPublisher.publishFailed(auction, now);
         }
-        auction.fail(FailureReason.NO_BID);
-        auctionEventPublisher.publishFailed(auction,now);
-        return AuctionCloseResult.FAILED;
+        return result;
     }
 }

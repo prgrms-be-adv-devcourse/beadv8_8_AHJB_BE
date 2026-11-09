@@ -68,7 +68,7 @@ public class AuctionFacade {
     public void applyRefundAccepted(Long auctionId) {auctionTradeResultUseCase.applyRefundAccepted(auctionId, LocalDateTime.now());}
 
     @Transactional(readOnly = true)
-    public List<AuctionMyBidDto> myBids(Long memberId){return auctionMyBidsUseCase.myBids(memberId);}
+    public List<AuctionMyBidDto> myBids(Long memberId){return auctionMyBidsUseCase.myBids(memberId, LocalDateTime.now());}
 
     @Transactional(readOnly = true)
     public AuctionListResponseDto list(AuctionListStatus status, String category, AuctionSortType sort, int page, int size){return auctionListUseCase.list(status, category, sort, page, size, LocalDateTime.now());}

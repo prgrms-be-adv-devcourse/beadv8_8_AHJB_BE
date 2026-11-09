@@ -96,6 +96,21 @@ public class Auction extends BaseIdAndTime {
                 shippingFee, productSnapshot, now, endAt);
     }
 
+    // 화면에 보여 줄 현재가. 영국식은 시각과 무관하고, 하향식은 시각으로 계산한다.
+    public Long currentPriceAt(LocalDateTime now) {
+        return getCurrentPrice();
+    }
+
+    // 종료 시각이 지난 경매를 마감한다. 입찰이 있으면 최고 입찰자에게 낙찰, 없으면 유찰.
+    public AuctionCloseResult close(LocalDateTime now) {
+        if (hasBids()) {
+            win(highestBidderId, highestBidPrice, now);
+            return AuctionCloseResult.WON;
+        }
+        fail(FailureReason.NO_BID);
+        return AuctionCloseResult.FAILED;
+    }
+
     // 입찰
     public Long getCurrentPrice(){
         if(bidCount==0){return startPrice;}

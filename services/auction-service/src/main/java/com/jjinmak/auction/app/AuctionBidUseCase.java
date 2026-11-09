@@ -5,6 +5,7 @@ import com.jjinmak.auction.domain.AuctionStatus;
 import com.jjinmak.auction.domain.Bid;
 import com.jjinmak.auction.domain.BidIncrement;
 import com.jjinmak.auction.dto.AuctionBidResponseDto;
+import com.jjinmak.auction.dto.AuctionMyBidDto;
 import com.jjinmak.auction.exception.AuctionErrorCode;
 import com.jjinmak.auction.out.AuctionRepository;
 import com.jjinmak.auction.out.BidRepository;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor

@@ -6,6 +6,7 @@ import com.jjinmak.auction.out.AuctionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -13,9 +14,9 @@ import java.util.List;
 public class AuctionMyBidsUseCase {
     private final AuctionRepository auctionRepository;
 
-    public List<AuctionMyBidDto> myBids(Long memberId) {
+    public List<AuctionMyBidDto> myBids(Long memberId, LocalDateTime now) {
         return auctionRepository.findMyBidding(memberId, AuctionStatus.IN_PROGRESS).stream()
-                .map(auction -> AuctionMyBidDto.of(auction, memberId))
+                .map(auction -> AuctionMyBidDto.of(auction, memberId, now))
                 .toList();
     }
 }

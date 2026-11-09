@@ -36,7 +36,7 @@ public class AuctionListUseCase {
         );
 
         return new AuctionListResponseDto(
-                result.getContent().stream().map(AuctionListItemDto::from).toList(),
+                result.getContent().stream().map(auction -> AuctionListItemDto.from(auction, now)).toList(),
                 safePage,
                 safeSize,
                 result.getTotalElements(),

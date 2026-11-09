@@ -22,7 +22,7 @@ public record AuctionInfoDto(
         FailureReason failureReason
 
 ) {
-    public static AuctionInfoDto of(Auction auction){
+    public static AuctionInfoDto of(Auction auction, LocalDateTime now) {
         boolean inProgress = auction.isInProgress();
         return new AuctionInfoDto(
                 auction.getId(),
@@ -31,9 +31,9 @@ public record AuctionInfoDto(
                 auction.getInstantWinPrice(),
                 auction.getStartAt(),
                 auction.getStatus(),
-                auction.getCurrentPrice(),
-                inProgress?auction.getBidUnit():null,
-                inProgress?auction.getMinBidPrice():null,
+                auction.currentPriceAt(now),
+                inProgress ? auction.getBidUnit() : null,
+                inProgress ? auction.getMinBidPrice() : null,
                 auction.getBidCount(),
                 auction.getEndAt(),
                 auction.getWinningPrice(),

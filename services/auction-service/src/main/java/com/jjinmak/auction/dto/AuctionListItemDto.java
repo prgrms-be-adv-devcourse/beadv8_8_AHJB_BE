@@ -19,7 +19,7 @@ public record AuctionListItemDto(
         int bidCount,
         LocalDateTime endAt
 ) {
-    public static AuctionListItemDto from(Auction auction) {
+    public static AuctionListItemDto from(Auction auction, LocalDateTime now) {
         ProductSnapshot snapshot = auction.getProductSnapshot();
         return new AuctionListItemDto(
                 auction.getId(),
@@ -28,7 +28,7 @@ public record AuctionListItemDto(
                 snapshot != null ? snapshot.getCategory() : null,
                 snapshot != null ? snapshot.getThumbnailUrl() : null,
                 auction.getStatus(),
-                auction.getWinningPrice() != null ? auction.getWinningPrice() : auction.getCurrentPrice(),
+                auction.getWinningPrice() != null ? auction.getWinningPrice() : auction.currentPriceAt(now),
                 auction.getInstantWinPrice(),
                 auction.getBidCount(),
                 auction.getEndAt()

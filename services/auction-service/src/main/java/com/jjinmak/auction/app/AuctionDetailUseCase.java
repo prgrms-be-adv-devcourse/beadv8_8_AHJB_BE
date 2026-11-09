@@ -19,6 +19,6 @@ public class AuctionDetailUseCase {
     private final AuctionRepository auctionRepository;
     public AuctionDetailResponseDto detail(Long auctionId, Long memberId, LocalDateTime now){
         Auction auction = auctionRepository.findById(auctionId).orElseThrow(()->new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
-        return new AuctionDetailResponseDto(AuctionInfoDto.of(auction), AuctionViewerDto.of(auction,memberId),now);
+        return new AuctionDetailResponseDto(AuctionInfoDto.of(auction,now), AuctionViewerDto.of(auction,memberId),now);
     }
 }
