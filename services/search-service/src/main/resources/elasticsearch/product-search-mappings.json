@@ -1,6 +1,8 @@
 {
   "dynamic": "strict",
   "properties": {
+    "productId": { "type": "long" },
+
     "productName": {
       "type": "text",
       "analyzer": "korean_index_analyzer",
