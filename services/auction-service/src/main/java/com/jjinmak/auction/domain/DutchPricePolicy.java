@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 
 // 시작가 기준 선형 하락: 하락 주기마다 시작가 × 하락률만큼
+// 최저가는 0 이상, 시작가 미만. 0이면 0원까지 내려간다. 진행 시간 제한은 없다.
 
 public final class DutchPricePolicy {
 
@@ -30,7 +31,7 @@ public final class DutchPricePolicy {
         if (startAt == null) {
             throw new IllegalArgumentException("하향식 시작 시각이 없습니다.");
         }
-        if (floorPrice <= 0 || startPrice <= floorPrice) {
+        if (floorPrice < 0 || startPrice <= floorPrice) {
             throw new IllegalArgumentException(
                     "하향식 가격 조건이 올바르지 않습니다. startPrice=" + startPrice + ", floorPrice=" + floorPrice);
         }
@@ -42,7 +43,7 @@ public final class DutchPricePolicy {
         if (dropAmount < ROUNDING_UNIT) {
             throw new IllegalArgumentException("하향식 감소 금액이 100원보다 작습니다. dropAmount=" + dropAmount);
         }
-        long lastStep = (startPrice - floorPrice) / dropAmount;   // 최저가 이상인 마지막 단계
+        long lastStep = (startPrice - floorPrice) / dropAmount;   // 최저가 이상인 마지막 단계 (최저가 0이면 0원)
         return new DutchPricePolicy(startPrice, dropAmount, Duration.ofSeconds(dropIntervalSec), startAt, lastStep);
     }
 

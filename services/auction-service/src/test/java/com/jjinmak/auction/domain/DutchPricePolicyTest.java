@@ -68,6 +68,18 @@ class DutchPricePolicyTest {
             assertThat(기본_정책().endAt()).isEqualTo(START_AT.plusMinutes(26));
         }
 
+        @Test
+        void 최저가가_0이면_0원까지_내려간다() {
+            // 30만, 최저가 0, 2% → 6,000원씩, 마지막 단계 50(0원), 51분 뒤 유찰
+            DutchPricePolicy policy = DutchPricePolicy.of(300_000L, 0L, 2, 60, START_AT);
+
+            assertThat(policy.lastStep()).isEqualTo(50);
+            assertThat(policy.priceAt(START_AT.plusMinutes(50))).isEqualTo(0L);
+            assertThat(policy.isLastPriceAt(START_AT.plusMinutes(50))).isTrue();
+            assertThat(policy.nextPriceAt(START_AT.plusMinutes(50))).isNull();
+            assertThat(policy.endAt()).isEqualTo(START_AT.plusMinutes(51));
+        }
+
         @ParameterizedTest(name = "주기 {0}초 → 종료 {1}초 뒤")
         @CsvSource({"30, 780", "60, 1560", "90, 2340", "120, 3120"})
         void 하락_주기만큼_종료_시각이_늘어난다(int intervalSec, long endAfterSec) {
@@ -160,8 +172,8 @@ class DutchPricePolicyTest {
     class 잘못된_조건 {
 
         @ParameterizedTest(name = "시작가 {0}, 최저가 {1}")
-        @CsvSource({"300000, 300000", "300000, 400000", "300000, 0", "300000, -1"})
-        void 최저가는_0보다_크고_시작가보다_작아야_한다(long startPrice, long floorPrice) {
+        @CsvSource({"300000, 300000", "300000, 400000", "300000, -1"})
+        void 최저가는_0_이상이고_시작가보다_작아야_한다(long startPrice, long floorPrice) {
             assertThatThrownBy(() -> DutchPricePolicy.of(startPrice, floorPrice, 2, 60, START_AT))
                     .isInstanceOf(IllegalArgumentException.class);
         }
