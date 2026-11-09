@@ -5,13 +5,13 @@ import com.jjinmak.auction.domain.EnglishAuction;
 import java.time.LocalDateTime;
 
 public record EnglishAuctionDetailResponseDto(
-        AuctionInfoDto auction,
-        AuctionViewerDto me,
+        EnglishAuctionInfoDto auction,
+        EnglishAuctionViewerDto me,
         LocalDateTime serverTime
 ) implements AuctionDetailResponseDto {
 
     public static EnglishAuctionDetailResponseDto of(EnglishAuction auction, Long memberId, LocalDateTime now) {
         return new EnglishAuctionDetailResponseDto(
-                AuctionInfoDto.of(auction, now), AuctionViewerDto.of(auction, memberId), now);
+                EnglishAuctionInfoDto.of(auction, now), EnglishAuctionViewerDto.of(auction, memberId), now);
     }
 }

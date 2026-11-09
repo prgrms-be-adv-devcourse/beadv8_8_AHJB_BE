@@ -2,12 +2,12 @@ package com.jjinmak.auction.dto;
 
 import com.jjinmak.auction.domain.EnglishAuction;
 
-public record AuctionViewerDto (
+public record EnglishAuctionViewerDto (
         boolean isSeller,
         boolean isHighestBidder
 ){
-    public static AuctionViewerDto of(EnglishAuction auction, Long memberId){
-        return new AuctionViewerDto(
+    public static EnglishAuctionViewerDto of(EnglishAuction auction, Long memberId){
+        return new EnglishAuctionViewerDto(
                 auction.isSeller(memberId),
                 auction.isHighestBidder(memberId)
         );

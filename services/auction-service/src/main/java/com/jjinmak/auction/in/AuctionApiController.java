@@ -109,14 +109,14 @@ public class AuctionApiController {
                     + "정렬을 생략하면 진행 중은 마감 임박순, 종료는 최근 종료순입니다."
     )
     @GetMapping
-    public ResponseEntity<RsData<AuctionListResponseDto>> list(
+    public ResponseEntity<RsData<EnglishAuctionListResponseDto>> englishList(
             @RequestParam(defaultValue = "IN_PROGRESS") AuctionListStatus status,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) AuctionSortType sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        AuctionListResponseDto response = auctionFacade.list(status, category, sort, page, size);
+        EnglishAuctionListResponseDto response = auctionFacade.englishList(status, category, sort, page, size);
         return ResponseEntity.ok(new RsData<>(true, "경매 목록 조회에 성공했습니다.", response));
     }
 

@@ -39,7 +39,7 @@ public interface AuctionRepository extends JpaRepository<Auction,Long> {
             where a.status in :statuses
               and (:category is null or a.productSnapshot.category = :category)
             """)
-    Page<EnglishAuction> findList(@Param("statuses") Collection<AuctionStatus> statuses,
+    Page<EnglishAuction> findEnglishList(@Param("statuses") Collection<AuctionStatus> statuses,
                                   @Param("category") String category,
                                   Pageable pageable);
 

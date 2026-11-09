@@ -7,7 +7,7 @@ import com.jjinmak.auction.domain.ProductSnapshot;
 import java.time.LocalDateTime;
 
 // 경매 목록 카드 한 장
-public record AuctionListItemDto(
+public record EnglishAuctionListItemDto(
         Long auctionId,
         Long productId,
         String productName,
@@ -19,9 +19,9 @@ public record AuctionListItemDto(
         int bidCount,
         LocalDateTime endAt
 ) {
-    public static AuctionListItemDto from(EnglishAuction auction, LocalDateTime now) {
+    public static EnglishAuctionListItemDto from(EnglishAuction auction, LocalDateTime now) {
         ProductSnapshot snapshot = auction.getProductSnapshot();
-        return new AuctionListItemDto(
+        return new EnglishAuctionListItemDto(
                 auction.getId(),
                 auction.getProductId(),
                 snapshot != null ? snapshot.getProductName() : null,

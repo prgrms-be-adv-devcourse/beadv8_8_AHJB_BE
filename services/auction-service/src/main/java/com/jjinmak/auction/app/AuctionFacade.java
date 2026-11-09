@@ -72,7 +72,7 @@ public class AuctionFacade {
     public List<AuctionMyBidDto> myBids(Long memberId){return auctionMyBidsUseCase.myBids(memberId, LocalDateTime.now());}
 
     @Transactional(readOnly = true)
-    public AuctionListResponseDto list(AuctionListStatus status, String category, AuctionSortType sort, int page, int size){return auctionListUseCase.list(status, category, sort, page, size, LocalDateTime.now());}
+    public EnglishAuctionListResponseDto englishList(AuctionListStatus status, String category, AuctionSortType sort, int page, int size){return auctionListUseCase.englishList(status, category, sort, page, size, LocalDateTime.now());}
 
     @Transactional
     public DutchBuyResponseDto dutchBuy(Long auctionId, Long memberId, Long expectedPrice) {return auctionDutchBuyUseCase.buy(auctionId, memberId, expectedPrice, LocalDateTime.now());}

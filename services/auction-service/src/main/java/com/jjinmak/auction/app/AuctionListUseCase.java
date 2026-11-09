@@ -4,8 +4,8 @@ import com.jjinmak.auction.domain.AuctionListStatus;
 import com.jjinmak.auction.domain.AuctionSortType;
 import com.jjinmak.auction.domain.DutchAuction;
 import com.jjinmak.auction.domain.EnglishAuction;
-import com.jjinmak.auction.dto.AuctionListItemDto;
-import com.jjinmak.auction.dto.AuctionListResponseDto;
+import com.jjinmak.auction.dto.EnglishAuctionListItemDto;
+import com.jjinmak.auction.dto.EnglishAuctionListResponseDto;
 import com.jjinmak.auction.dto.DutchAuctionListItemDto;
 import com.jjinmak.auction.dto.DutchAuctionListResponseDto;
 import com.jjinmak.auction.out.AuctionRepository;
@@ -27,21 +27,21 @@ public class AuctionListUseCase {
 
     private final AuctionRepository auctionRepository;
 
-    public AuctionListResponseDto list(AuctionListStatus status, String category, AuctionSortType sort,
+    public EnglishAuctionListResponseDto englishList(AuctionListStatus status, String category, AuctionSortType sort,
                                        int page, int size, LocalDateTime now) {
         int safePage = Math.max(page, 0);
         int safeSize = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
         AuctionSortType resolvedSort = (sort != null) ? sort : status.defaultSort();
         String resolvedCategory = StringUtils.hasText(category) ? category : null;   // "" → 전체
 
-        Page<EnglishAuction> result = auctionRepository.findList(
+        Page<EnglishAuction> result = auctionRepository.findEnglishList(
                 status.statuses(),
                 resolvedCategory,
                 PageRequest.of(safePage, safeSize, resolvedSort.toSort())
         );
 
-        return new AuctionListResponseDto(
-                result.getContent().stream().map(auction -> AuctionListItemDto.from(auction, now)).toList(),
+        return new EnglishAuctionListResponseDto(
+                result.getContent().stream().map(auction -> EnglishAuctionListItemDto.from(auction, now)).toList(),
                 safePage,
                 safeSize,
                 result.getTotalElements(),
