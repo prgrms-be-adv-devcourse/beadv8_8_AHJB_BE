@@ -3,8 +3,8 @@ package com.jjinmak.auction.dto;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record AuctionListResponseDto(
-        List<AuctionListItemDto> content,
+public record EnglishAuctionListResponseDto(
+        List<EnglishAuctionListItemDto> content,
         int page,
         int size,
         long totalElements,

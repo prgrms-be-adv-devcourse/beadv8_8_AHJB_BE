@@ -1,6 +1,6 @@
 package com.jjinmak.auction.app;
 
-import com.jjinmak.auction.domain.Auction;
+import com.jjinmak.auction.domain.EnglishAuction;
 import com.jjinmak.auction.domain.ProductSnapshot;
 import com.jjinmak.auction.domain.AuctionCloseResult;
 import com.jjinmak.auction.out.AuctionRepository;
@@ -38,17 +38,17 @@ class AuctionCloseUseCaseTest {
 
     @InjectMocks AuctionCloseUseCase auctionCloseUseCase;
 
-    private Auction 입찰_없는_경매() {
-        return Auction.create(1L, SELLER_ID, 10_000L, null, 3_000L, SNAPSHOT, END_AT, END_AT.minusDays(3));
+    private EnglishAuction 입찰_없는_경매() {
+        return EnglishAuction.create(1L, SELLER_ID, 10_000L, null, 3_000L, SNAPSHOT, END_AT, END_AT.minusDays(3));
     }
 
-    private Auction 입찰_있는_경매() {
-        Auction auction = 입찰_없는_경매();
+    private EnglishAuction 입찰_있는_경매() {
+        EnglishAuction auction = 입찰_없는_경매();
         auction.updateHighestBid(BIDDER_ID, HIGHEST_PRICE);
         return auction;
     }
 
-    private void 경매가_조회된다(Auction auction) {
+    private void 경매가_조회된다(EnglishAuction auction) {
         given(auctionRepository.findById(AUCTION_ID)).willReturn(Optional.of(auction));
     }
 
@@ -58,7 +58,7 @@ class AuctionCloseUseCaseTest {
         @Test
         void 입찰이_있으면_최고_입찰자에게_낙찰되고_낙찰_이벤트가_발행된다() {
             // given
-            Auction auction = 입찰_있는_경매();
+            EnglishAuction auction = 입찰_있는_경매();
             경매가_조회된다(auction);
             LocalDateTime now = END_AT.plusSeconds(1);
 
@@ -88,7 +88,7 @@ class AuctionCloseUseCaseTest {
 
         @Test
         void 입찰이_없으면_유찰되고_무산_이벤트가_발행된다() {
-            Auction auction = 입찰_없는_경매();
+            EnglishAuction auction = 입찰_없는_경매();
             경매가_조회된다(auction);
             LocalDateTime now = END_AT.plusSeconds(1);
 
@@ -107,7 +107,7 @@ class AuctionCloseUseCaseTest {
 
         @Test
         void 종료_시각_1초_전이면_건너뛴다() {
-            Auction auction = 입찰_있는_경매();
+            EnglishAuction auction = 입찰_있는_경매();
             경매가_조회된다(auction);
 
             AuctionCloseResult result = auctionCloseUseCase.closeAuction(AUCTION_ID, END_AT.minusSeconds(1));
@@ -129,7 +129,7 @@ class AuctionCloseUseCaseTest {
 
         @Test
         void 진행중이_아닌_경매는_건너뛴다() {
-            Auction auction = 입찰_있는_경매();
+            EnglishAuction auction = 입찰_있는_경매();
             auction.win(BIDDER_ID, HIGHEST_PRICE, END_AT);   // 즉시낙찰 등으로 이미 낙찰
             경매가_조회된다(auction);
 
@@ -141,7 +141,7 @@ class AuctionCloseUseCaseTest {
 
         @Test
         void 같은_경매를_두_번_처리하면_두_번째는_건너뛰고_이벤트는_한_번만_발행된다() {
-            Auction auction = 입찰_있는_경매();
+            EnglishAuction auction = 입찰_있는_경매();
             경매가_조회된다(auction);
             LocalDateTime now = END_AT.plusSeconds(1);
 

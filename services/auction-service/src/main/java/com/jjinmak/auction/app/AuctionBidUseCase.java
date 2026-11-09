@@ -1,12 +1,8 @@
 package com.jjinmak.auction.app;
 
-import com.jjinmak.auction.domain.Auction;
-import com.jjinmak.auction.domain.AuctionStatus;
-import com.jjinmak.auction.domain.Bid;
-import com.jjinmak.auction.domain.BidIncrement;
+import com.jjinmak.auction.domain.*;
 import com.jjinmak.auction.dto.AuctionBidResponseDto;
 import com.jjinmak.auction.exception.AuctionErrorCode;
-import com.jjinmak.auction.out.AuctionRepository;
 import com.jjinmak.auction.out.BidRepository;
 import com.jjinmak.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -18,13 +14,12 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 public class AuctionBidUseCase {
-    private final AuctionRepository auctionRepository;
     private final BidRepository bidRepository;
     private final AuctionEventPublisher auctionEventPublisher;
+    private final AuctionReader auctionReader;
 
     public AuctionBidResponseDto bid(Long auctionId, Long bidderId, Long bidPrice, LocalDateTime now){
-        Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(()->new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
+        EnglishAuction auction = auctionReader.getEnglish(auctionId);
         // 공통검증
         validateBid(auction,bidderId,now);
         // 즉시낙찰 저장
@@ -67,7 +62,7 @@ public class AuctionBidUseCase {
         );
     }
     // validateBid - 진행중,종료전,판매자아님
-    private void validateBid(Auction auction,Long bidderId,LocalDateTime now){
+    private void validateBid(EnglishAuction auction,Long bidderId,LocalDateTime now){
         if(auction.getStatus()!= AuctionStatus.IN_PROGRESS){
             throw new BusinessException(AuctionErrorCode.AUCTION_NOT_IN_PROGRESS);
         }
@@ -79,7 +74,7 @@ public class AuctionBidUseCase {
         }
     }
     // validatePrice - 최소입찰이상인지, 단위 배수인지
-    private void validatePrice(Auction auction,Long bidPrice){
+    private void validatePrice(EnglishAuction auction,Long bidPrice){
         if(bidPrice< auction.getMinBidPrice()){
             throw new BusinessException(AuctionErrorCode.BID_PRICE_TOO_LOW);
         }

@@ -1,13 +1,9 @@
 package com.jjinmak.auction.app;
 
 
-import com.jjinmak.auction.domain.Auction;
-import com.jjinmak.auction.dto.AuctionDetailResponseDto;
-import com.jjinmak.auction.dto.AuctionInfoDto;
-import com.jjinmak.auction.dto.AuctionViewerDto;
-import com.jjinmak.auction.exception.AuctionErrorCode;
-import com.jjinmak.auction.out.AuctionRepository;
-import com.jjinmak.common.exception.BusinessException;
+import com.jjinmak.auction.domain.DutchAuction;
+import com.jjinmak.auction.domain.EnglishAuction;
+import com.jjinmak.auction.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,9 +12,13 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 public class AuctionDetailUseCase {
-    private final AuctionRepository auctionRepository;
-    public AuctionDetailResponseDto detail(Long auctionId, Long memberId, LocalDateTime now){
-        Auction auction = auctionRepository.findById(auctionId).orElseThrow(()->new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
-        return new AuctionDetailResponseDto(AuctionInfoDto.of(auction), AuctionViewerDto.of(auction,memberId),now);
+    private final AuctionReader auctionReader;
+
+    public AuctionDetailResponseDto detail(Long auctionId, Long memberId, LocalDateTime now) {
+        return switch (auctionReader.get(auctionId)) {
+            case EnglishAuction english -> EnglishAuctionDetailResponseDto.of(english, memberId, now);
+            case DutchAuction dutch -> DutchAuctionDetailResponseDto.of(dutch, memberId, now);
+            default -> throw new IllegalStateException("지원하지 않는 경매 유형입니다. auctionId=" + auctionId);
+        };
     }
 }

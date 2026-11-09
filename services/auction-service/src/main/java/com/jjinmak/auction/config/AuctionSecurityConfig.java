@@ -39,7 +39,8 @@ public class AuctionSecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_URLS).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/auctions").permitAll()  // 경매 목록 (비로그인)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auctions").permitAll()  //비로그인 허용하는 Api
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auctions/dutch").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint)

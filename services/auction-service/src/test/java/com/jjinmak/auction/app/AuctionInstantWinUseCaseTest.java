@@ -1,17 +1,18 @@
 package com.jjinmak.auction.app;
 
-import com.jjinmak.auction.domain.Auction;
+import com.jjinmak.auction.domain.DutchAuction;
+import com.jjinmak.auction.domain.EnglishAuction;
 import com.jjinmak.auction.domain.ProductSnapshot;
 import com.jjinmak.auction.domain.Bid;
 import com.jjinmak.auction.exception.AuctionErrorCode;
 import com.jjinmak.auction.out.AuctionRepository;
 import com.jjinmak.auction.out.BidRepository;
 import com.jjinmak.common.exception.BusinessException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -41,17 +42,24 @@ class AuctionInstantWinUseCaseTest {
     @Mock BidRepository bidRepository;
     @Mock AuctionEventPublisher auctionEventPublisher;
 
-    @InjectMocks AuctionInstantWinUseCase auctionInstantWinUseCase;
+    AuctionInstantWinUseCase auctionInstantWinUseCase;
 
-    private Auction 경매(Long instantWinPrice, LocalDateTime endAt) {
-        return Auction.create(1L, SELLER_ID, 10_000L, instantWinPrice, 3_000L, SNAPSHOT, endAt, NOW.minusDays(3));
+    // AuctionReader는 mock이 아니라 실제 객체로 조립해 findById mock을 그대로 쓴다
+    @BeforeEach
+    void setUp() {
+        auctionInstantWinUseCase = new AuctionInstantWinUseCase(
+                bidRepository, new AuctionReader(auctionRepository), auctionEventPublisher);
     }
 
-    private Auction 즉시낙찰_가능_경매() {
+    private EnglishAuction 경매(Long instantWinPrice, LocalDateTime endAt) {
+        return EnglishAuction.create(1L, SELLER_ID, 10_000L, instantWinPrice, 3_000L, SNAPSHOT, endAt, NOW.minusDays(3));
+    }
+
+    private EnglishAuction 즉시낙찰_가능_경매() {
         return 경매(INSTANT_WIN_PRICE, END_AT);
     }
 
-    private void 경매가_조회된다(Auction auction) {
+    private void 경매가_조회된다(EnglishAuction auction) {
         given(auctionRepository.findById(AUCTION_ID)).willReturn(Optional.of(auction));
     }
 
@@ -74,7 +82,7 @@ class AuctionInstantWinUseCaseTest {
         @Test
         void 즉시낙찰가로_낙찰되고_낙찰_이벤트가_발행된다() {
             // given
-            Auction auction = 즉시낙찰_가능_경매();
+            EnglishAuction auction = 즉시낙찰_가능_경매();
             경매가_조회된다(auction);
             입찰이_저장된다();
 
@@ -107,7 +115,7 @@ class AuctionInstantWinUseCaseTest {
 
         @Test
         void 현재_최고_입찰자도_즉시낙찰할_수_있다() {
-            Auction auction = 즉시낙찰_가능_경매();
+            EnglishAuction auction = 즉시낙찰_가능_경매();
             auction.updateHighestBid(BIDDER_ID, 20_000L);
             경매가_조회된다(auction);
             입찰이_저장된다();
@@ -119,7 +127,7 @@ class AuctionInstantWinUseCaseTest {
 
         @Test
         void 다른_사람의_입찰이_있어도_즉시낙찰가로_낙찰된다() {
-            Auction auction = 즉시낙찰_가능_경매();
+            EnglishAuction auction = 즉시낙찰_가능_경매();
             auction.updateHighestBid(OTHER_BIDDER_ID, 49_000L);
             경매가_조회된다(auction);
             입찰이_저장된다();
@@ -132,7 +140,7 @@ class AuctionInstantWinUseCaseTest {
 
         @Test
         void 종료_시각_1초_전에는_즉시낙찰할_수_있다() {
-            Auction auction = 경매(INSTANT_WIN_PRICE, NOW.plusSeconds(1));
+            EnglishAuction auction = 경매(INSTANT_WIN_PRICE, NOW.plusSeconds(1));
             경매가_조회된다(auction);
             입찰이_저장된다();
 
@@ -153,8 +161,17 @@ class AuctionInstantWinUseCaseTest {
         }
 
         @Test
+        void 하향식_경매는_즉시낙찰할_수_없다() {
+            DutchAuction dutch = DutchAuction.create(1L, SELLER_ID, 300_000L, 150_000L, 2, 60,
+                    3_000L, SNAPSHOT, NOW.minusMinutes(1));
+            given(auctionRepository.findById(AUCTION_ID)).willReturn(Optional.of(dutch));
+
+            즉시낙찰이_거부된다(BIDDER_ID, AuctionErrorCode.AUCTION_TYPE_MISMATCH);
+        }
+
+        @Test
         void 진행중이_아닌_경매는_즉시낙찰할_수_없다() {
-            Auction auction = 즉시낙찰_가능_경매();
+            EnglishAuction auction = 즉시낙찰_가능_경매();
             auction.win(OTHER_BIDDER_ID, 20_000L, NOW);
             경매가_조회된다(auction);
 
@@ -191,7 +208,7 @@ class AuctionInstantWinUseCaseTest {
 
         @Test
         void 이미_즉시낙찰된_경매에_다시_요청하면_거부되고_이벤트는_한_번만_발행된다() {
-            Auction auction = 즉시낙찰_가능_경매();
+            EnglishAuction auction = 즉시낙찰_가능_경매();
             경매가_조회된다(auction);
             입찰이_저장된다();
             auctionInstantWinUseCase.instantWin(AUCTION_ID, BIDDER_ID, NOW);

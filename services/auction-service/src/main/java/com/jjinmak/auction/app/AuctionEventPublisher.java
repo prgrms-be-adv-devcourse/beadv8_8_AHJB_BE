@@ -1,6 +1,7 @@
 package com.jjinmak.auction.app;
 
 import com.jjinmak.auction.domain.Auction;
+import com.jjinmak.auction.domain.EnglishAuction;
 import com.jjinmak.auction.out.eventPublisher.EventPublisher;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
@@ -35,7 +36,7 @@ public class AuctionEventPublisher {
         ));
     }
 
-    public void publishStarted(Auction auction){
+    public void publishStarted(EnglishAuction auction){
         eventPublisher.publish(new AuctionStartedEvent(
                 auction.getId(),
                 auction.getProductId(),
