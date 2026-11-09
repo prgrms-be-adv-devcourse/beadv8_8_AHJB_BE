@@ -1,0 +1,33 @@
+server:
+  port: 8091
+
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowed-origins: ${CORS_ALLOWED_ORIGINS}
+                allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+                allowed-headers: Authorization,Content-Type
+                allow-credentials: true
+                max-age: 3600
+          routes:
+            - id: member-service
+              uri: ${service-uri.member}
+              predicates:
+                - Path=/api/v1/auth/**,/api/v1/member/**
+
+service-uri:
+  member: http://member-service
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+jwt:
+  public-key: ${JWT_PUBLIC_KEY}

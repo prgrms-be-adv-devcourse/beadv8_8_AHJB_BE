@@ -42,7 +42,7 @@ management:
         enabled: true
 
 jwt:
-  secret: ${JWT_SECRET}
+  private-key: ${JWT_PRIVATE_KEY}
   access-token-expiration: 900000
   refresh-token-expiration: 1209600000
 
