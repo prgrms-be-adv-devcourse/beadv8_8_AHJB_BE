@@ -34,7 +34,7 @@ public class ProductPublishChangedUseCase {
                 product.getName(),
                 product.getCategory().name(),
                 product.getManufacturer().name(),
-                product.getManufacturerEtc(),
+                product.getManufacturer().resolveDisplayName(product.getManufacturerEtc()),
                 auctionTerms.getStartPrice(),
                 auctionTerms.getInstantWinPrice(),
                 product.getAuctionScheduledAt(),
