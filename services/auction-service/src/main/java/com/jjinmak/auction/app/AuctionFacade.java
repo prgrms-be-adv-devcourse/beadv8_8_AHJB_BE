@@ -76,5 +76,8 @@ public class AuctionFacade {
 
     @Transactional
     public DutchBuyResponseDto dutchBuy(Long auctionId, Long memberId, Long expectedPrice) {return auctionDutchBuyUseCase.buy(auctionId, memberId, expectedPrice, LocalDateTime.now());}
+
+    @Transactional(readOnly = true)
+    public DutchAuctionListResponseDto dutchList(AuctionListStatus status, int page, int size) {return auctionListUseCase.dutchList(status, page, size, LocalDateTime.now());}
 }
 

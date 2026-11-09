@@ -2,6 +2,7 @@ package com.jjinmak.auction.out;
 
 import com.jjinmak.auction.domain.Auction;
 import com.jjinmak.auction.domain.AuctionStatus;
+import com.jjinmak.auction.domain.DutchAuction;
 import com.jjinmak.auction.domain.EnglishAuction;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -41,4 +42,10 @@ public interface AuctionRepository extends JpaRepository<Auction,Long> {
     Page<EnglishAuction> findList(@Param("statuses") Collection<AuctionStatus> statuses,
                                   @Param("category") String category,
                                   Pageable pageable);
+
+    @Query("""
+        select a from DutchAuction a
+        where a.status in :statuses
+        """)
+    Page<DutchAuction> findDutchList(@Param("statuses") Collection<AuctionStatus> statuses, Pageable pageable);
 }
