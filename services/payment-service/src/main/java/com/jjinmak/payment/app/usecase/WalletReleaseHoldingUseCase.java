@@ -7,7 +7,7 @@ import com.jjinmak.payment.app.support.LedgerRecorder;
 import com.jjinmak.payment.domain.Holding;
 import com.jjinmak.payment.domain.Wallet;
 import com.jjinmak.payment.out.eventPublisher.EventPublisher;
-import com.jjinmak.payment.out.HoldingRepository;
+import com.jjinmak.payment.out.repository.HoldingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;

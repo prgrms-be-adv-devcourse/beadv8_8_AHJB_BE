@@ -5,7 +5,7 @@ import com.jjinmak.payment.domain.WalletTransaction;
 import com.jjinmak.payment.domain.enums.ReferenceType;
 import com.jjinmak.payment.domain.enums.WalletAccount;
 import com.jjinmak.payment.domain.enums.WalletTransactionType;
-import com.jjinmak.payment.out.WalletTransactionRepository;
+import com.jjinmak.payment.out.repository.WalletTransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

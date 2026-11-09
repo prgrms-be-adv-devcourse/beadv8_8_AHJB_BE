@@ -1,4 +1,4 @@
-package com.jjinmak.payment.in;
+package com.jjinmak.payment.in.scheduler;
 
 import com.jjinmak.payment.app.facade.PaymentFacade;
 import lombok.RequiredArgsConstructor;

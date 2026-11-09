@@ -4,8 +4,8 @@ package com.jjinmak.payment.app.usecase;
 import com.jjinmak.contracts.payment.dto.WalletMemberDto;
 import com.jjinmak.payment.domain.Wallet;
 import com.jjinmak.payment.domain.WalletMember;
-import com.jjinmak.payment.out.WalletMemberRepository;
-import com.jjinmak.payment.out.WalletRepository;
+import com.jjinmak.payment.out.repository.WalletMemberRepository;
+import com.jjinmak.payment.out.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

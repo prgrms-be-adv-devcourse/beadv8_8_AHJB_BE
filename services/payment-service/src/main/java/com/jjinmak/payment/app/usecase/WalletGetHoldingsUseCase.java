@@ -8,7 +8,7 @@ import com.jjinmak.payment.app.dto.PageDto;
 import com.jjinmak.payment.domain.Holding;
 import com.jjinmak.payment.domain.Wallet;
 import com.jjinmak.payment.domain.enums.HoldingStatus;
-import com.jjinmak.payment.out.HoldingRepository;
+import com.jjinmak.payment.out.repository.HoldingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

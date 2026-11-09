@@ -3,7 +3,7 @@ package com.jjinmak.payment.app.usecase;
 
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.payment.domain.Holding;
-import com.jjinmak.payment.out.HoldingRepository;
+import com.jjinmak.payment.out.repository.HoldingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;

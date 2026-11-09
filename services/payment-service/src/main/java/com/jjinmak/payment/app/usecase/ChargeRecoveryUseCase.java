@@ -4,8 +4,8 @@ import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.payment.app.support.ChargeRecoverySupport;
 import com.jjinmak.payment.domain.Charge;
 import com.jjinmak.payment.exception.PgApiException;
-import com.jjinmak.payment.out.ChargeRepository;
-import com.jjinmak.payment.out.TossPaymentsClient;
+import com.jjinmak.payment.out.repository.ChargeRepository;
+import com.jjinmak.payment.out.toss.TossPaymentsClient;
 import com.jjinmak.payment.out.dto.TossPaymentResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,7 +18,7 @@ import static com.jjinmak.payment.domain.enums.ChargePurpose.FOR_PAYMENT;
 import static com.jjinmak.payment.domain.enums.ChargeStatus.CHARGED;
 import static com.jjinmak.payment.domain.enums.ChargeStatus.REQUESTED;
 import static com.jjinmak.payment.exception.PaymentErrorCode.CHARGE_NOT_FOUND;
-import static com.jjinmak.payment.out.TossPaymentsClient.NOT_FOUND_PAYMENT;
+import static com.jjinmak.payment.out.toss.TossPaymentsClient.NOT_FOUND_PAYMENT;
 
 /**
  * REQUESTED 에 너무 오래 머문 Charge 정리. (PaymentScheduler → PaymentFacade → 여기)

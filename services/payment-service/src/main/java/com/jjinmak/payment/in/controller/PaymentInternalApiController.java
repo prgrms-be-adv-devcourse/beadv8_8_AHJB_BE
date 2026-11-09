@@ -1,4 +1,4 @@
-package com.jjinmak.payment.in;
+package com.jjinmak.payment.in.controller;
 
 import com.jjinmak.contracts.payment.dto.HoldingSettlementDto;
 import com.jjinmak.contracts.payment.dto.PaymentRequestDto;

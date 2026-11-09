@@ -2,8 +2,8 @@ package com.jjinmak.payment.app.usecase;
 
 import com.jjinmak.payment.domain.Charge;
 import com.jjinmak.payment.domain.Payment;
-import com.jjinmak.payment.out.ChargeRepository;
-import com.jjinmak.payment.out.PaymentRepository;
+import com.jjinmak.payment.out.repository.ChargeRepository;
+import com.jjinmak.payment.out.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

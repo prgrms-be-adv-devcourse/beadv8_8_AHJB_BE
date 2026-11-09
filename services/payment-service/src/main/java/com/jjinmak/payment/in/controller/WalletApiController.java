@@ -1,4 +1,4 @@
-package com.jjinmak.payment.in;
+package com.jjinmak.payment.in.controller;
 
 import com.jjinmak.common.rsData.RsData;
 import com.jjinmak.common.security.AuthPrincipal;

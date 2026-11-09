@@ -1,4 +1,4 @@
-package com.jjinmak.payment.out;
+package com.jjinmak.payment.out.eventPublisher;
 
 import com.jjinmak.contracts.payment.event.PaymentEventTopics;
 import com.jjinmak.contracts.payment.event.PaymentPaidEvent;

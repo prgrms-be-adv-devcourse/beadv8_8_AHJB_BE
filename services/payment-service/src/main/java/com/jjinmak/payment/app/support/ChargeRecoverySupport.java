@@ -2,7 +2,7 @@ package com.jjinmak.payment.app.support;
 
 import com.jjinmak.payment.domain.Charge;
 import com.jjinmak.payment.domain.Wallet;
-import com.jjinmak.payment.out.TossPaymentsClient;
+import com.jjinmak.payment.out.toss.TossPaymentsClient;
 import com.jjinmak.payment.out.dto.TossPaymentResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 import static com.jjinmak.payment.domain.enums.ChargeStatus.REQUESTED;
 import static com.jjinmak.payment.domain.enums.ReferenceType.PAYMENT;
 import static com.jjinmak.payment.domain.enums.WalletTransactionType.CHARGE;
-import static com.jjinmak.payment.out.TossPaymentsClient.NOT_FOUND_PAYMENT;
+import static com.jjinmak.payment.out.toss.TossPaymentsClient.NOT_FOUND_PAYMENT;
 
 /**
  * 승인 전(REQUESTED) 충전 건을 토스 상태에 맞추는 복구 판단. (호출하는 쪽 트랜잭션 안에서 실행)

@@ -1,4 +1,4 @@
-package com.jjinmak.payment.out;
+package com.jjinmak.payment.out.repository;
 
 import com.jjinmak.payment.domain.Charge;
 import com.jjinmak.payment.domain.Payment;

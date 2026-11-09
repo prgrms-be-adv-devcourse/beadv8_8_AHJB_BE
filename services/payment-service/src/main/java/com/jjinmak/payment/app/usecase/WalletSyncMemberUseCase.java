@@ -5,7 +5,7 @@ import com.jjinmak.contracts.member.dto.MemberDto;
 import com.jjinmak.contracts.payment.event.WalletMemberCreatedEvent;
 import com.jjinmak.payment.domain.WalletMember;
 import com.jjinmak.payment.out.eventPublisher.EventPublisher;
-import com.jjinmak.payment.out.WalletMemberRepository;
+import com.jjinmak.payment.out.repository.WalletMemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

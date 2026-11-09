@@ -3,7 +3,7 @@ package com.jjinmak.payment.app.support;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.payment.domain.Charge;
 import com.jjinmak.payment.domain.Wallet;
-import com.jjinmak.payment.out.ChargeRepository;
+import com.jjinmak.payment.out.repository.ChargeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;

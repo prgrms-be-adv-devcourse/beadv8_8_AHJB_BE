@@ -3,7 +3,7 @@ package com.jjinmak.payment.app.support;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.payment.domain.Charge;
 import com.jjinmak.payment.exception.PgApiException;
-import com.jjinmak.payment.out.TossPaymentsClient;
+import com.jjinmak.payment.out.toss.TossPaymentsClient;
 import com.jjinmak.payment.out.dto.TossPaymentResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 import static com.jjinmak.payment.exception.PaymentErrorCode.PG_NOT_APPROVED;
 import static com.jjinmak.payment.exception.PaymentErrorCode.PG_UNAVAILABLE;
-import static com.jjinmak.payment.out.TossPaymentsClient.ALREADY_PROCESSED_PAYMENT;
+import static com.jjinmak.payment.out.toss.TossPaymentsClient.ALREADY_PROCESSED_PAYMENT;
 
 /**
  * 토스 승인/보상 공통 로직. 충전 승인과 주문 결제 승인 두 유스케이스가 같이 쓴다.

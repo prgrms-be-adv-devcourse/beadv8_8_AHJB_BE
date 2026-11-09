@@ -1,4 +1,4 @@
-package com.jjinmak.payment.out;
+package com.jjinmak.payment.out.repository;
 
 import com.jjinmak.payment.domain.WalletMember;
 import org.springframework.data.jpa.repository.JpaRepository;

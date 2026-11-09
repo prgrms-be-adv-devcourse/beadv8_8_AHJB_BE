@@ -4,9 +4,9 @@ import com.jjinmak.payment.app.support.ChargeRecoverySupport;
 import com.jjinmak.payment.domain.Charge;
 import com.jjinmak.payment.domain.TossWebhookEvent;
 import com.jjinmak.payment.exception.PgApiException;
-import com.jjinmak.payment.out.ChargeRepository;
-import com.jjinmak.payment.out.TossPaymentsClient;
-import com.jjinmak.payment.out.TossWebhookEventRepository;
+import com.jjinmak.payment.out.repository.ChargeRepository;
+import com.jjinmak.payment.out.toss.TossPaymentsClient;
+import com.jjinmak.payment.out.repository.TossWebhookEventRepository;
 import com.jjinmak.payment.out.dto.TossPaymentResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,7 @@ import java.util.Set;
 
 import static com.jjinmak.payment.domain.enums.WebhookEventStatus.FAILED;
 import static com.jjinmak.payment.domain.enums.WebhookEventStatus.RECEIVED;
-import static com.jjinmak.payment.out.TossPaymentsClient.NOT_FOUND_PAYMENT;
+import static com.jjinmak.payment.out.toss.TossPaymentsClient.NOT_FOUND_PAYMENT;
 
 /**
  * 저장된 토스 웹훅 처리. (파사드 트랜잭션 안에서 실행, 웹훅 1건 단위)

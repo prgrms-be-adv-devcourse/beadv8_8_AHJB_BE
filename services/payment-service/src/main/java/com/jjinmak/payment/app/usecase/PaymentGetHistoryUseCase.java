@@ -6,8 +6,8 @@ import com.jjinmak.payment.app.dto.PaymentDetailDto;
 import com.jjinmak.payment.app.dto.PaymentSummaryDto;
 import com.jjinmak.payment.domain.Charge;
 import com.jjinmak.payment.domain.Payment;
-import com.jjinmak.payment.out.ChargeRepository;
-import com.jjinmak.payment.out.PaymentRepository;
+import com.jjinmak.payment.out.repository.ChargeRepository;
+import com.jjinmak.payment.out.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

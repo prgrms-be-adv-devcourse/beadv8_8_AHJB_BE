@@ -8,8 +8,8 @@ import com.jjinmak.payment.app.support.LedgerRecorder;
 import com.jjinmak.payment.domain.Charge;
 import com.jjinmak.payment.domain.Wallet;
 import com.jjinmak.payment.domain.WalletTransaction;
-import com.jjinmak.payment.out.ChargeRepository;
-import com.jjinmak.payment.out.WalletTransactionRepository;
+import com.jjinmak.payment.out.repository.ChargeRepository;
+import com.jjinmak.payment.out.repository.WalletTransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

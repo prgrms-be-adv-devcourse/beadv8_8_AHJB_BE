@@ -6,7 +6,7 @@ import com.jjinmak.payment.domain.Charge;
 import com.jjinmak.payment.domain.Holding;
 import com.jjinmak.payment.domain.HoldingPolicy;
 import com.jjinmak.payment.domain.Wallet;
-import com.jjinmak.payment.out.HoldingRepository;
+import com.jjinmak.payment.out.repository.HoldingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;

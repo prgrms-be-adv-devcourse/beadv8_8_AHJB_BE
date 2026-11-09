@@ -8,7 +8,7 @@ import com.jjinmak.payment.app.support.LedgerRecorder;
 import com.jjinmak.payment.domain.Wallet;
 import com.jjinmak.payment.domain.Withdrawal;
 import com.jjinmak.payment.domain.enums.WalletTransactionType;
-import com.jjinmak.payment.out.WithdrawalRepository;
+import com.jjinmak.payment.out.repository.WithdrawalRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

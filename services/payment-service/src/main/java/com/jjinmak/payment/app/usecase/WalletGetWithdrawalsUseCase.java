@@ -2,7 +2,7 @@ package com.jjinmak.payment.app.usecase;
 
 import com.jjinmak.payment.app.dto.PageDto;
 import com.jjinmak.payment.app.dto.WithdrawalDto;
-import com.jjinmak.payment.out.WithdrawalRepository;
+import com.jjinmak.payment.out.repository.WithdrawalRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

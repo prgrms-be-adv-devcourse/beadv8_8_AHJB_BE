@@ -2,7 +2,7 @@ package com.jjinmak.payment.app.usecase;
 
 import com.jjinmak.payment.app.dto.TossWebhookReceiveDto;
 import com.jjinmak.payment.domain.TossWebhookEvent;
-import com.jjinmak.payment.out.TossWebhookEventRepository;
+import com.jjinmak.payment.out.repository.TossWebhookEventRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

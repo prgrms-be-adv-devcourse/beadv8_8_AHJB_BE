@@ -1,4 +1,4 @@
-package com.jjinmak.payment.in;
+package com.jjinmak.payment.in.controller;
 
 import com.jjinmak.payment.app.facade.TossWebhookFacade;
 import com.jjinmak.payment.app.dto.TossWebhookReceiveDto;

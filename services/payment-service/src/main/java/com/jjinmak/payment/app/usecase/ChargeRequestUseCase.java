@@ -4,7 +4,7 @@ import com.jjinmak.payment.app.support.WalletSupport;
 import com.jjinmak.payment.app.dto.ChargeSummaryDto;
 import com.jjinmak.payment.domain.Charge;
 import com.jjinmak.payment.domain.Wallet;
-import com.jjinmak.payment.out.ChargeRepository;
+import com.jjinmak.payment.out.repository.ChargeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

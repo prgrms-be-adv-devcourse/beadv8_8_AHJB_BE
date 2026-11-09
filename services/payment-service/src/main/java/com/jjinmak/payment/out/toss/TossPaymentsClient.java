@@ -1,4 +1,4 @@
-package com.jjinmak.payment.out;
+package com.jjinmak.payment.out.toss;
 
 import com.jjinmak.common.exception.ErrorCode;
 import com.jjinmak.payment.exception.PgApiException;
