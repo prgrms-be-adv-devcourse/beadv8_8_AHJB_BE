@@ -1,6 +1,6 @@
 package com.jjinmak.payment.in;
 
-import com.jjinmak.payment.app.PaymentFacade;
+import com.jjinmak.payment.app.facade.PaymentFacade;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

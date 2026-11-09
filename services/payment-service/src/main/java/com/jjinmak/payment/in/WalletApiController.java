@@ -2,8 +2,8 @@ package com.jjinmak.payment.in;
 
 import com.jjinmak.common.rsData.RsData;
 import com.jjinmak.common.security.AuthPrincipal;
-import com.jjinmak.payment.app.WalletFacade;
-import com.jjinmak.payment.app.WalletRetrySupport;
+import com.jjinmak.payment.app.facade.WalletFacade;
+import com.jjinmak.payment.app.support.WalletRetrySupport;
 import com.jjinmak.payment.app.dto.*;
 import com.jjinmak.payment.domain.enums.HoldingStatus;
 import com.jjinmak.payment.domain.enums.WalletAccount;
