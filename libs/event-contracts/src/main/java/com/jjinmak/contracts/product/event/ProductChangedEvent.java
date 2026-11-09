@@ -16,7 +16,7 @@ public record ProductChangedEvent(
         String productName,
         String category,                // ProductCategory.name()
         String manufacturer,            // Manufacturer.name()
-        String manufacturerEtc,         // manufacturer가 ETC일 때만 값이 있음
+        String manufacturerName,        // 한글 이름 ("닌텐도"). 기타(ETC)면 판매자가 직접 입력한 이름
         Long startPrice,
         Long instantWinPrice,           // 선택
         LocalDateTime auctionScheduledAt,   // 경매 시작 예정 시각 (곧 시작 탭, 시작 임박순 정렬)
