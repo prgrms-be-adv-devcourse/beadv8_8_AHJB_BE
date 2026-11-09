@@ -1,0 +1,38 @@
+{
+  "dynamic": "strict",
+  "properties": {
+    "productName": {
+      "type": "text",
+      "analyzer": "korean_index_analyzer",
+      "search_analyzer": "korean_search_analyzer",
+      "fields": {
+        "raw": { "type": "keyword", "ignore_above": 256 }
+      }
+    },
+    "manufacturerName": {
+      "type": "text",
+      "analyzer": "korean_index_analyzer",
+      "search_analyzer": "korean_search_analyzer"
+    },
+
+    "category":     { "type": "keyword" },
+    "manufacturer": { "type": "keyword" },
+    "status":       { "type": "keyword" },
+
+    "startPrice":         { "type": "long" },
+    "registeredAt":       { "type": "date", "format": "date_hour_minute_second_millis||strict_date_optional_time" },
+    "auctionScheduledAt": { "type": "date", "format": "date_hour_minute_second_millis||strict_date_optional_time" },
+    "auctionStartAt":     { "type": "date", "format": "date_hour_minute_second_millis||strict_date_optional_time" },
+    "auctionEndAt":       { "type": "date", "format": "date_hour_minute_second_millis||strict_date_optional_time" },
+
+    "sellerId":        { "type": "long",    "index": false },
+    "thumbnailUrl":    { "type": "keyword", "index": false },
+    "instantWinPrice": { "type": "long",    "index": false },
+    "auctionId":       { "type": "long",    "index": false },
+    "winningPrice":    { "type": "long",    "index": false },
+
+    "productVersion": { "type": "long" },
+    "deleted":        { "type": "boolean" },
+    "syncedAt":       { "type": "date", "format": "date_hour_minute_second_millis||strict_date_optional_time" }
+  }
+}
