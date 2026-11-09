@@ -26,6 +26,7 @@ public class AuctionFacade {
     private final AuctionTradeResultUseCase auctionTradeResultUseCase;
     private final AuctionMyBidsUseCase auctionMyBidsUseCase;
     private final AuctionListUseCase auctionListUseCase;
+    private final AuctionDutchBuyUseCase auctionDutchBuyUseCase;
 
     @Transactional
     public AuctionMember syncMember(MemberDto dto){
@@ -72,5 +73,8 @@ public class AuctionFacade {
 
     @Transactional(readOnly = true)
     public AuctionListResponseDto list(AuctionListStatus status, String category, AuctionSortType sort, int page, int size){return auctionListUseCase.list(status, category, sort, page, size, LocalDateTime.now());}
+
+    @Transactional
+    public DutchBuyResponseDto dutchBuy(Long auctionId, Long memberId, Long expectedPrice) {return auctionDutchBuyUseCase.buy(auctionId, memberId, expectedPrice, LocalDateTime.now());}
 }
 

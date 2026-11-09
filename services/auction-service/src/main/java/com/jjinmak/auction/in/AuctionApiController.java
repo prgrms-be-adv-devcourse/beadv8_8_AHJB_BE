@@ -6,6 +6,7 @@ import com.jjinmak.auction.domain.AuctionSortType;
 import com.jjinmak.auction.dto.*;
 import com.jjinmak.auction.exception.AuctionErrorCode;
 import com.jjinmak.auction.in.dto.AuctionBidRequestDto;
+import com.jjinmak.auction.in.dto.DutchBuyRequestDto;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.rsData.RsData;
 import com.jjinmak.common.security.AuthPrincipal;
@@ -119,5 +120,28 @@ public class AuctionApiController {
     ) {
         AuctionListResponseDto response = auctionFacade.list(status, category, sort, page, size);
         return ResponseEntity.ok(new RsData<>(true, "경매 목록 조회에 성공했습니다.", response));
+    }
+
+    @Operation(
+            summary = "하향식 구매",
+            description = "하향식 경매를 현재가로 구매합니다. expectedPrice는 화면에서 본 가격이며, "
+                    + "서버 현재가가 더 낮으면 낮은 가격으로 낙찰됩니다. "
+                    + "서버 현재가가 더 높으면 AUCTION013, 이미 판매됐으면 AUCTION014입니다."
+    )
+
+    @PreAuthorize("hasAuthority('PERM_TRADE')")
+    @PostMapping("/{auctionId}/dutch-buy")
+    public ResponseEntity<RsData<DutchBuyResponseDto>> dutchBuy(
+            @PathVariable Long auctionId,
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @Valid @RequestBody DutchBuyRequestDto request
+    ) {
+        DutchBuyResponseDto response;
+        try {
+            response = auctionFacade.dutchBuy(auctionId, principal.memberId(), request.expectedPrice());
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new BusinessException(AuctionErrorCode.DUTCH_ALREADY_SOLD);
+        }
+        return ResponseEntity.ok(new RsData<>(true, "구매가 완료되었습니다.", response));
     }
 }

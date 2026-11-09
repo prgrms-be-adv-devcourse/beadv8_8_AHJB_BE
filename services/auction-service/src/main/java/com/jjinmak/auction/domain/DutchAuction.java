@@ -85,4 +85,8 @@ public class DutchAuction extends Auction {
     private DutchPricePolicy policy() {
         return DutchPricePolicy.of(getStartPrice(), floorPrice, dropRatePercent, dropIntervalSec, getStartAt());
     }
+    // 누군가 이미 샀는지 (WON 이후 상태). 014 판단용
+    public boolean isSold() {
+        return isStatus(AuctionStatus.WON) || isStatus(AuctionStatus.PAID) || isStatus(AuctionStatus.COMPLETED);
+    }
 }
