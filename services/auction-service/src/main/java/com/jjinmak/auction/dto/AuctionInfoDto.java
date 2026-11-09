@@ -1,12 +1,14 @@
 package com.jjinmak.auction.dto;
 
 import com.jjinmak.auction.domain.AuctionStatus;
+import com.jjinmak.auction.domain.AuctionType;
 import com.jjinmak.auction.domain.EnglishAuction;
 import com.jjinmak.auction.domain.FailureReason;
 
 import java.time.LocalDateTime;
 
 public record AuctionInfoDto(
+        AuctionType auctionType,
         Long auctionId,
         Long productId,
         Long startPrice,
@@ -25,6 +27,7 @@ public record AuctionInfoDto(
     public static AuctionInfoDto of(EnglishAuction auction, LocalDateTime now) {
         boolean inProgress = auction.isInProgress();
         return new AuctionInfoDto(
+                AuctionType.ENGLISH,
                 auction.getId(),
                 auction.getProductId(),
                 auction.getStartPrice(),
