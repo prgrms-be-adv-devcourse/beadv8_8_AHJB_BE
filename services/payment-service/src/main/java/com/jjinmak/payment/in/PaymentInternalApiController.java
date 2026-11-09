@@ -24,7 +24,7 @@ public class PaymentInternalApiController {
             summary = "주문 건 결제 요청",
             description = "주문에 대한 결제를 처리합니다. 주문에서 호출합니다."
     )
-    @PostMapping("/payment/request")
+    @PostMapping("/payments/request")
     public ResponseEntity<PaymentResultDto> request(
             @RequestBody PaymentRequestDto dto
     ) {
