@@ -5,9 +5,10 @@ spring:
     password: p@ssword
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
+        show_sql: true
         format_sql: true
   kafka:
     bootstrap-servers: localhost:9092
