@@ -8,7 +8,7 @@ import com.jjinmak.contracts.payment.event.WalletMemberCreatedEvent;
 import com.jjinmak.contracts.refund.event.RefundAcceptedEvent;
 import com.jjinmak.contracts.refund.event.RefundRetryRequestedEvent;
 import com.jjinmak.contracts.settlement.event.SettlementRequestedEvent;
-import com.jjinmak.payment.app.WalletFacade;
+import com.jjinmak.payment.app.facade.WalletFacade;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

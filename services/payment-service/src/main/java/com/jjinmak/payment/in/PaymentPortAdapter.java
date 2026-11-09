@@ -4,9 +4,9 @@ import com.jjinmak.contracts.payment.dto.HoldingSettlementDto;
 import com.jjinmak.contracts.payment.dto.PaymentRequestDto;
 import com.jjinmak.contracts.payment.dto.PaymentResultDto;
 import com.jjinmak.contracts.payment.port.PaymentPort;
-import com.jjinmak.payment.app.PaymentFacade;
-import com.jjinmak.payment.app.WalletFacade;
-import com.jjinmak.payment.app.WalletRetrySupport;
+import com.jjinmak.payment.app.facade.PaymentFacade;
+import com.jjinmak.payment.app.facade.WalletFacade;
+import com.jjinmak.payment.app.support.WalletRetrySupport;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
