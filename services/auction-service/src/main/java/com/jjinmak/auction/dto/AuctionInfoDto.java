@@ -1,7 +1,7 @@
 package com.jjinmak.auction.dto;
 
-import com.jjinmak.auction.domain.Auction;
 import com.jjinmak.auction.domain.AuctionStatus;
+import com.jjinmak.auction.domain.EnglishAuction;
 import com.jjinmak.auction.domain.FailureReason;
 
 import java.time.LocalDateTime;
@@ -22,7 +22,7 @@ public record AuctionInfoDto(
         FailureReason failureReason
 
 ) {
-    public static AuctionInfoDto of(Auction auction, LocalDateTime now) {
+    public static AuctionInfoDto of(EnglishAuction auction, LocalDateTime now) {
         boolean inProgress = auction.isInProgress();
         return new AuctionInfoDto(
                 auction.getId(),

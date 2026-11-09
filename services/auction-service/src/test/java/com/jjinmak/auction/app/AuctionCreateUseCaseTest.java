@@ -1,6 +1,7 @@
 package com.jjinmak.auction.app;
 
 import com.jjinmak.auction.domain.Auction;
+import com.jjinmak.auction.domain.EnglishAuction;
 import com.jjinmak.auction.dto.AuctionCreateDto;
 import com.jjinmak.auction.out.AuctionRepository;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,7 @@ class AuctionCreateUseCaseTest {
         auctionCreateUseCase.createAuction(생성_요청());
 
         then(auctionRepository).should().save(any(Auction.class));
-        then(auctionEventPublisher).should().publishStarted(any(Auction.class));
+        then(auctionEventPublisher).should().publishStarted(any(EnglishAuction.class));
     }
 
     @Test

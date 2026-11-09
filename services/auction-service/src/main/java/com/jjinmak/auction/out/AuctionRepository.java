@@ -2,6 +2,7 @@ package com.jjinmak.auction.out;
 
 import com.jjinmak.auction.domain.Auction;
 import com.jjinmak.auction.domain.AuctionStatus;
+import com.jjinmak.auction.domain.EnglishAuction;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -25,19 +26,19 @@ public interface AuctionRepository extends JpaRepository<Auction,Long> {
     List<Long> findCloseTargetIds(@Param("status") AuctionStatus status,@Param("now") LocalDateTime now, Pageable pageable);
 
     @Query("""
-            select a from Auction a
+            select a from EnglishAuction a
             where a.status = :status
               and a.id in (select b.auctionId from Bid b where b.bidderId = :bidderId)
             order by a.endAt asc
             """)
-    List<Auction> findMyBidding(@Param("bidderId") Long bidderId, @Param("status") AuctionStatus status);
+    List<EnglishAuction> findMyBidding(@Param("bidderId") Long bidderId, @Param("status") AuctionStatus status);
 
     @Query("""
-            select a from Auction a
+            select a from EnglishAuction a
             where a.status in :statuses
               and (:category is null or a.productSnapshot.category = :category)
             """)
-    Page<Auction> findList(@Param("statuses") Collection<AuctionStatus> statuses,
-                           @Param("category") String category,
-                           Pageable pageable);
+    Page<EnglishAuction> findList(@Param("statuses") Collection<AuctionStatus> statuses,
+                                  @Param("category") String category,
+                                  Pageable pageable);
 }

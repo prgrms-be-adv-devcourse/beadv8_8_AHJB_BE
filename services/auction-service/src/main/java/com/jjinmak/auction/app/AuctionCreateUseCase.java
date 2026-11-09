@@ -1,6 +1,6 @@
 package com.jjinmak.auction.app;
 
-import com.jjinmak.auction.domain.Auction;
+import com.jjinmak.auction.domain.EnglishAuction;
 import com.jjinmak.auction.domain.ProductSnapshot;
 import com.jjinmak.auction.dto.AuctionCreateDto;
 import com.jjinmak.auction.out.AuctionRepository;
@@ -22,7 +22,7 @@ public class AuctionCreateUseCase {
             log.info("경매 생성 중복 수신, 무시: productId={}", dto.productId());
             return;
         }
-        Auction auction = Auction.create(
+        EnglishAuction auction = EnglishAuction.create(
                 dto.productId(),
                 dto.sellerId(),
                 dto.startPrice(),
@@ -32,7 +32,7 @@ public class AuctionCreateUseCase {
                 dto.endAt(),
                 LocalDateTime.now()
         );
-        Auction saved = auctionRepository.save(auction);
+        EnglishAuction saved = auctionRepository.save(auction);
         auctionEventPublisher.publishStarted(saved);
     }
 }

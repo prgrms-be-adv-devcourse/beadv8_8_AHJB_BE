@@ -1,8 +1,8 @@
 package com.jjinmak.auction.app;
 
-import com.jjinmak.auction.domain.Auction;
 import com.jjinmak.auction.domain.AuctionStatus;
 import com.jjinmak.auction.domain.Bid;
+import com.jjinmak.auction.domain.EnglishAuction;
 import com.jjinmak.auction.dto.AuctionInstantWinResponseDto;
 import com.jjinmak.auction.exception.AuctionErrorCode;
 import com.jjinmak.auction.out.AuctionRepository;
@@ -22,8 +22,10 @@ public class AuctionInstantWinUseCase {
 
     public AuctionInstantWinResponseDto instantWin(Long auctionId,Long bidderId, LocalDateTime now){
 
-        Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(()->new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
+        EnglishAuction auction = auctionRepository.findById(auctionId)
+                .filter(EnglishAuction.class::isInstance)
+                .map(EnglishAuction.class::cast)
+                .orElseThrow(() -> new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
         // 공통검증
         validateInstantWin(auction,bidderId,now);
         auction.winInstantly(bidderId,now);
@@ -37,7 +39,7 @@ public class AuctionInstantWinUseCase {
                 auction.getStatus()
         );
     }
-    private void validateInstantWin(Auction auction, Long bidderId, LocalDateTime now) {
+    private void validateInstantWin(EnglishAuction auction, Long bidderId, LocalDateTime now) {
         if (auction.getStatus() != AuctionStatus.IN_PROGRESS) {
             throw new BusinessException(AuctionErrorCode.AUCTION_NOT_IN_PROGRESS);
         }

@@ -1,8 +1,8 @@
 package com.jjinmak.auction.app;
 
-import com.jjinmak.auction.domain.Auction;
 import com.jjinmak.auction.domain.AuctionListStatus;
 import com.jjinmak.auction.domain.AuctionSortType;
+import com.jjinmak.auction.domain.EnglishAuction;
 import com.jjinmak.auction.dto.AuctionListItemDto;
 import com.jjinmak.auction.dto.AuctionListResponseDto;
 import com.jjinmak.auction.out.AuctionRepository;
@@ -29,7 +29,7 @@ public class AuctionListUseCase {
         AuctionSortType resolvedSort = (sort != null) ? sort : status.defaultSort();
         String resolvedCategory = StringUtils.hasText(category) ? category : null;   // "" → 전체
 
-        Page<Auction> result = auctionRepository.findList(
+        Page<EnglishAuction> result = auctionRepository.findList(
                 status.statuses(),
                 resolvedCategory,
                 PageRequest.of(safePage, safeSize, resolvedSort.toSort())

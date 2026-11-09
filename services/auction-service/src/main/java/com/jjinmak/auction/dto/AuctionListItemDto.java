@@ -1,7 +1,7 @@
 package com.jjinmak.auction.dto;
 
-import com.jjinmak.auction.domain.Auction;
 import com.jjinmak.auction.domain.AuctionStatus;
+import com.jjinmak.auction.domain.EnglishAuction;
 import com.jjinmak.auction.domain.ProductSnapshot;
 
 import java.time.LocalDateTime;
@@ -19,7 +19,7 @@ public record AuctionListItemDto(
         int bidCount,
         LocalDateTime endAt
 ) {
-    public static AuctionListItemDto from(Auction auction, LocalDateTime now) {
+    public static AuctionListItemDto from(EnglishAuction auction, LocalDateTime now) {
         ProductSnapshot snapshot = auction.getProductSnapshot();
         return new AuctionListItemDto(
                 auction.getId(),
