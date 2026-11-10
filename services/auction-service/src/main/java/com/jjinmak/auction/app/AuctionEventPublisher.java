@@ -32,7 +32,8 @@ public class AuctionEventPublisher {
                 auction.getId(),
                 auction.getProductId(),
                 auction.getFailureReason().name(),
-                failedAt
+                failedAt,
+                auction.getSellerId()
         ));
     }
 

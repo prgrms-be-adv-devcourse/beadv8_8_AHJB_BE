@@ -6,6 +6,11 @@ public record AuctionFailedEvent (
         Long auctionId,
         Long productId,
         String failureReason,
-        LocalDateTime failedAt
+        LocalDateTime failedAt,
+        Long sellerId
 ){
+    @Deprecated
+    public AuctionFailedEvent(Long auctionId, Long productId, String failureReason, LocalDateTime failedAt) {
+        this(auctionId, productId, failureReason, failedAt, null);
+    }
 }
