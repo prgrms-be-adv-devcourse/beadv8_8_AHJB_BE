@@ -28,9 +28,10 @@ class AuctionCreateUseCaseTest {
     @InjectMocks AuctionCreateUseCase auctionCreateUseCase;
 
     private AuctionCreateDto 생성_요청() {
+        LocalDateTime now = LocalDateTime.now();
         return new AuctionCreateDto(
                 PRODUCT_ID, 100L, 10_000L, null, 3_000L,
-                LocalDateTime.now().plusDays(3),
+                now, now.plusDays(3),
                 "CONSOLE"
         );
     }

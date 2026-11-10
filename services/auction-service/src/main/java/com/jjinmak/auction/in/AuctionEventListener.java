@@ -59,22 +59,24 @@ public class AuctionEventListener {
     public void handleOrderRefundAccepted(OrderRefundAcceptedEvent event) {
         auctionFacade.applyRefundAccepted(event.auctionId());
     }
-    // 종료 시각 직접 지정 or 기간선택(1,3,7)
-    private LocalDateTime resolveEndAt(ProductRegisteredEvent event, LocalDateTime now) {
+
+    private LocalDateTime resolveLegacyEndAt(ProductRegisteredEvent event, LocalDateTime startAt) {
         if (event.customEndAt() != null) {
             return event.customEndAt();
         }
-        return now.plusDays(event.duration());
+        return startAt.plusDays(event.duration());
     }
-
     private AuctionCreateDto toCreateDto(ProductRegisteredEvent event, LocalDateTime now) {
+        LocalDateTime startAt = event.scheduledAt() != null ? event.scheduledAt() : now;
+        ProductRegisteredEvent.EnglishTerms english = event.english();
         return new AuctionCreateDto(
                 event.productId(),
                 event.sellerId(),
                 event.startPrice(),
-                event.instantWinPrice(),
+                english != null ? english.instantWinPrice() : event.instantWinPrice(),
                 event.shippingFee(),
-                resolveEndAt(event, now),
+                startAt,
+                english != null ? english.endAt() : resolveLegacyEndAt(event, startAt),
                 event.category()
         );
     }

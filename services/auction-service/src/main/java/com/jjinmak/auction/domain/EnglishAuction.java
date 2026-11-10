@@ -29,11 +29,10 @@ public class EnglishAuction extends Auction{
 
     // 경매 조건은 상품 컨텍스트에서 검증된 값을 받는다.
     public static EnglishAuction create(Long productId, Long sellerId, Long startPrice,
-                                        Long instantWinPrice, Long shippingFee,
-                                        String category,
-                                        LocalDateTime endAt, LocalDateTime now) {
+                                        Long instantWinPrice, Long shippingFee, String category,
+                                        LocalDateTime endAt, LocalDateTime startAt) {
         return new EnglishAuction(productId, sellerId, startPrice, instantWinPrice,
-                shippingFee, category, now, endAt);
+                shippingFee, category, startAt, endAt);
     }
     //오버라이드
     @Override

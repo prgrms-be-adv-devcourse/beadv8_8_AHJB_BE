@@ -8,6 +8,7 @@ public record AuctionCreateDto(
         Long startPrice,
         Long instantWinPrice,
         Long shippingFee,
+        LocalDateTime startAt,
         LocalDateTime endAt,
         String category
 ) {

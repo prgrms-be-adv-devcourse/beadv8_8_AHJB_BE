@@ -29,8 +29,12 @@ public class AuctionCreateUseCase {
                 dto.shippingFee(),
                 dto.category(),
                 dto.endAt(),
-                LocalDateTime.now()
+                dto.startAt()
         );
+        // 이벤트가 크게 늦으면 이미 종료 시각이 지났을 수 있다. 그대로 만들고 다음 스케줄러 주기에 유찰
+        if (auction.isEnded(LocalDateTime.now())) {
+            log.warn("경매 생성 시점에 이미 종료 시각이 지남: productId={}, endAt={}", dto.productId(), auction.getEndAt());
+        }
         EnglishAuction saved = auctionRepository.save(auction);
         auctionEventPublisher.publishStarted(saved);
     }
