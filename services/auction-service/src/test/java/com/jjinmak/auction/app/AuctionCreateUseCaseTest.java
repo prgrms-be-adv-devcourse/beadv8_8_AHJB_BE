@@ -1,17 +1,21 @@
 package com.jjinmak.auction.app;
 
 import com.jjinmak.auction.domain.Auction;
+import com.jjinmak.auction.domain.DutchAuction;
 import com.jjinmak.auction.domain.EnglishAuction;
 import com.jjinmak.auction.dto.AuctionCreateDto;
 import com.jjinmak.auction.out.AuctionRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -28,11 +32,9 @@ class AuctionCreateUseCaseTest {
     @InjectMocks AuctionCreateUseCase auctionCreateUseCase;
 
     private AuctionCreateDto 생성_요청() {
-        return new AuctionCreateDto(
-                PRODUCT_ID, 100L, 10_000L, null, 3_000L,
-                LocalDateTime.now().plusDays(3),
-                "테스트 상품", "CONSOLE", null
-        );
+        LocalDateTime now = LocalDateTime.now();
+        return AuctionCreateDto.english(PRODUCT_ID, 100L, 10_000L, 3_000L,
+                now, "CONSOLE", null, now.plusDays(3));
     }
 
     @Test
@@ -54,5 +56,23 @@ class AuctionCreateUseCaseTest {
 
         then(auctionRepository).should(never()).save(any());
         then(auctionEventPublisher).should(never()).publishStarted(any());
+    }
+
+    @Test
+    void 네덜란드식_요청이면_가격_곡선으로_종료_시각을_계산해_생성한다() {
+        LocalDateTime startAt = LocalDateTime.now().plusMinutes(1).truncatedTo(ChronoUnit.SECONDS);
+        AuctionCreateDto dto = AuctionCreateDto.dutch(PRODUCT_ID, 100L, 300_000L, 3_000L,
+                startAt, "CONSOLE", 150_000L, 2, 60);
+        given(auctionRepository.existsByProductId(PRODUCT_ID)).willReturn(false);
+        given(auctionRepository.save(any(Auction.class))).willAnswer(inv -> inv.getArgument(0));
+
+        auctionCreateUseCase.createAuction(dto);
+
+        ArgumentCaptor<Auction> captor = ArgumentCaptor.forClass(Auction.class);
+        then(auctionRepository).should().save(captor.capture());
+        assertThat(captor.getValue()).isInstanceOf(DutchAuction.class);
+        assertThat(captor.getValue().getStartAt()).isEqualTo(startAt);
+        assertThat(captor.getValue().getEndAt()).isEqualTo(startAt.plusMinutes(26));
+        then(auctionEventPublisher).should().publishStarted(captor.getValue());
     }
 }

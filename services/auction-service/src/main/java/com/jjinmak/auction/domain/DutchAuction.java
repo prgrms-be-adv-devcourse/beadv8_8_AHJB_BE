@@ -24,9 +24,9 @@ public class DutchAuction extends Auction {
 
     private DutchAuction(Long productId, Long sellerId, Long startPrice, Long floorPrice,
                          Integer dropRatePercent, Integer dropIntervalSec,
-                         Long shippingFee, ProductSnapshot productSnapshot,
+                         Long shippingFee, String category,
                          LocalDateTime startAt, LocalDateTime endAt) {
-        super(productId, sellerId, startPrice, shippingFee, productSnapshot, startAt, endAt);
+        super(productId, sellerId, startPrice, shippingFee, category, startAt, endAt);
         this.floorPrice = floorPrice;
         this.dropRatePercent = dropRatePercent;
         this.dropIntervalSec = dropIntervalSec;
@@ -34,12 +34,12 @@ public class DutchAuction extends Auction {
 
     public static DutchAuction create(Long productId, Long sellerId, Long startPrice, Long floorPrice,
                                       Integer dropRatePercent, Integer dropIntervalSec,
-                                      Long shippingFee, ProductSnapshot productSnapshot,
+                                      Long shippingFee, String category,
                                       LocalDateTime startAt) {
         DutchPricePolicy policy = DutchPricePolicy.of(
                 startPrice, floorPrice, dropRatePercent, dropIntervalSec, startAt);
         return new DutchAuction(productId, sellerId, startPrice, floorPrice,
-                dropRatePercent, dropIntervalSec, shippingFee, productSnapshot,
+                dropRatePercent, dropIntervalSec, shippingFee, category,
                 startAt, policy.endAt());
     }
 

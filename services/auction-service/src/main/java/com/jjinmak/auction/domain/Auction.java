@@ -38,8 +38,7 @@ public abstract class Auction extends BaseIdAndTime {
 
     private Long shippingFee;
 
-    @Embedded
-    private ProductSnapshot productSnapshot;
+    private String category;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
@@ -66,13 +65,13 @@ public abstract class Auction extends BaseIdAndTime {
     private Long version;
 
     protected Auction(Long productId, Long sellerId, Long startPrice,
-                    Long shippingFee, ProductSnapshot productSnapshot,
+                    Long shippingFee, String category,
                     LocalDateTime startAt, LocalDateTime endAt) {
         this.productId = productId;
         this.sellerId = sellerId;
         this.startPrice = startPrice;
         this.shippingFee = shippingFee;
-        this.productSnapshot = productSnapshot;
+        this.category = category;
         this.startAt = startAt;
         this.endAt = endAt;
         this.status = AuctionStatus.IN_PROGRESS;

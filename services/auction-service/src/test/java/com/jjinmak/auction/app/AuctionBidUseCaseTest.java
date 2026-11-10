@@ -2,7 +2,6 @@ package com.jjinmak.auction.app;
 
 import com.jjinmak.auction.domain.DutchAuction;
 import com.jjinmak.auction.domain.EnglishAuction;
-import com.jjinmak.auction.domain.ProductSnapshot;
 import com.jjinmak.auction.domain.Bid;
 import com.jjinmak.auction.exception.AuctionErrorCode;
 import com.jjinmak.auction.out.AuctionRepository;
@@ -38,7 +37,7 @@ class AuctionBidUseCaseTest {
     private static final Long SHIPPING_FEE = 3_000L;
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 20, 20, 0);   // 입찰 시각
     private static final LocalDateTime END_AT = NOW.plusDays(1);
-    private static final ProductSnapshot SNAPSHOT = ProductSnapshot.of("테스트 상품", "CONSOLE", null);
+    private static final String CATEGORY = "CONSOLE";
 
     @Mock AuctionRepository auctionRepository;
     @Mock BidRepository bidRepository;
@@ -55,7 +54,7 @@ class AuctionBidUseCaseTest {
 
     // ── 경매 만들기 ──
     private EnglishAuction 경매(Long instantWinPrice, LocalDateTime endAt) {
-        return EnglishAuction.create(1L, SELLER_ID, START_PRICE, instantWinPrice, SHIPPING_FEE, SNAPSHOT, endAt, NOW.minusDays(3));
+        return EnglishAuction.create(1L, SELLER_ID, START_PRICE, instantWinPrice, SHIPPING_FEE, CATEGORY, endAt, NOW.minusDays(3));
     }
 
     private EnglishAuction 진행중_경매() {
@@ -180,7 +179,7 @@ class AuctionBidUseCaseTest {
         @Test
         void 하향식_경매에는_입찰할_수_없다() {
             DutchAuction dutch = DutchAuction.create(1L, SELLER_ID, 300_000L, 150_000L, 2, 60,
-                    3_000L, SNAPSHOT, NOW.minusMinutes(1));
+                    3_000L, CATEGORY, NOW.minusMinutes(1));
             given(auctionRepository.findById(AUCTION_ID)).willReturn(Optional.of(dutch));
 
             입찰이_거부된다(BIDDER_ID, 310_000L, AuctionErrorCode.AUCTION_TYPE_MISMATCH);

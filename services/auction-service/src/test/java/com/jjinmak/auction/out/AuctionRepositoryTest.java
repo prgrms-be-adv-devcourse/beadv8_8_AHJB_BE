@@ -4,7 +4,6 @@ import com.jjinmak.auction.domain.Auction;
 import com.jjinmak.auction.domain.AuctionStatus;
 import com.jjinmak.auction.domain.DutchAuction;
 import com.jjinmak.auction.domain.EnglishAuction;
-import com.jjinmak.auction.domain.ProductSnapshot;
 import com.jjinmak.auction.support.AuctionIntegrationTestSupport;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -23,7 +22,7 @@ class AuctionRepositoryTest extends AuctionIntegrationTestSupport {
 
     // 종료 스케줄러(1초 주기)가 테스트 중에 경매를 마감하지 않도록 미래 시각으로 둔다
     private static final LocalDateTime START_AT = LocalDateTime.now().plusDays(1).truncatedTo(ChronoUnit.SECONDS);
-    private static final ProductSnapshot SNAPSHOT = ProductSnapshot.of("테스트 상품", "CONSOLE", null);
+    private static final String CATEGORY = "CONSOLE";
     private static final List<AuctionStatus> IN_PROGRESS = List.of(AuctionStatus.IN_PROGRESS);
 
     @Autowired AuctionRepository auctionRepository;
@@ -34,11 +33,11 @@ class AuctionRepositoryTest extends AuctionIntegrationTestSupport {
     }
 
     private EnglishAuction 영국식() {
-        return EnglishAuction.create(1L, 100L, 10_000L, 50_000L, 3_000L, SNAPSHOT, START_AT.plusDays(1), START_AT);
+        return EnglishAuction.create(1L, 100L, 10_000L, 50_000L, 3_000L, CATEGORY, START_AT.plusDays(1), START_AT);
     }
 
     private DutchAuction 하향식() {
-        return DutchAuction.create(2L, 100L, 300_000L, 150_000L, 2, 60, 3_000L, SNAPSHOT, START_AT);
+        return DutchAuction.create(2L, 100L, 300_000L, 150_000L, 2, 60, 3_000L, CATEGORY, START_AT);
     }
 
     @Test

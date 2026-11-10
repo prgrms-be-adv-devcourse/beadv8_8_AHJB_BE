@@ -37,7 +37,7 @@ public interface AuctionRepository extends JpaRepository<Auction,Long> {
     @Query("""
             select a from EnglishAuction a
             where a.status in :statuses
-              and (:category is null or a.productSnapshot.category = :category)
+              and (:category is null or a.category = :category)
             """)
     Page<EnglishAuction> findEnglishList(@Param("statuses") Collection<AuctionStatus> statuses,
                                   @Param("category") String category,

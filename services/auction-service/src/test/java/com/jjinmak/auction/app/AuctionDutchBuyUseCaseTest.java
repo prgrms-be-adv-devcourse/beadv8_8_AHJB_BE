@@ -3,7 +3,6 @@ package com.jjinmak.auction.app;
 import com.jjinmak.auction.domain.Auction;
 import com.jjinmak.auction.domain.DutchAuction;
 import com.jjinmak.auction.domain.EnglishAuction;
-import com.jjinmak.auction.domain.ProductSnapshot;
 import com.jjinmak.auction.dto.DutchBuyResponseDto;
 import com.jjinmak.auction.exception.AuctionErrorCode;
 import com.jjinmak.auction.out.AuctionRepository;
@@ -35,7 +34,7 @@ class AuctionDutchBuyUseCaseTest {
     private static final LocalDateTime START_AT = LocalDateTime.of(2026, 11, 9, 21, 0);
     private static final LocalDateTime NOW = START_AT.plusMinutes(5);          // 현재가 270,000원
     private static final LocalDateTime END_AT = START_AT.plusMinutes(26);      // 유찰 시각
-    private static final ProductSnapshot SNAPSHOT = ProductSnapshot.of("테스트 상품", "CONSOLE", null);
+    private static final String CATEGORY = "CONSOLE";
 
     @Mock AuctionRepository auctionRepository;
     @Mock AuctionEventPublisher auctionEventPublisher;
@@ -51,7 +50,7 @@ class AuctionDutchBuyUseCaseTest {
     // ── 경매 만들기 ──
     // 시작가 30만, 최저가 15만, 2%, 60초 → 6,000원씩, 마지막 단계 25(150,000원), 21:26 유찰
     private DutchAuction 진행중_경매() {
-        return DutchAuction.create(PRODUCT_ID, SELLER_ID, 300_000L, 150_000L, 2, 60, 3_000L, SNAPSHOT, START_AT);
+        return DutchAuction.create(PRODUCT_ID, SELLER_ID, 300_000L, 150_000L, 2, 60, 3_000L, CATEGORY, START_AT);
     }
 
     private DutchAuction 판매된_경매() {
@@ -118,7 +117,7 @@ class AuctionDutchBuyUseCaseTest {
         @Test
         void 최저가가_0원이면_0원으로_낙찰된다() {
             // 30만, 최저가 0, 2% → 50단계에 0원, 51분 뒤 유찰
-            DutchAuction auction = DutchAuction.create(PRODUCT_ID, SELLER_ID, 300_000L, 0L, 2, 60, 3_000L, SNAPSHOT, START_AT);
+            DutchAuction auction = DutchAuction.create(PRODUCT_ID, SELLER_ID, 300_000L, 0L, 2, 60, 3_000L, CATEGORY, START_AT);
             경매가_조회된다(auction);
 
             DutchBuyResponseDto response = auctionDutchBuyUseCase.buy(
@@ -141,7 +140,7 @@ class AuctionDutchBuyUseCaseTest {
 
         @Test
         void 영국식_경매는_012() {
-            경매가_조회된다(EnglishAuction.create(PRODUCT_ID, SELLER_ID, 10_000L, null, 3_000L, SNAPSHOT,
+            경매가_조회된다(EnglishAuction.create(PRODUCT_ID, SELLER_ID, 10_000L, null, 3_000L, CATEGORY,
                     START_AT.plusDays(1), START_AT));
 
             구매가_거부된다(BUYER_ID, 270_000L, NOW, AUCTION_TYPE_MISMATCH);
