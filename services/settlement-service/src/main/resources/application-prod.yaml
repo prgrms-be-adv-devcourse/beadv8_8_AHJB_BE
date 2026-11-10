@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: ${SETTLEMENT_DB_URL}
+    username: ${SETTLEMENT_DB_USERNAME}
+    password: ${SETTLEMENT_DB_PASSWORD}
+  kafka:
+    bootstrap-servers: kafka.infra.svc.cluster.local:19092
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+server:
+  forward-headers-strategy: native

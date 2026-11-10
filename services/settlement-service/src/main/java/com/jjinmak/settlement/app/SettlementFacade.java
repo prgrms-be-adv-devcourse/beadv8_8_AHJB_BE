@@ -1,0 +1,66 @@
+package com.jjinmak.settlement.app;
+
+import com.jjinmak.settlement.domain.Settlement;
+import com.jjinmak.settlement.domain.SettlementPayoutResult;
+import com.jjinmak.settlement.in.dto.SettlementDetailDto;
+import com.jjinmak.settlement.in.dto.SettlementListDto;
+import com.jjinmak.contracts.order.event.OrderConfirmPurchaseEvent;
+import com.jjinmak.contracts.product.event.ProductRegisteredEvent;
+import com.jjinmak.contracts.settlement.domain.SettlementStatus;
+import com.jjinmak.contracts.payment.event.WalletReleasedEvent;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class SettlementFacade {
+
+    private final SettlementCreateSettlementUseCase settlementCreateSettlementUseCase;
+    private final SettlementRequestPayoutUseCase settlementRequestPayoutUseCase;
+    private final SettlementCompleteSettlementUseCase settlementCompleteSettlementUseCase;
+    private final SettlementGetSettlementsUseCase settlementGetSettlementsUseCase;
+    private final SettlementGetSettlementUseCase settlementGetSettlementUseCase;
+    private final SettlementSaveProductUseCase settlementSaveProductUseCase;
+
+    @Transactional
+    public void saveProduct(ProductRegisteredEvent event) {
+        settlementSaveProductUseCase.saveProduct(event);
+    }
+
+    @Transactional
+    public void createSettlement(OrderConfirmPurchaseEvent event) {
+        settlementCreateSettlementUseCase.createSettlement(event);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> findPayoutTargetIds(LocalDate today) {
+        return settlementRequestPayoutUseCase.findPayoutTargetIds(today);
+    }
+
+    @Transactional
+    public SettlementPayoutResult requestPayout(Long settlementId, LocalDate today) {
+        return settlementRequestPayoutUseCase.requestPayout(settlementId, today);
+    }
+
+    @Transactional
+    public void completeSettlement(WalletReleasedEvent event) {
+        settlementCompleteSettlementUseCase.completeSettlement(event);
+    }
+
+    @Transactional(readOnly = true)
+    public SettlementListDto getSettlements(Long memberId, SettlementStatus status, int page, int size) {
+        return SettlementListDto.from(
+                settlementGetSettlementsUseCase.getSettlements(memberId, status, page, size)
+                        .map(Settlement::itemDto)
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public SettlementDetailDto getSettlement(Long memberId, Long settlementId) {
+        return settlementGetSettlementUseCase.getSettlement(memberId, settlementId).detailDto();
+    }
+}
