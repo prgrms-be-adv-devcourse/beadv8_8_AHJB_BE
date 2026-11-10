@@ -1,7 +1,9 @@
 package com.jjinmak.auction.in;
 
 import com.jjinmak.auction.app.AuctionFacade;
+import com.jjinmak.auction.domain.AuctionType;
 import com.jjinmak.auction.dto.AuctionCreateDto;
+import com.jjinmak.common.kafka.InvalidEventException;
 import com.jjinmak.contracts.cart.event.CartPaymentDefaultEvent;
 import com.jjinmak.contracts.member.event.MemberCreatedEvent;
 import com.jjinmak.contracts.order.event.OrderConfirmPurchaseEvent;
@@ -30,7 +32,13 @@ public class AuctionEventListener {
 
     @KafkaListener(topics = PRODUCT_REGISTERED, groupId = "auction")
     public void handleProductRegistered(ProductRegisteredEvent event) {
-        auctionFacade.createAuction(toCreateDto(event, LocalDateTime.now()));
+        AuctionCreateDto dto = toCreateDto(event, LocalDateTime.now());
+        try {
+            auctionFacade.createAuction(dto);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidEventException(
+                    "경매 생성 조건이 올바르지 않습니다. productId=" + event.productId() + ", " + e.getMessage());
+        }
     }
     // 회원 생성 시 경매 회원을 복제한다. (입찰자 확인, 입찰 내역 닉네임)
     @TransactionalEventListener(phase = AFTER_COMMIT)
@@ -66,19 +74,45 @@ public class AuctionEventListener {
         }
         return startAt.plusDays(event.duration());
     }
+
+    // null이면 영국식
+    private AuctionType resolveType(ProductRegisteredEvent event) {
+        if (event.auctionType() == null) {
+            return AuctionType.ENGLISH;
+        }
+        try {
+            return AuctionType.valueOf(event.auctionType());
+        } catch (IllegalArgumentException e) {
+            throw new InvalidEventException("알 수 없는 경매 유형입니다. productId="
+                    + event.productId() + ", auctionType=" + event.auctionType());
+        }
+    }
+
+    // 네덜란드식은 공지 시각과 조건이 모두 있어야 한다
+    private ProductRegisteredEvent.DutchTerms requireDutch(ProductRegisteredEvent event) {
+        ProductRegisteredEvent.DutchTerms dutch = event.dutch();
+        if (event.startPrice() == null || event.scheduledAt() == null || dutch == null
+                || dutch.floorPrice() == null || dutch.dropRatePercent() == null || dutch.dropIntervalSec() == null) {
+            throw new InvalidEventException("네덜란드식 조건이 없습니다. productId=" + event.productId());
+        }
+        return dutch;
+    }
+
+
     private AuctionCreateDto toCreateDto(ProductRegisteredEvent event, LocalDateTime now) {
+        if (resolveType(event) == AuctionType.DUTCH) {
+            ProductRegisteredEvent.DutchTerms dutch = requireDutch(event);
+            return AuctionCreateDto.dutch(event.productId(), event.sellerId(), event.startPrice(),
+                    event.shippingFee(), event.scheduledAt(), event.category(),
+                    dutch.floorPrice(), dutch.dropRatePercent(), dutch.dropIntervalSec());
+        }
+
         LocalDateTime startAt = event.scheduledAt() != null ? event.scheduledAt() : now;
         ProductRegisteredEvent.EnglishTerms english = event.english();
-        return new AuctionCreateDto(
-                event.productId(),
-                event.sellerId(),
-                event.startPrice(),
+        return AuctionCreateDto.english(event.productId(), event.sellerId(), event.startPrice(),
+                event.shippingFee(), startAt, event.category(),
                 english != null ? english.instantWinPrice() : event.instantWinPrice(),
-                event.shippingFee(),
-                startAt,
-                english != null ? english.endAt() : resolveLegacyEndAt(event, startAt),
-                event.category()
-        );
+                english != null ? english.endAt() : resolveLegacyEndAt(event, startAt));
     }
 
 }
