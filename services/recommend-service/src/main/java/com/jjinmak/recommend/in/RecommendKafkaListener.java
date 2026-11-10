@@ -26,16 +26,16 @@ public class RecommendKafkaListener {
 
     @KafkaListener(topics = AUCTION_STARTED, groupId = groupId)
     public void handle(AuctionStartedEvent event){
-
+        recommendFacade.startAuction(event);
     }
 
     @KafkaListener(topics = AUCTION_WON, groupId = groupId)
     public void handle(AuctionWonEvent event){
-
+        recommendFacade.winAuction(event);
     }
 
     @KafkaListener(topics = AUCTION_FAILED, groupId = groupId)
     public void handle(AuctionFailedEvent event){
-
+        recommendFacade.failAuction(event);
     }
 }
