@@ -19,9 +19,24 @@ spring:
               uri: ${service-uri.member}
               predicates:
                 - Path=/api/v1/auth/**,/api/v1/member/**
+            - id: delivery-service
+              uri: ${service-uri.delivery}
+              predicates:
+                - Path=/api/v1/order/*/delivery/**
+            - id: order-service
+              uri: ${service-uri.order}
+              predicates:
+                - Path=/api/v1/cart/**,/api/v1/order/**
+            - id: recommend-service
+              uri: ${service-uri.recommend}
+              predicates:
+                - Path=/api/v1/recommend/**
 
 service-uri:
   member: http://member-service
+  order: http://order-service
+  delivery: http://delivery-service
+  recommend: http://recommend-service
 
 management:
   endpoint:
