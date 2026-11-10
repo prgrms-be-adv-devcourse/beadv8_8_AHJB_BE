@@ -1,8 +1,10 @@
 package com.jjinmak.auction.app;
 
+import com.jjinmak.auction.domain.Bid;
 import com.jjinmak.auction.domain.DutchAuction;
 import com.jjinmak.auction.domain.EnglishAuction;
 import com.jjinmak.auction.out.eventPublisher.EventPublisher;
+import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,6 +12,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 
@@ -55,5 +58,29 @@ class AuctionEventPublisherTest {
         assertThat(event.endAt()).isNull();
         assertThat(event.instantWinPrice()).isNull();
         assertThat(event.startAt()).isEqualTo(START_AT);
+    }
+
+    @Test
+    void 입찰_성공_이벤트에는_이번_입찰까지의_누적_입찰_수와_연장된_종료_시각이_담긴다() {
+        EnglishAuction auction = EnglishAuction.create(1L, 100L, 10_000L, null, 3_000L, "CONSOLE",
+                START_AT.plusDays(3), START_AT);
+        auction.updateHighestBid(200L, 10_000L);
+        auction.updateHighestBid(300L, 11_000L);
+        auction.extendEndAt(START_AT.plusDays(3).plusMinutes(5));
+        Bid bid = new Bid(auction.getId(), 300L, 11_000L, START_AT.plusDays(3).minusMinutes(1));
+        ReflectionTestUtils.setField(bid, "id", 7L);
+
+        auctionEventPublisher.publishBidSucceed(auction, bid);
+
+        ArgumentCaptor<AuctionBidSucceedEvent> captor = ArgumentCaptor.forClass(AuctionBidSucceedEvent.class);
+        then(eventPublisher).should().publish(captor.capture());
+        AuctionBidSucceedEvent event = captor.getValue();
+        assertThat(event.bidId()).isEqualTo(7L);
+        assertThat(event.productId()).isEqualTo(1L);
+        assertThat(event.bidderId()).isEqualTo(300L);
+        assertThat(event.bidPrice()).isEqualTo(11_000L);
+        assertThat(event.bidCount()).isEqualTo(2);
+        assertThat(event.endAt()).isEqualTo(START_AT.plusDays(3).plusMinutes(5));
+        assertThat(event.bidAt()).isEqualTo(START_AT.plusDays(3).minusMinutes(1));
     }
 }

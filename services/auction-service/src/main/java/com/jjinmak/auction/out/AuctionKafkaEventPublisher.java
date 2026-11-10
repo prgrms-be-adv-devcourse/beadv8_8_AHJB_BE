@@ -1,5 +1,6 @@
 package com.jjinmak.auction.out;
 
+import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
@@ -30,5 +31,10 @@ public class AuctionKafkaEventPublisher {
     @TransactionalEventListener(phase = AFTER_COMMIT)
     public void publish(AuctionFailedEvent event) {
         kafkaTemplate.send(AUCTION_FAILED, String.valueOf(event.auctionId()), event);
+    }
+
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    public void publish(AuctionBidSucceedEvent event) {
+        kafkaTemplate.send(AUCTION_BID_SUCCEED, String.valueOf(event.auctionId()), event);
     }
 }
