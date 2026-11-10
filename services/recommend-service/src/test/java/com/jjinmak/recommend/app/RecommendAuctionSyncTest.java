@@ -4,17 +4,26 @@ import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
+import com.jjinmak.contracts.product.event.ProductChangedEvent;
 import com.jjinmak.recommend.domain.RecommendAuction;
+import com.jjinmak.recommend.domain.RecommendMember;
 import com.jjinmak.recommend.in.RecommendKafkaListener;
+import com.jjinmak.recommend.out.InteractionLogRepository;
+import com.jjinmak.recommend.out.InteractionRepository;
 import com.jjinmak.recommend.out.RecommendAuctionRepository;
+import com.jjinmak.recommend.out.RecommendMemberRepository;
+import com.jjinmak.recommend.out.RecommendProductRepository;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
+import static com.jjinmak.contracts.product.event.ProductChangeType.CREATED;
 import static com.jjinmak.recommend.domain.AuctionStatus.ACTIVE;
 import static com.jjinmak.recommend.domain.AuctionStatus.ENDED;
 import static com.jjinmak.recommend.exception.RecommendErrorCode.AUCTION_NOT_FOUND;
@@ -36,9 +45,32 @@ class RecommendAuctionSyncTest {
     @Autowired
     RecommendAuctionRepository recommendAuctionRepository;
 
+    @Autowired
+    RecommendProductRepository recommendProductRepository;
+
+    @Autowired
+    RecommendMemberRepository recommendMemberRepository;
+
+    @Autowired
+    InteractionRepository interactionRepository;
+
+    @Autowired
+    InteractionLogRepository interactionLogRepository;
+
+    @BeforeEach
+    void createProductAndWinnerCopies() {
+        recommendKafkaListener.handle(new ProductChangedEvent(55L, CREATED, 0L, 9L, "듀얼센스", "ACCESSORY", "SONY", null,
+                10000L, 50000L, START_AT, null, START_AT.minusDays(1)));
+        recommendMemberRepository.save(new RecommendMember(7L, UUID.randomUUID(), "낙찰자"));
+    }
+
     @AfterEach
     void tearDown() {
+        interactionLogRepository.deleteAll();
+        interactionRepository.deleteAll();
         recommendAuctionRepository.deleteAll();
+        recommendMemberRepository.deleteAll();
+        recommendProductRepository.deleteAll();
     }
 
     @Test

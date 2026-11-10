@@ -1,5 +1,6 @@
 package com.jjinmak.recommend.in;
 
+import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
@@ -41,7 +42,8 @@ class RecommendKafkaListenerTest {
                 arguments(ProductChangedEvent.class, "product.changed"),
                 arguments(AuctionStartedEvent.class, "auction.started"),
                 arguments(AuctionWonEvent.class, "auction.won"),
-                arguments(AuctionFailedEvent.class, "auction.failed")
+                arguments(AuctionFailedEvent.class, "auction.failed"),
+                arguments(AuctionBidSucceedEvent.class, "auction.bid-succeed")
         );
     }
 
@@ -97,6 +99,17 @@ class RecommendKafkaListenerTest {
         recommendKafkaListener.handle(event);
 
         verify(recommendFacade).failAuction(event);
+        verifyNoMoreInteractions(recommendFacade);
+    }
+
+    @Test
+    @DisplayName("입찰 성공 이벤트를 받으면 입찰 상호작용을 저장한다")
+    void auctionBidSucceed_bidsAuction() {
+        AuctionBidSucceedEvent event = new AuctionBidSucceedEvent(1L, 100L, 55L, 7L, 21000L, 1, AT.plusDays(3), AT);
+
+        recommendKafkaListener.handle(event);
+
+        verify(recommendFacade).bidAuction(event);
         verifyNoMoreInteractions(recommendFacade);
     }
 }
