@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -23,6 +24,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
@@ -218,6 +220,25 @@ class AuctionInstantWinUseCaseTest {
                     .isEqualTo(AuctionErrorCode.AUCTION_NOT_IN_PROGRESS);
             assertThat(auction.getWinnerId()).isEqualTo(BIDDER_ID);
             then(auctionEventPublisher).should(times(1)).publishWon(auction);
+        }
+    }
+
+    @Nested
+    class 입찰_성공_이벤트 {
+
+        @Test
+        void 즉시낙찰도_입찰로_기록되므로_입찰_성공_이벤트_다음에_낙찰_이벤트를_발행한다() {
+            EnglishAuction auction = 즉시낙찰_가능_경매();
+            경매가_조회된다(auction);
+            입찰이_저장된다();
+            ArgumentCaptor<Bid> captor = ArgumentCaptor.forClass(Bid.class);
+
+            auctionInstantWinUseCase.instantWin(AUCTION_ID, BIDDER_ID, NOW);
+
+            then(bidRepository).should().save(captor.capture());
+            InOrder order = inOrder(auctionEventPublisher);
+            order.verify(auctionEventPublisher).publishBidSucceed(auction, captor.getValue());
+            order.verify(auctionEventPublisher).publishWon(auction);
         }
     }
 }

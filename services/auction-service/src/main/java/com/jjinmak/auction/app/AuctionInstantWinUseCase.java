@@ -25,8 +25,9 @@ public class AuctionInstantWinUseCase {
         // 공통검증
         validateInstantWin(auction,bidderId,now);
         auction.winInstantly(bidderId,now);
-        bidRepository.save(new Bid(auction.getId(),bidderId, auction.getInstantWinPrice(), now));
-        // 낙찰 이벤트발행
+        Bid bid = new Bid(auction.getId(), bidderId, auction.getInstantWinPrice(), now);
+        bidRepository.save(bid);
+        auctionEventPublisher.publishBidSucceed(auction, bid);
         auctionEventPublisher.publishWon(auction);
         return new AuctionInstantWinResponseDto(
                 auctionId,
