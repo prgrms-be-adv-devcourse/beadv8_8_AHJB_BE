@@ -2,15 +2,33 @@ package com.jjinmak.contracts.product.event;
 
 import java.time.LocalDateTime;
 
+// 확장 단계: 상품 전환 후 @Deprecated 필드와 옛 생성자 삭제
 public record ProductRegisteredEvent(
         Long productId,
         Long sellerId,
-        Long shippingFee,       // 낙찰 후 장바구니/주문의 배송비로 쓰인다.
+        Long shippingFee,
         Long startPrice,
-        Long instantWinPrice,   // 선택
-        int duration,           // 1, 3, 7일 (직접 지정이면 0)
-        LocalDateTime customEndAt,// 종료 시간 직접 지정 시에만 값이 있음
-        String productName,
-        String category,        // ProductCategory.name()
-        String thumbnailUrl
-) {}
+        @Deprecated Long instantWinPrice,
+        @Deprecated int duration,
+        @Deprecated LocalDateTime customEndAt,
+        @Deprecated String productName,
+        String category,
+        @Deprecated String thumbnailUrl,
+        String auctionType,         // "ENGLISH" | "DUTCH", null이면 옛 형태(ENGLISH)
+        LocalDateTime scheduledAt,
+        EnglishTerms english,
+        DutchTerms dutch
+) {
+
+    @Deprecated
+    public ProductRegisteredEvent(Long productId, Long sellerId, Long shippingFee, Long startPrice,
+                                  Long instantWinPrice, int duration, LocalDateTime customEndAt,
+                                  String productName, String category, String thumbnailUrl) {
+        this(productId, sellerId, shippingFee, startPrice, instantWinPrice, duration, customEndAt,
+                productName, category, thumbnailUrl, null, null, null, null);
+    }
+
+    public record EnglishTerms(Long instantWinPrice, LocalDateTime endAt) {}
+
+    public record DutchTerms(Long floorPrice, Integer dropRatePercent, Integer dropIntervalSec) {}
+}
