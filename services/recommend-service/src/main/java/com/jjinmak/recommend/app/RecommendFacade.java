@@ -1,5 +1,6 @@
 package com.jjinmak.recommend.app;
 
+import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
@@ -34,5 +35,10 @@ public class RecommendFacade {
     @Transactional
     public void failAuction(AuctionFailedEvent event){
         recommendSyncUseCase.failAuction(event);
+    }
+
+    @Transactional
+    public void bidAuction(AuctionBidSucceedEvent event){
+        interactionUseCase.bidAuction(event);
     }
 }

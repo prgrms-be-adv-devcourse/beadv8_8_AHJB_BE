@@ -17,7 +17,8 @@ public class RecommendKafkaDltTopics {
                 TopicBuilder.name(dlt(AUCTION_STARTED)).build(),
                 TopicBuilder.name(dlt(AUCTION_WON)).build(),
                 TopicBuilder.name(dlt(AUCTION_FAILED)).build(),
-                TopicBuilder.name(dlt(PRODUCT_CHANGED)).build()
+                TopicBuilder.name(dlt(PRODUCT_CHANGED)).build(),
+                TopicBuilder.name(dlt(AUCTION_BID_SUCCEED)).build()
         );
     }
 

@@ -14,13 +14,17 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 @Table(uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"member_id", "product_id", "type"})
+        @UniqueConstraint(columnNames = {"member_id", "auction_id", "type"})
 })
 public class Interaction extends BaseIdAndTime {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     private RecommendMember member;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY)
+    private RecommendAuction auction;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
@@ -36,13 +40,19 @@ public class Interaction extends BaseIdAndTime {
     private LocalDateTime lastOccurredAt;
 
     public Interaction(
-            RecommendMember member, RecommendProduct product,
+            RecommendMember member, RecommendAuction auction, RecommendProduct product,
             InteractionType type, LocalDateTime occurredAt
     ){
         this.member = member;
+        this.auction = auction;
         this.product = product;
         this.active = true;
         this.type = type;
         this.lastOccurredAt = occurredAt;
+    }
+
+    public void update(LocalDateTime occurredAt){
+        if (this.lastOccurredAt == null || occurredAt.isAfter(this.lastOccurredAt))
+            this.lastOccurredAt = occurredAt;
     }
 }

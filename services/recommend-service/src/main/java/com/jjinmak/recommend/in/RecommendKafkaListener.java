@@ -1,5 +1,6 @@
 package com.jjinmak.recommend.in;
 
+import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
@@ -37,5 +38,10 @@ public class RecommendKafkaListener {
     @KafkaListener(topics = AUCTION_FAILED, groupId = groupId)
     public void handle(AuctionFailedEvent event){
         recommendFacade.failAuction(event);
+    }
+
+    @KafkaListener(topics = AUCTION_BID_SUCCEED, groupId = groupId)
+    public void handle(AuctionBidSucceedEvent event) {
+        recommendFacade.bidAuction(event);
     }
 }
