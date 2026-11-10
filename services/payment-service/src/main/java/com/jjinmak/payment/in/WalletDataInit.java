@@ -2,7 +2,7 @@ package com.jjinmak.payment.in;
 
 import com.jjinmak.payment.domain.Wallet;
 import com.jjinmak.payment.domain.enums.WalletType;
-import com.jjinmak.payment.out.WalletRepository;
+import com.jjinmak.payment.out.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;

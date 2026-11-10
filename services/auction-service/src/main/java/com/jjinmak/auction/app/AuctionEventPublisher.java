@@ -1,7 +1,8 @@
 package com.jjinmak.auction.app;
 
-import com.jjinmak.auction.domain.Auction;
+import com.jjinmak.auction.domain.*;
 import com.jjinmak.auction.out.eventPublisher.EventPublisher;
+import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
@@ -36,13 +37,30 @@ public class AuctionEventPublisher {
     }
 
     public void publishStarted(Auction auction){
+        boolean dutch = auction instanceof DutchAuction;
+        Long instantWinPrice = (auction instanceof EnglishAuction english) ? english.getInstantWinPrice() : null;
+
         eventPublisher.publish(new AuctionStartedEvent(
                 auction.getId(),
                 auction.getProductId(),
                 auction.getStartPrice(),
-                auction.getInstantWinPrice(),
+                instantWinPrice,
                 auction.getStartAt(),
-                auction.getEndAt()
+                dutch ? null : auction.getEndAt(),
+                dutch ? AuctionType.DUTCH.name() : AuctionType.ENGLISH.name()
+        ));
+    }
+
+    public void publishBidSucceed(EnglishAuction auction, Bid bid) {
+        eventPublisher.publish(new AuctionBidSucceedEvent(
+                bid.getId(),
+                auction.getId(),
+                auction.getProductId(),
+                bid.getBidderId(),
+                bid.getBidPrice(),
+                auction.getBidCount(),
+                auction.getEndAt(),
+                bid.getBidAt()
         ));
     }
 

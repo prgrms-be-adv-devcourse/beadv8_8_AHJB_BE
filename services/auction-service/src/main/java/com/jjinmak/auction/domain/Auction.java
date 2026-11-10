@@ -19,11 +19,13 @@ import static com.jjinmak.auction.exception.AuctionErrorCode.*;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "auction_type", discriminatorType = DiscriminatorType.STRING, length = 20)
 @Table(indexes = {
         @Index(name = "idx_auction_status_end_at", columnList = "status, end_at"),
         @Index(name = "idx_auction_status_category_end_at", columnList = "status, category, end_at")
 })
-public class Auction extends BaseIdAndTime {
+public abstract class Auction extends BaseIdAndTime {
 
     @Column(nullable = false)
     private Long productId;
@@ -34,12 +36,9 @@ public class Auction extends BaseIdAndTime {
     @Column(nullable = false)
     private Long startPrice;
 
-    private Long instantWinPrice;
-
     private Long shippingFee;
 
-    @Embedded
-    private ProductSnapshot productSnapshot;
+    private String category;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
@@ -49,13 +48,6 @@ public class Auction extends BaseIdAndTime {
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
     private FailureReason failureReason;
-
-    private Long highestBidPrice;
-
-    private Long highestBidderId;
-
-    @Column(nullable = false)
-    private int bidCount;
 
     private Long winnerId;
 
@@ -72,61 +64,32 @@ public class Auction extends BaseIdAndTime {
     @Version
     private Long version;
 
-    private Auction(Long productId, Long sellerId, Long startPrice, Long instantWinPrice,
-                    Long shippingFee, ProductSnapshot productSnapshot,
+    protected Auction(Long productId, Long sellerId, Long startPrice,
+                    Long shippingFee, String category,
                     LocalDateTime startAt, LocalDateTime endAt) {
         this.productId = productId;
         this.sellerId = sellerId;
         this.startPrice = startPrice;
-        this.instantWinPrice = instantWinPrice;
         this.shippingFee = shippingFee;
-        this.productSnapshot = productSnapshot;
+        this.category = category;
         this.startAt = startAt;
         this.endAt = endAt;
         this.status = AuctionStatus.IN_PROGRESS;
-        this.bidCount = 0;
     }
 
-    // 경매 조건은 상품 컨텍스트에서 검증된 값을 받는다.
-    public static Auction create(Long productId, Long sellerId, Long startPrice,
-                                 Long instantWinPrice, Long shippingFee,
-                                 ProductSnapshot productSnapshot,
-                                 LocalDateTime endAt, LocalDateTime now) {
-        return new Auction(productId, sellerId, startPrice, instantWinPrice,
-                shippingFee, productSnapshot, now, endAt);
-    }
+    // 지금 시점의 가격. 영국식은 입찰 기준이라 시각과 무관하고, 하향식은 시각으로 계산한다.
+    public abstract Long currentPriceAt(LocalDateTime now);
 
-    // 입찰
-    public Long getCurrentPrice(){
-        if(bidCount==0){return startPrice;}
-        return highestBidPrice;
-    }
-    public long getBidUnit(){
-        return BidIncrement.unitOf(getCurrentPrice());
-    }
-    public Long getMinBidPrice(){
-        if(!hasBids()){return startPrice;}
-        return getCurrentPrice()+getBidUnit();
-    }
+    // 종료 시각이 지난 경매를 마감한다. 낙찰·유찰 규칙은 유형마다 다르다.
+    public abstract AuctionCloseResult close(LocalDateTime now);
     public boolean isEnded(LocalDateTime now){
         return !now.isBefore(endAt);
     }
 
-    public void updateHighestBid(Long bidderId, Long price){
-        this.highestBidPrice=price;
-        this.highestBidderId=bidderId;
-        this.bidCount++;
+    // 하위 클래스가 종료 시각을 바꿀 때 쓴다. -->> 영국식 연장
+    protected void changeEndAt(LocalDateTime newEndAt) {
+        this.endAt = newEndAt;
     }
-    public void extendEndAt(LocalDateTime newEndAt){
-        this.endAt=newEndAt;
-    }
-    //즉시낙찰
-    public void winInstantly(Long bidderId, LocalDateTime now){
-        updateHighestBid(bidderId,instantWinPrice);
-        win(bidderId,instantWinPrice,now);
-    }
-    //낙찰관련 메소드
-    public boolean hasBids(){return bidCount>0;}
 
     public void win(Long winnerId,Long price,LocalDateTime now){
         validateStatus(IN_PROGRESS);
@@ -159,9 +122,6 @@ public class Auction extends BaseIdAndTime {
     }
     public boolean isSeller(Long memberId){
         return Objects.equals(sellerId, memberId);
-    }
-    public boolean isHighestBidder(Long memberId){
-        return Objects.equals(highestBidderId, memberId);
     }
     public boolean isStatus(AuctionStatus status){return this.status==status;}
 }

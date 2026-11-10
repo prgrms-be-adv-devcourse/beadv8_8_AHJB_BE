@@ -6,6 +6,7 @@ import com.jjinmak.auction.domain.AuctionSortType;
 import com.jjinmak.auction.dto.*;
 import com.jjinmak.auction.exception.AuctionErrorCode;
 import com.jjinmak.auction.in.dto.AuctionBidRequestDto;
+import com.jjinmak.auction.in.dto.DutchBuyRequestDto;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.rsData.RsData;
 import com.jjinmak.common.security.AuthPrincipal;
@@ -84,7 +85,7 @@ public class AuctionApiController {
 
     @Operation(
             summary = "경매 상세 조회",
-            description = "경매 조건, 현재 상태(현재가,최소 입찰가,종료 시각 등), 내 정보(판매자,최고 입찰자 여부)를 조회합니다. "
+            description = "경매 정보와 내 정보(판매자 여부 등)를 조회합니다. 영국식과 하향식은 응답 항목이 다릅니다."
     )
     @GetMapping("/{auctionId}")
     public ResponseEntity<RsData<AuctionDetailResponseDto>> detail(@PathVariable Long auctionId,@AuthenticationPrincipal AuthPrincipal principal){
@@ -103,21 +104,54 @@ public class AuctionApiController {
     }
 
     @Operation(
-            summary = "경매 목록",
-            description = "status: IN_PROGRESS(기본) | ENDED / "
-                    + "category: CONSOLE, GAME_SOFTWARE, ACCESSORY, LIMITED_EDITION, ETC (생략 시 전체) / "
-                    + "sort: ENDING_SOON, RECENTLY_ENDED, NEWEST, MOST_BIDS, PRICE_ASC, PRICE_DESC "
-                    + "(생략 시 진행 중 ENDING_SOON, 종료 RECENTLY_ENDED)"
+            summary = "영국식 경매 목록",
+            description = "진행 중(기본) 또는 종료된 영국식 경매를 조회합니다. 카테고리로 거를 수 있고, 생략하면 전체를 보여줍니다. "
+                    + "정렬을 생략하면 진행 중은 마감 임박순, 종료는 최근 종료순입니다."
     )
     @GetMapping
-    public ResponseEntity<RsData<AuctionListResponseDto>> list(
+    public ResponseEntity<RsData<EnglishAuctionListResponseDto>> englishList(
             @RequestParam(defaultValue = "IN_PROGRESS") AuctionListStatus status,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) AuctionSortType sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        AuctionListResponseDto response = auctionFacade.list(status, category, sort, page, size);
+        EnglishAuctionListResponseDto response = auctionFacade.englishList(status, category, sort, page, size);
         return ResponseEntity.ok(new RsData<>(true, "경매 목록 조회에 성공했습니다.", response));
+    }
+
+    @Operation(
+            summary = "하향식 구매",
+            description = "하향식 경매를 현재 가격으로 구매합니다. 화면에서 본 가격보다 서버 가격이 더 낮으면 낮은 가격으로 구매됩니다."
+    )
+
+    @PreAuthorize("hasAuthority('PERM_TRADE')")
+    @PostMapping("/{auctionId}/dutch-buy")
+    public ResponseEntity<RsData<DutchBuyResponseDto>> dutchBuy(
+            @PathVariable Long auctionId,
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @Valid @RequestBody DutchBuyRequestDto request
+    ) {
+        DutchBuyResponseDto response;
+        try {
+            response = auctionFacade.dutchBuy(auctionId, principal.memberId(), request.expectedPrice());
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new BusinessException(AuctionErrorCode.DUTCH_ALREADY_SOLD);
+        }
+        return ResponseEntity.ok(new RsData<>(true, "구매가 완료되었습니다.", response));
+    }
+
+    @Operation(
+            summary = "하향식 경매 목록",
+            description = "진행 중(IN_PROGRESS, 기본) 또는 종료(ENDED) 하향식 경매를 최신 시작순으로 조회합니다."
+    )
+    @GetMapping("/dutch")
+    public ResponseEntity<RsData<DutchAuctionListResponseDto>> dutchList(
+            @RequestParam(defaultValue = "IN_PROGRESS") AuctionListStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        DutchAuctionListResponseDto response = auctionFacade.dutchList(status, page, size);
+        return ResponseEntity.ok(new RsData<>(true, "하향식 경매 목록 조회에 성공했습니다.", response));
     }
 }

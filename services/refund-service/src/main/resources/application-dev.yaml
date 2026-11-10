@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: ${REFUND_DB_URL}
+    username: ${REFUND_DB_USERNAME}
+    password: ${REFUND_DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+  kafka:
+    bootstrap-servers: kafka.infra.svc.cluster.local:19092

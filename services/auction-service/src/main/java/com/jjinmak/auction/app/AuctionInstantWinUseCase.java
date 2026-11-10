@@ -1,11 +1,10 @@
 package com.jjinmak.auction.app;
 
-import com.jjinmak.auction.domain.Auction;
 import com.jjinmak.auction.domain.AuctionStatus;
 import com.jjinmak.auction.domain.Bid;
+import com.jjinmak.auction.domain.EnglishAuction;
 import com.jjinmak.auction.dto.AuctionInstantWinResponseDto;
 import com.jjinmak.auction.exception.AuctionErrorCode;
-import com.jjinmak.auction.out.AuctionRepository;
 import com.jjinmak.auction.out.BidRepository;
 import com.jjinmak.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -17,18 +16,18 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class AuctionInstantWinUseCase {
     private final BidRepository bidRepository;
-    private final AuctionRepository auctionRepository;
+    private final AuctionReader auctionReader;
     private final AuctionEventPublisher auctionEventPublisher;
 
     public AuctionInstantWinResponseDto instantWin(Long auctionId,Long bidderId, LocalDateTime now){
 
-        Auction auction = auctionRepository.findById(auctionId)
-                .orElseThrow(()->new BusinessException(AuctionErrorCode.AUCTION_NOT_FOUND));
+        EnglishAuction auction = auctionReader.getEnglish(auctionId);
         // 공통검증
         validateInstantWin(auction,bidderId,now);
         auction.winInstantly(bidderId,now);
-        bidRepository.save(new Bid(auction.getId(),bidderId, auction.getInstantWinPrice(), now));
-        // 낙찰 이벤트발행
+        Bid bid = new Bid(auction.getId(), bidderId, auction.getInstantWinPrice(), now);
+        bidRepository.save(bid);
+        auctionEventPublisher.publishBidSucceed(auction, bid);
         auctionEventPublisher.publishWon(auction);
         return new AuctionInstantWinResponseDto(
                 auctionId,
@@ -37,7 +36,7 @@ public class AuctionInstantWinUseCase {
                 auction.getStatus()
         );
     }
-    private void validateInstantWin(Auction auction, Long bidderId, LocalDateTime now) {
+    private void validateInstantWin(EnglishAuction auction, Long bidderId, LocalDateTime now) {
         if (auction.getStatus() != AuctionStatus.IN_PROGRESS) {
             throw new BusinessException(AuctionErrorCode.AUCTION_NOT_IN_PROGRESS);
         }

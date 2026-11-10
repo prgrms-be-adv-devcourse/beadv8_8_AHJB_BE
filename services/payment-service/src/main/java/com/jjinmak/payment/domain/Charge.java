@@ -7,6 +7,7 @@ import com.jjinmak.payment.domain.enums.ChargeStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -107,6 +108,16 @@ public class Charge extends BaseIdAndTime {
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(nullable = false, length = 20)
     private ChargeStatus status;
+
+    /**
+     * 낙관적 락. 충전 복구 스케줄러와 웹훅 처리처럼 같은 충전 건을 동시에 바꾸는 경로가 있어,
+     * 늦게 커밋한 쪽이 OptimisticLockingFailureException 으로 실패하게 한다 (실패한 쪽은 다음 주기에 다시 보고 이미 처리된 건으로 넘긴다).
+     * 기존 행이 있는 DB 에 컬럼이 추가될 때를 위해 기본값 0 을 둔다.
+     */
+    @Version
+    @ColumnDefault("0")
+    @Column(nullable = false)
+    private long version;
 
     /** 토스 승인 시각 (토스 응답의 approvedAt) */
     private LocalDateTime approvedAt;

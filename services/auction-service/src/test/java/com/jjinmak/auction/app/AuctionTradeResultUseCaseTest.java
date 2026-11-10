@@ -1,7 +1,6 @@
 package com.jjinmak.auction.app;
 
-import com.jjinmak.auction.domain.Auction;
-import com.jjinmak.auction.domain.ProductSnapshot;
+import com.jjinmak.auction.domain.EnglishAuction;
 import com.jjinmak.auction.exception.AuctionErrorCode;
 import com.jjinmak.auction.out.AuctionRepository;
 import com.jjinmak.common.exception.BusinessException;
@@ -30,7 +29,7 @@ class AuctionTradeResultUseCaseTest {
     private static final Long WINNER_ID = 200L;
     private static final LocalDateTime END_AT = LocalDateTime.of(2026, 10, 20, 21, 0);
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 21, 10, 0);
-    private static final ProductSnapshot SNAPSHOT = ProductSnapshot.of("테스트 상품", "CONSOLE", null);
+    private static final String CATEGORY = "CONSOLE";
 
     @Mock AuctionRepository auctionRepository;
     @Mock AuctionEventPublisher auctionEventPublisher;
@@ -38,30 +37,30 @@ class AuctionTradeResultUseCaseTest {
     @InjectMocks AuctionTradeResultUseCase auctionTradeResultUseCase;
 
     // ── 상태별 경매 ──
-    private Auction 진행중_경매() {
-        return Auction.create(1L, SELLER_ID, 10_000L, null, 3_000L, SNAPSHOT, END_AT, END_AT.minusDays(3));
+    private EnglishAuction 진행중_경매() {
+        return EnglishAuction.create(1L, SELLER_ID, 10_000L, null, 3_000L, CATEGORY, END_AT, END_AT.minusDays(3));
     }
 
-    private Auction 낙찰_경매() {
-        Auction auction = 진행중_경매();
+    private EnglishAuction 낙찰_경매() {
+        EnglishAuction auction = 진행중_경매();
         auction.updateHighestBid(WINNER_ID, 20_000L);
         auction.win(WINNER_ID, 20_000L, END_AT);
         return auction;
     }
 
-    private Auction 결제완료_경매() {
-        Auction auction = 낙찰_경매();
+    private EnglishAuction 결제완료_경매() {
+        EnglishAuction auction = 낙찰_경매();
         auction.pay();
         return auction;
     }
 
-    private Auction 구매확정_경매() {
-        Auction auction = 결제완료_경매();
+    private EnglishAuction 구매확정_경매() {
+        EnglishAuction auction = 결제완료_경매();
         auction.complete();
         return auction;
     }
 
-    private void 경매가_조회된다(Auction auction) {
+    private void 경매가_조회된다(EnglishAuction auction) {
         given(auctionRepository.findById(AUCTION_ID)).willReturn(Optional.of(auction));
     }
 
@@ -79,7 +78,7 @@ class AuctionTradeResultUseCaseTest {
         @Test
         void 낙찰_경매는_결제완료가_되고_이벤트는_발행하지_않는다() {
             // given
-            Auction auction = 낙찰_경매();
+            EnglishAuction auction = 낙찰_경매();
             경매가_조회된다(auction);
 
             // when
@@ -92,7 +91,7 @@ class AuctionTradeResultUseCaseTest {
 
         @Test
         void 이미_결제완료면_중복으로_보고_무시한다() {
-            Auction auction = 결제완료_경매();
+            EnglishAuction auction = 결제완료_경매();
             경매가_조회된다(auction);
 
             auctionTradeResultUseCase.applyPaymentSucceeded(AUCTION_ID);
@@ -111,7 +110,7 @@ class AuctionTradeResultUseCaseTest {
         @Test
         void 미결제로_무산된_경매에_결제완료가_오면_예외가_발생한다() {
             // 돈은 결제됐는데 경매는 무산된 상태 → 조용히 무시하면 안 된다
-            Auction auction = 낙찰_경매();
+            EnglishAuction auction = 낙찰_경매();
             auction.fail(UNPAID);
             경매가_조회된다(auction);
 
@@ -133,7 +132,7 @@ class AuctionTradeResultUseCaseTest {
 
         @Test
         void 결제완료_경매는_경매완료가_된다() {
-            Auction auction = 결제완료_경매();
+            EnglishAuction auction = 결제완료_경매();
             경매가_조회된다(auction);
 
             auctionTradeResultUseCase.applyPurchaseConfirmed(AUCTION_ID);
@@ -144,7 +143,7 @@ class AuctionTradeResultUseCaseTest {
 
         @Test
         void 이미_경매완료면_중복으로_보고_무시한다() {
-            Auction auction = 구매확정_경매();
+            EnglishAuction auction = 구매확정_경매();
             경매가_조회된다(auction);
 
             auctionTradeResultUseCase.applyPurchaseConfirmed(AUCTION_ID);
@@ -167,7 +166,7 @@ class AuctionTradeResultUseCaseTest {
 
         @Test
         void 낙찰_경매는_미결제로_무산되고_무산_이벤트가_발행된다() {
-            Auction auction = 낙찰_경매();
+            EnglishAuction auction = 낙찰_경매();
             경매가_조회된다(auction);
 
             auctionTradeResultUseCase.applyPaymentDefaulted(AUCTION_ID, NOW);
@@ -179,7 +178,7 @@ class AuctionTradeResultUseCaseTest {
 
         @Test
         void 이미_무산됐으면_중복으로_보고_이벤트를_다시_발행하지_않는다() {
-            Auction auction = 낙찰_경매();
+            EnglishAuction auction = 낙찰_경매();
             경매가_조회된다(auction);
 
             auctionTradeResultUseCase.applyPaymentDefaulted(AUCTION_ID, NOW);
@@ -191,7 +190,7 @@ class AuctionTradeResultUseCaseTest {
         @Test
         void 결제완료된_경매에_미결제가_오면_예외가_발생한다() {
             // 결제 직후 결제 기한 만료가 겹친 경합 상황
-            Auction auction = 결제완료_경매();
+            EnglishAuction auction = 결제완료_경매();
             경매가_조회된다(auction);
 
             예외가_발생한다(() -> auctionTradeResultUseCase.applyPaymentDefaulted(AUCTION_ID, NOW),
@@ -205,7 +204,7 @@ class AuctionTradeResultUseCaseTest {
 
         @Test
         void 결제완료_경매는_환불로_무산되고_무산_이벤트가_발행된다() {
-            Auction auction = 결제완료_경매();
+            EnglishAuction auction = 결제완료_경매();
             경매가_조회된다(auction);
 
             auctionTradeResultUseCase.applyRefundAccepted(AUCTION_ID, NOW);
@@ -217,7 +216,7 @@ class AuctionTradeResultUseCaseTest {
 
         @Test
         void 이미_무산됐으면_중복으로_보고_무시한다() {
-            Auction auction = 결제완료_경매();
+            EnglishAuction auction = 결제완료_경매();
             auction.fail(REFUNDED);
             경매가_조회된다(auction);
 
@@ -248,7 +247,7 @@ class AuctionTradeResultUseCaseTest {
 
         @Test
         void 결제완료_후_환불되면_무산되고_이후_구매확정은_예외가_발생한다() {
-            Auction auction = 낙찰_경매();
+            EnglishAuction auction = 낙찰_경매();
             경매가_조회된다(auction);
 
             auctionTradeResultUseCase.applyPaymentSucceeded(AUCTION_ID);
@@ -271,7 +270,7 @@ class AuctionTradeResultUseCaseTest {
 
         @Test
         void 유찰된_경매에_미결제가_와도_현재는_무시한다() {
-            Auction auction = 진행중_경매();
+            EnglishAuction auction = 진행중_경매();
             auction.fail(NO_BID);
             경매가_조회된다(auction);
 

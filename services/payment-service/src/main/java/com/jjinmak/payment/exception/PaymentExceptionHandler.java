@@ -1,8 +1,8 @@
 package com.jjinmak.payment.exception;
 
 import com.jjinmak.common.exception.BusinessException;
-import com.jjinmak.payment.in.PaymentApiController;
-import com.jjinmak.payment.in.WalletApiController;
+import com.jjinmak.payment.in.controller.PaymentApiController;
+import com.jjinmak.payment.in.controller.WalletApiController;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.ResponseEntity;

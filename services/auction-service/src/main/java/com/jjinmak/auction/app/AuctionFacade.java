@@ -26,6 +26,7 @@ public class AuctionFacade {
     private final AuctionTradeResultUseCase auctionTradeResultUseCase;
     private final AuctionMyBidsUseCase auctionMyBidsUseCase;
     private final AuctionListUseCase auctionListUseCase;
+    private final AuctionDutchBuyUseCase auctionDutchBuyUseCase;
 
     @Transactional
     public AuctionMember syncMember(MemberDto dto){
@@ -68,9 +69,15 @@ public class AuctionFacade {
     public void applyRefundAccepted(Long auctionId) {auctionTradeResultUseCase.applyRefundAccepted(auctionId, LocalDateTime.now());}
 
     @Transactional(readOnly = true)
-    public List<AuctionMyBidDto> myBids(Long memberId){return auctionMyBidsUseCase.myBids(memberId);}
+    public List<AuctionMyBidDto> myBids(Long memberId){return auctionMyBidsUseCase.myBids(memberId, LocalDateTime.now());}
 
     @Transactional(readOnly = true)
-    public AuctionListResponseDto list(AuctionListStatus status, String category, AuctionSortType sort, int page, int size){return auctionListUseCase.list(status, category, sort, page, size, LocalDateTime.now());}
+    public EnglishAuctionListResponseDto englishList(AuctionListStatus status, String category, AuctionSortType sort, int page, int size){return auctionListUseCase.englishList(status, category, sort, page, size, LocalDateTime.now());}
+
+    @Transactional
+    public DutchBuyResponseDto dutchBuy(Long auctionId, Long memberId, Long expectedPrice) {return auctionDutchBuyUseCase.buy(auctionId, memberId, expectedPrice, LocalDateTime.now());}
+
+    @Transactional(readOnly = true)
+    public DutchAuctionListResponseDto dutchList(AuctionListStatus status, int page, int size) {return auctionListUseCase.dutchList(status, page, size, LocalDateTime.now());}
 }
 

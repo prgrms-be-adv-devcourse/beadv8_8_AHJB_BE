@@ -1,17 +1,18 @@
 package com.jjinmak.auction.app;
 
-import com.jjinmak.auction.domain.Auction;
-import com.jjinmak.auction.domain.ProductSnapshot;
+import com.jjinmak.auction.domain.DutchAuction;
+import com.jjinmak.auction.domain.EnglishAuction;
 import com.jjinmak.auction.domain.Bid;
 import com.jjinmak.auction.exception.AuctionErrorCode;
 import com.jjinmak.auction.out.AuctionRepository;
 import com.jjinmak.auction.out.BidRepository;
 import com.jjinmak.common.exception.BusinessException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -23,6 +24,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,35 +39,42 @@ class AuctionBidUseCaseTest {
     private static final Long SHIPPING_FEE = 3_000L;
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 20, 20, 0);   // 입찰 시각
     private static final LocalDateTime END_AT = NOW.plusDays(1);
-    private static final ProductSnapshot SNAPSHOT = ProductSnapshot.of("테스트 상품", "CONSOLE", null);
+    private static final String CATEGORY = "CONSOLE";
 
     @Mock AuctionRepository auctionRepository;
     @Mock BidRepository bidRepository;
     @Mock AuctionEventPublisher auctionEventPublisher;
 
-    @InjectMocks AuctionBidUseCase auctionBidUseCase;
+    AuctionBidUseCase auctionBidUseCase;
 
-    // ── 경매 만들기 ──
-    private Auction 경매(Long instantWinPrice, LocalDateTime endAt) {
-        return Auction.create(1L, SELLER_ID, START_PRICE, instantWinPrice, SHIPPING_FEE, SNAPSHOT, endAt, NOW.minusDays(3));
+    // AuctionReader는 mock이 아니라 실제 객체로 조립해 findById mock을 그대로 쓴다
+    @BeforeEach
+    void setUp() {
+        auctionBidUseCase = new AuctionBidUseCase(
+                bidRepository, auctionEventPublisher, new AuctionReader(auctionRepository));
     }
 
-    private Auction 진행중_경매() {
+    // ── 경매 만들기 ──
+    private EnglishAuction 경매(Long instantWinPrice, LocalDateTime endAt) {
+        return EnglishAuction.create(1L, SELLER_ID, START_PRICE, instantWinPrice, SHIPPING_FEE, CATEGORY, endAt, NOW.minusDays(3));
+    }
+
+    private EnglishAuction 진행중_경매() {
         return 경매(null, END_AT);
     }
 
-    private Auction 즉시낙찰가_있는_경매() {
+    private EnglishAuction 즉시낙찰가_있는_경매() {
         return 경매(INSTANT_WIN_PRICE, END_AT);
     }
 
-    private Auction 입찰_있는_경매(Long bidderId, Long price) {
-        Auction auction = 진행중_경매();
+    private EnglishAuction 입찰_있는_경매(Long bidderId, Long price) {
+        EnglishAuction auction = 진행중_경매();
         auction.updateHighestBid(bidderId, price);
         return auction;
     }
 
     // ── Mock 설정 ──
-    private void 경매가_조회된다(Auction auction) {
+    private void 경매가_조회된다(EnglishAuction auction) {
         given(auctionRepository.findById(AUCTION_ID)).willReturn(Optional.of(auction));
     }
 
@@ -89,7 +98,7 @@ class AuctionBidUseCaseTest {
         @Test
         void 입찰이_없으면_시작가로_입찰할_수_있다() {
             // given
-            Auction auction = 진행중_경매();
+            EnglishAuction auction = 진행중_경매();
             경매가_조회된다(auction);
             입찰이_저장된다();
 
@@ -109,7 +118,7 @@ class AuctionBidUseCaseTest {
 
         @Test
         void 입찰이_있으면_현재가에_단위를_더한_가격부터_입찰할_수_있다() {
-            Auction auction = 입찰_있는_경매(OTHER_BIDDER_ID, 15_000L);
+            EnglishAuction auction = 입찰_있는_경매(OTHER_BIDDER_ID, 15_000L);
             경매가_조회된다(auction);
             입찰이_저장된다();
 
@@ -122,7 +131,7 @@ class AuctionBidUseCaseTest {
 
         @Test
         void 단위의_배수만큼_더_높게_입찰할_수_있다() {
-            Auction auction = 입찰_있는_경매(OTHER_BIDDER_ID, 15_000L);
+            EnglishAuction auction = 입찰_있는_경매(OTHER_BIDDER_ID, 15_000L);
             경매가_조회된다(auction);
             입찰이_저장된다();
 
@@ -134,7 +143,7 @@ class AuctionBidUseCaseTest {
         @Test
         void 입찰로_가격_구간이_바뀌면_다음_최소입찰가에_새_단위가_적용된다() {
             // 99,000원(단위 1,000) → 100,000원 입찰 → 단위 5,000
-            Auction auction = 입찰_있는_경매(OTHER_BIDDER_ID, 99_000L);
+            EnglishAuction auction = 입찰_있는_경매(OTHER_BIDDER_ID, 99_000L);
             경매가_조회된다(auction);
             입찰이_저장된다();
 
@@ -170,8 +179,17 @@ class AuctionBidUseCaseTest {
         }
 
         @Test
+        void 하향식_경매에는_입찰할_수_없다() {
+            DutchAuction dutch = DutchAuction.create(1L, SELLER_ID, 300_000L, 150_000L, 2, 60,
+                    3_000L, CATEGORY, NOW.minusMinutes(1));
+            given(auctionRepository.findById(AUCTION_ID)).willReturn(Optional.of(dutch));
+
+            입찰이_거부된다(BIDDER_ID, 310_000L, AuctionErrorCode.AUCTION_TYPE_MISMATCH);
+        }
+
+        @Test
         void 진행중이_아닌_경매에는_입찰할_수_없다() {
-            Auction auction = 입찰_있는_경매(OTHER_BIDDER_ID, 15_000L);
+            EnglishAuction auction = 입찰_있는_경매(OTHER_BIDDER_ID, 15_000L);
             auction.win(OTHER_BIDDER_ID, 15_000L, NOW);
             경매가_조회된다(auction);
 
@@ -222,7 +240,7 @@ class AuctionBidUseCaseTest {
 
         @Test
         void 거부된_입찰은_경매를_바꾸지_않는다() {
-            Auction auction = 입찰_있는_경매(OTHER_BIDDER_ID, 15_000L);
+            EnglishAuction auction = 입찰_있는_경매(OTHER_BIDDER_ID, 15_000L);
             경매가_조회된다(auction);
 
             입찰이_거부된다(BIDDER_ID, 16_500L, AuctionErrorCode.INVALID_BID_UNIT);
@@ -238,7 +256,7 @@ class AuctionBidUseCaseTest {
 
         @Test
         void 종료_시각_1초_전에는_입찰할_수_있다() {
-            Auction auction = 경매(null, NOW.plusSeconds(1));
+            EnglishAuction auction = 경매(null, NOW.plusSeconds(1));
             경매가_조회된다(auction);
             입찰이_저장된다();
 
@@ -267,7 +285,7 @@ class AuctionBidUseCaseTest {
 
         @Test
         void 종료_5분_전_이후에_입찰하면_입찰_시각_5분_뒤로_연장된다() {
-            Auction auction = 경매(null, NOW.plusMinutes(3));
+            EnglishAuction auction = 경매(null, NOW.plusMinutes(3));
             경매가_조회된다(auction);
             입찰이_저장된다();
 
@@ -281,7 +299,7 @@ class AuctionBidUseCaseTest {
         @Test
         void 종료_정확히_5분_전에_입찰해도_연장된다() {
             // 정책: "종료 5분 전 이후"는 5분 전 정각을 포함한다
-            Auction auction = 경매(null, NOW.plusMinutes(5));
+            EnglishAuction auction = 경매(null, NOW.plusMinutes(5));
             경매가_조회된다(auction);
             입찰이_저장된다();
 
@@ -294,7 +312,7 @@ class AuctionBidUseCaseTest {
         @Test
         void 종료_5분_1초_전에_입찰하면_연장되지_않는다() {
             LocalDateTime endAt = NOW.plusMinutes(5).plusSeconds(1);
-            Auction auction = 경매(null, endAt);
+            EnglishAuction auction = 경매(null, endAt);
             경매가_조회된다(auction);
             입찰이_저장된다();
 
@@ -306,7 +324,7 @@ class AuctionBidUseCaseTest {
 
         @Test
         void 연장이_반복되면_마지막_입찰_시각_기준으로_5분_연장된다() {
-            Auction auction = 경매(null, NOW.plusMinutes(3));
+            EnglishAuction auction = 경매(null, NOW.plusMinutes(3));
             경매가_조회된다(auction);
             입찰이_저장된다();
 
@@ -321,8 +339,8 @@ class AuctionBidUseCaseTest {
     class 즉시낙찰가_이상_입찰 {
 
         @Test
-        void 즉시낙찰가와_같으면_즉시낙찰되고_낙찰_이벤트만_발행된다() {
-            Auction auction = 즉시낙찰가_있는_경매();
+        void 즉시낙찰가와_같으면_즉시낙찰되고_낙찰_이벤트가_발행된다() {
+            EnglishAuction auction = 즉시낙찰가_있는_경매();
             경매가_조회된다(auction);
             입찰이_저장된다();
 
@@ -338,7 +356,7 @@ class AuctionBidUseCaseTest {
 
         @Test
         void 즉시낙찰가보다_높게_입찰해도_즉시낙찰가로_낙찰되고_저장된다() {
-            Auction auction = 즉시낙찰가_있는_경매();
+            EnglishAuction auction = 즉시낙찰가_있는_경매();
             경매가_조회된다(auction);
             입찰이_저장된다();
             ArgumentCaptor<Bid> captor = ArgumentCaptor.forClass(Bid.class);
@@ -352,7 +370,7 @@ class AuctionBidUseCaseTest {
 
         @Test
         void 즉시낙찰이면_입찰_단위가_맞지_않아도_낙찰된다() {
-            Auction auction = 즉시낙찰가_있는_경매();
+            EnglishAuction auction = 즉시낙찰가_있는_경매();
             경매가_조회된다(auction);
             입찰이_저장된다();
 
@@ -364,7 +382,7 @@ class AuctionBidUseCaseTest {
 
         @Test
         void 현재_최고_입찰자도_즉시낙찰가로_입찰할_수_있다() {
-            Auction auction = 즉시낙찰가_있는_경매();
+            EnglishAuction auction = 즉시낙찰가_있는_경매();
             auction.updateHighestBid(BIDDER_ID, 20_000L);
             경매가_조회된다(auction);
             입찰이_저장된다();
@@ -377,7 +395,7 @@ class AuctionBidUseCaseTest {
 
         @Test
         void 즉시낙찰가_바로_아래는_일반_입찰로_처리된다() {
-            Auction auction = 즉시낙찰가_있는_경매();
+            EnglishAuction auction = 즉시낙찰가_있는_경매();
             경매가_조회된다(auction);
             입찰이_저장된다();
 
@@ -389,7 +407,7 @@ class AuctionBidUseCaseTest {
 
         @Test
         void 즉시낙찰가가_없으면_큰_금액도_일반_입찰로_처리된다() {
-            Auction auction = 진행중_경매();
+            EnglishAuction auction = 진행중_경매();
             경매가_조회된다(auction);
             입찰이_저장된다();
 
@@ -409,7 +427,7 @@ class AuctionBidUseCaseTest {
         @Test
         void 종료_임박_구간의_즉시낙찰은_연장하지_않는다() {
             LocalDateTime endAt = NOW.plusMinutes(3);
-            Auction auction = 경매(INSTANT_WIN_PRICE, endAt);
+            EnglishAuction auction = 경매(INSTANT_WIN_PRICE, endAt);
             경매가_조회된다(auction);
             입찰이_저장된다();
 
@@ -417,6 +435,37 @@ class AuctionBidUseCaseTest {
 
             assertThat(response.isExtended()).isFalse();
             assertThat(auction.getEndAt()).isEqualTo(endAt);
+        }
+    }
+
+    @Nested
+    class 입찰_성공_이벤트 {
+
+        @Test
+        void 일반_입찰이면_저장한_입찰로_입찰_성공_이벤트를_발행한다() {
+            EnglishAuction auction = 진행중_경매();
+            경매가_조회된다(auction);
+            입찰이_저장된다();
+            ArgumentCaptor<Bid> captor = ArgumentCaptor.forClass(Bid.class);
+
+            auctionBidUseCase.bid(AUCTION_ID, BIDDER_ID, 10_000L, NOW);
+
+            then(bidRepository).should().save(captor.capture());
+            then(auctionEventPublisher).should().publishBidSucceed(auction, captor.getValue());
+            then(auctionEventPublisher).should(never()).publishWon(any());
+        }
+
+        @Test
+        void 즉시낙찰가_이상_입찰이면_입찰_성공_이벤트_다음에_낙찰_이벤트를_발행한다() {
+            EnglishAuction auction = 즉시낙찰가_있는_경매();
+            경매가_조회된다(auction);
+            입찰이_저장된다();
+
+            auctionBidUseCase.bid(AUCTION_ID, BIDDER_ID, INSTANT_WIN_PRICE, NOW);
+
+            InOrder order = inOrder(auctionEventPublisher);
+            order.verify(auctionEventPublisher).publishBidSucceed(any(), any());
+            order.verify(auctionEventPublisher).publishWon(auction);
         }
     }
 }
