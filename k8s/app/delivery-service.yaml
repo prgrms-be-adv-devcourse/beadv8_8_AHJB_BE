@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: delivery-config
+  namespace: app
+data:
+  DB_URL: jdbc:postgresql://postgres.infra.svc.cluster.local:5432/delivery_db
+  KAFKA_BOOTSTRAP_SERVERS: kafka.infra.svc.cluster.local:19092
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: delivery-service
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: delivery-service
+  template:
+    metadata:
+      labels:
+        app: delivery-service
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: delivery-service
+          image: ghcr.io/prgrms-be-adv-devcourse/beadv8_8_ahjb_be/delivery-service:6b0466b78519ecbbef4ea12c775bbe63921d7bb4
+          ports:
+            - containerPort: 8082
+          envFrom:
+            - configMapRef:
+                name: delivery-config
+            - secretRef:
+                name: delivery-db-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: delivery-service
+  namespace: app
+spec:
+  selector:
+    app: delivery-service
+  ports:
+    - port: 80
+      targetPort: 8082
