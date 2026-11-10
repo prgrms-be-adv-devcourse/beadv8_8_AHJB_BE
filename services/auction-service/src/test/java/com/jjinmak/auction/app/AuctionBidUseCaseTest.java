@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -23,6 +24,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
@@ -337,7 +339,7 @@ class AuctionBidUseCaseTest {
     class 즉시낙찰가_이상_입찰 {
 
         @Test
-        void 즉시낙찰가와_같으면_즉시낙찰되고_낙찰_이벤트만_발행된다() {
+        void 즉시낙찰가와_같으면_즉시낙찰되고_낙찰_이벤트가_발행된다() {
             EnglishAuction auction = 즉시낙찰가_있는_경매();
             경매가_조회된다(auction);
             입찰이_저장된다();
@@ -433,6 +435,37 @@ class AuctionBidUseCaseTest {
 
             assertThat(response.isExtended()).isFalse();
             assertThat(auction.getEndAt()).isEqualTo(endAt);
+        }
+    }
+
+    @Nested
+    class 입찰_성공_이벤트 {
+
+        @Test
+        void 일반_입찰이면_저장한_입찰로_입찰_성공_이벤트를_발행한다() {
+            EnglishAuction auction = 진행중_경매();
+            경매가_조회된다(auction);
+            입찰이_저장된다();
+            ArgumentCaptor<Bid> captor = ArgumentCaptor.forClass(Bid.class);
+
+            auctionBidUseCase.bid(AUCTION_ID, BIDDER_ID, 10_000L, NOW);
+
+            then(bidRepository).should().save(captor.capture());
+            then(auctionEventPublisher).should().publishBidSucceed(auction, captor.getValue());
+            then(auctionEventPublisher).should(never()).publishWon(any());
+        }
+
+        @Test
+        void 즉시낙찰가_이상_입찰이면_입찰_성공_이벤트_다음에_낙찰_이벤트를_발행한다() {
+            EnglishAuction auction = 즉시낙찰가_있는_경매();
+            경매가_조회된다(auction);
+            입찰이_저장된다();
+
+            auctionBidUseCase.bid(AUCTION_ID, BIDDER_ID, INSTANT_WIN_PRICE, NOW);
+
+            InOrder order = inOrder(auctionEventPublisher);
+            order.verify(auctionEventPublisher).publishBidSucceed(any(), any());
+            order.verify(auctionEventPublisher).publishWon(auction);
         }
     }
 }
