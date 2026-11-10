@@ -4,7 +4,7 @@ import com.jjinmak.product.product.domain.Product;
 import com.jjinmak.product.product.domain.ProductAuctionFailureReason;
 import com.jjinmak.product.product.domain.ProductAuctionStatus;
 import com.jjinmak.product.product.domain.ProductAuctionTerms;
-import com.jjinmak.product.product.domain.ProductCategory;
+import com.jjinmak.contracts.product.domain.ProductCategory;
 
 import java.time.LocalDateTime;
 

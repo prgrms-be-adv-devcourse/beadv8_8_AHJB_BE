@@ -2,6 +2,8 @@ package com.jjinmak.product.product.domain;
 
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.jpa.entity.BaseIdAndTime;
+import com.jjinmak.contracts.product.domain.Manufacturer;
+import com.jjinmak.contracts.product.domain.ProductCategory;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -120,13 +122,25 @@ public class Product extends BaseIdAndTime {
         return registeredAt.plus(EDITABLE_PERIOD);
     }
 
+    // 제조사가 기타(ETC)일 때만 직접 입력한 이름을 저장한다. (기타인데 비어 있으면 예외)
+    // Manufacturer는 공용 enum(event-contracts)이라 상품 전용 예외를 던질 수 없어서 여기서 검증한다.
+    private static String resolveManufacturerEtc(Manufacturer manufacturer, String manufacturerEtc) {
+        if (manufacturer != Manufacturer.ETC) {
+            return null;
+        }
+        if (manufacturerEtc == null || manufacturerEtc.isBlank()) {
+            throw new BusinessException(ProductErrorCode.DIRECT_INPUT_REQUIRED);
+        }
+        return manufacturerEtc.strip();
+    }
+
     public static Product create(ProductMember seller, String name, ProductCategory category,
                                  Manufacturer manufacturer, String manufacturerEtc, String description,
                                  ShippingFeeType shippingFeeType, Long customShippingFee, boolean bundleShipping,
                                  String policyVersion, LocalDateTime now, ProductAuctionTerms auctionTerms) {
         return new Product(
                 seller, name, category,
-                manufacturer, manufacturer.resolveEtcName(manufacturerEtc), description,
+                manufacturer, resolveManufacturerEtc(manufacturer, manufacturerEtc), description,
                 shippingFeeType, shippingFeeType.resolveFee(customShippingFee), bundleShipping,
                 policyVersion, now, auctionTerms
         );
@@ -231,7 +245,7 @@ public class Product extends BaseIdAndTime {
             Manufacturer targetManufacturer = manufacturer != null ? manufacturer : this.manufacturer;
             String targetEtc = manufacturerEtc != null ? manufacturerEtc : this.manufacturerEtc;
             this.manufacturer = targetManufacturer;
-            this.manufacturerEtc = targetManufacturer.resolveEtcName(targetEtc);
+            this.manufacturerEtc = resolveManufacturerEtc(targetManufacturer, targetEtc);
         }
         if (description != null) {
             this.description = description;

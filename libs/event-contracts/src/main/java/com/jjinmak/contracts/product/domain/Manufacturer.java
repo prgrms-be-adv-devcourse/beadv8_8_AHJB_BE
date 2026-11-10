@@ -1,9 +1,10 @@
-package com.jjinmak.product.product.domain;
+package com.jjinmak.contracts.product.domain;
 
-import com.jjinmak.common.exception.BusinessException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+// 제조사 (상품 서비스와 검색 서비스가 같이 쓴다)
+// 이벤트와 검색 문서에 이름(name())으로 저장되므로 이름을 바꾸면 안 된다.
 @Getter
 @RequiredArgsConstructor
 public enum Manufacturer {
@@ -15,16 +16,6 @@ public enum Manufacturer {
 
     // 화면 표시·검색용 한글 이름
     private final String displayName;
-
-    public String resolveEtcName(String manufacturerEtc) {
-        if (this != ETC) {
-            return null;
-        }
-        if (manufacturerEtc == null || manufacturerEtc.isBlank()) {
-            throw new BusinessException(ProductErrorCode.DIRECT_INPUT_REQUIRED);
-        }
-        return manufacturerEtc.strip();
-    }
 
     // 실제로 보여줄 제조사 이름. 기타(ETC)면 판매자가 직접 입력한 이름을 쓴다.
     public String resolveDisplayName(String manufacturerEtc) {

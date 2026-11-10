@@ -1,7 +1,7 @@
 package com.jjinmak.product.product.out;
 
 import com.jjinmak.product.product.domain.Product;
-import com.jjinmak.product.product.domain.ProductCategory;
+import com.jjinmak.contracts.product.domain.ProductCategory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

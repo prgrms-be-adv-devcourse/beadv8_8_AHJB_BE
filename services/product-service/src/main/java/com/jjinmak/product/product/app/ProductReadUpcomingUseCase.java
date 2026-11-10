@@ -1,7 +1,7 @@
 package com.jjinmak.product.product.app;
 
 import com.jjinmak.product.product.domain.Product;
-import com.jjinmak.product.product.domain.ProductCategory;
+import com.jjinmak.contracts.product.domain.ProductCategory;
 import com.jjinmak.product.product.in.dto.ProductUpcomingItemDto;
 import com.jjinmak.product.product.in.dto.ProductUpcomingListResponseDto;
 import com.jjinmak.product.product.out.ProductRepository;
