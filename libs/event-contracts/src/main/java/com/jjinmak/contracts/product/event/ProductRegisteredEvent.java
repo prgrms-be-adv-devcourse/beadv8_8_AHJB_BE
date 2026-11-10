@@ -11,7 +11,7 @@ public record ProductRegisteredEvent(
         @Deprecated Long instantWinPrice,
         @Deprecated int duration,
         @Deprecated LocalDateTime customEndAt,
-        @Deprecated String productName,
+        String productName,                     // 정산이 상품명 기록용으로 사용
         String category,
         @Deprecated String thumbnailUrl,
         String auctionType,         // "ENGLISH" | "DUTCH", null이면 옛 형태(ENGLISH)
