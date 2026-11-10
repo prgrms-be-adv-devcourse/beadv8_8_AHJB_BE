@@ -31,7 +31,8 @@ class KafkaTopicDeclarationTest {
                 .toList();
 
         assertThat(deadLetterTopics).containsExactlyInAnyOrder(
-                "product.changed-dlt", "auction.started-dlt", "auction.won-dlt", "auction.failed-dlt");
+                "product.changed-dlt", "auction.started-dlt", "auction.won-dlt", "auction.failed-dlt",
+                "auction.bid-succeed-dlt");
         assertThat(declaredTopics()).containsAll(deadLetterTopics);
     }
 

@@ -1,5 +1,6 @@
 package com.jjinmak.recommend.app;
 
+import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class RecommendFacade {
 
     private final RecommendSyncUseCase recommendSyncUseCase;
+    private final RecommendInteractionUseCase interactionUseCase;
 
     @Transactional
     public void syncProduct(ProductChangedEvent event){
@@ -27,10 +29,16 @@ public class RecommendFacade {
     @Transactional
     public void winAuction(AuctionWonEvent event){
         recommendSyncUseCase.winAuction(event);
+        interactionUseCase.winAuction(event);
     }
 
     @Transactional
     public void failAuction(AuctionFailedEvent event){
         recommendSyncUseCase.failAuction(event);
+    }
+
+    @Transactional
+    public void bidAuction(AuctionBidSucceedEvent event){
+        interactionUseCase.bidAuction(event);
     }
 }

@@ -1,5 +1,6 @@
 package com.jjinmak.recommend.in;
 
+import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
@@ -37,7 +38,8 @@ class KafkaEventSubscribingTest {
                         10000L, 50000L, AT.plusDays(2), "https://img.test/1.jpg", AT)),
                 named("auction.started", new AuctionStartedEvent(100L, 55L, 10000L, 50000L, AT, AT.plusDays(3))),
                 named("auction.won", new AuctionWonEvent(100L, 55L, 7L, 9L, 30000L, 3000L, AT.plusDays(1))),
-                named("auction.failed", new AuctionFailedEvent(100L, 55L, "UNPAID", AT.plusDays(2)))
+                named("auction.failed", new AuctionFailedEvent(100L, 55L, "UNPAID", AT.plusDays(2))),
+                named("auction.bid-succeed", new AuctionBidSucceedEvent(1L, 100L, 55L, 7L, 21000L, 4, AT.plusDays(3), AT.plusHours(1)))
         );
     }
 

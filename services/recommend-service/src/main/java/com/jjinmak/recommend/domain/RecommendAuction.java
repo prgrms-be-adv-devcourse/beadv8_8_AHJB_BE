@@ -68,4 +68,9 @@ public class RecommendAuction extends BaseManualIdAndTime {
         this.endedAt = failedAt;
         this.status = ENDED;
     }
+
+    public void setEndAt(LocalDateTime endAt){
+        if (endAt.isAfter(this.endAt))
+            this.endAt = endAt;
+    }
 }
