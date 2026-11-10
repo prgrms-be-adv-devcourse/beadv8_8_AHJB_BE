@@ -1,20 +1,30 @@
+server:
+  port: 8084
+
 spring:
-  servlet:
-    multipart:
-      max-file-size: 10MB      # 파일 하나당 최대 크기
-      max-request-size: 12MB   # 요청 전체 최대 크기 (파일을 제외하고 2MB를 넉넉하게 할당함)
   application:
-    name: order
+    name: order-service
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 5
   jpa:
     open-in-view: false
+    hibernate:
+      ddl-auto: validate
   kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
       acks: all
       properties:
         "[enable.idempotence]": true
-        "[spring.json.add.type.headers]": false   # 클래스 이름을 헤더에 싣지 않음
+        "[spring.json.add.type.headers]": false
     consumer:
       group-id: ${spring.application.name}
       auto-offset-reset: earliest
@@ -22,5 +32,11 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
 
-server:
-  port: 8084
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+payment-service:
+  base-url: ${PAYMENT_SERVICE_BASE_URL}
