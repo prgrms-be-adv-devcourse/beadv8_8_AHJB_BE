@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: ${REFUND_DB_URL}
+    username: ${REFUND_DB_USERNAME}
+    password: ${REFUND_DB_PASSWORD}
+  kafka:
+    bootstrap-servers: kafka.infra.svc.cluster.local:19092
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+server:
+  forward-headers-strategy: native
