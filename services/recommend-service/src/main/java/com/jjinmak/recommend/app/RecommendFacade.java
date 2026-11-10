@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class RecommendFacade {
 
     private final RecommendSyncUseCase recommendSyncUseCase;
+    private final RecommendInteractionUseCase interactionUseCase;
 
     @Transactional
     public void syncProduct(ProductChangedEvent event){
@@ -27,6 +28,7 @@ public class RecommendFacade {
     @Transactional
     public void winAuction(AuctionWonEvent event){
         recommendSyncUseCase.winAuction(event);
+        interactionUseCase.winAuction(event);
     }
 
     @Transactional
