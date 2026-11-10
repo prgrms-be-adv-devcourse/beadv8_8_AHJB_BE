@@ -1,7 +1,6 @@
 package com.jjinmak.auction.app;
 
 import com.jjinmak.auction.domain.EnglishAuction;
-import com.jjinmak.auction.domain.ProductSnapshot;
 import com.jjinmak.auction.domain.AuctionCloseResult;
 import com.jjinmak.auction.out.AuctionRepository;
 import org.junit.jupiter.api.Nested;
@@ -31,7 +30,7 @@ class AuctionCloseUseCaseTest {
     private static final Long BIDDER_ID = 200L;
     private static final Long HIGHEST_PRICE = 20_000L;
     private static final LocalDateTime END_AT = LocalDateTime.of(2026, 10, 20, 21, 0);
-    private static final ProductSnapshot SNAPSHOT = ProductSnapshot.of("테스트 상품", "CONSOLE", null);
+    private static final String CATEGORY = "CONSOLE";
 
     @Mock AuctionRepository auctionRepository;
     @Mock AuctionEventPublisher auctionEventPublisher;
@@ -39,7 +38,7 @@ class AuctionCloseUseCaseTest {
     @InjectMocks AuctionCloseUseCase auctionCloseUseCase;
 
     private EnglishAuction 입찰_없는_경매() {
-        return EnglishAuction.create(1L, SELLER_ID, 10_000L, null, 3_000L, SNAPSHOT, END_AT, END_AT.minusDays(3));
+        return EnglishAuction.create(1L, SELLER_ID, 10_000L, null, 3_000L, CATEGORY, END_AT, END_AT.minusDays(3));
     }
 
     private EnglishAuction 입찰_있는_경매() {

@@ -31,7 +31,7 @@ class AuctionCreateUseCaseTest {
         return new AuctionCreateDto(
                 PRODUCT_ID, 100L, 10_000L, null, 3_000L,
                 LocalDateTime.now().plusDays(3),
-                "테스트 상품", "CONSOLE", null
+                "CONSOLE"
         );
     }
 

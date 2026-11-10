@@ -20,11 +20,11 @@ class DutchAuctionTest {
     private static final Long OTHER_ID = 300L;
     private static final Long SHIPPING_FEE = 3_000L;
     private static final LocalDateTime START_AT = LocalDateTime.of(2026, 11, 9, 21, 0);
-    private static final ProductSnapshot SNAPSHOT = ProductSnapshot.of("테스트 상품", "CONSOLE", null);
+    private static final String CATEGORY = "CONSOLE";
 
     private DutchAuction 진행중_경매() {
         return DutchAuction.create(PRODUCT_ID, SELLER_ID, 300_000L, 150_000L, 2, 60,
-                SHIPPING_FEE, SNAPSHOT, START_AT);
+                SHIPPING_FEE, CATEGORY, START_AT);
     }
 
     private void 에러코드를_확인한다(Executable action, AuctionErrorCode errorCode) {
@@ -50,7 +50,7 @@ class DutchAuctionTest {
         @Test
         void 하향식_조건이_잘못되면_생성할_수_없다() {
             assertThatThrownBy(() -> DutchAuction.create(PRODUCT_ID, SELLER_ID, 300_000L, 300_000L, 2, 60,
-                    SHIPPING_FEE, SNAPSHOT, START_AT))
+                    SHIPPING_FEE, CATEGORY, START_AT))
                     .isInstanceOf(IllegalArgumentException.class);
         }
     }

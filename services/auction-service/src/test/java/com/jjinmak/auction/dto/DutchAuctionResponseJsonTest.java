@@ -2,7 +2,6 @@ package com.jjinmak.auction.dto;
 
 import com.jjinmak.auction.domain.DutchAuction;
 import com.jjinmak.auction.domain.EnglishAuction;
-import com.jjinmak.auction.domain.ProductSnapshot;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
@@ -20,13 +19,13 @@ class DutchAuctionResponseJsonTest {
     private static final LocalDateTime START_AT = LocalDateTime.of(2026, 11, 9, 21, 0);
     private static final LocalDateTime MIDDLE = START_AT.plusMinutes(5).plusSeconds(30);       // 270,000원
     private static final LocalDateTime LAST_STEP = START_AT.plusMinutes(25).plusSeconds(30);   // 마지막 단계
-    private static final ProductSnapshot SNAPSHOT = ProductSnapshot.of("테스트 상품", "CONSOLE", null);
+    private static final String CATEGORY = "CONSOLE";
 
     private final JsonMapper mapper = JsonMapper.builder().build();
 
     // 시작가 30만, 최저가 15만, 2%, 60초 → 6,000원씩, 마지막 단계 25(150,000원), 21:26 유찰
     private DutchAuction 하향식_경매() {
-        return DutchAuction.create(10L, SELLER_ID, 300_000L, 150_000L, 2, 60, 3_000L, SNAPSHOT, START_AT);
+        return DutchAuction.create(10L, SELLER_ID, 300_000L, 150_000L, 2, 60, 3_000L, CATEGORY, START_AT);
     }
 
     private String json(Object value) {
@@ -86,7 +85,7 @@ class DutchAuctionResponseJsonTest {
         @Test
         void 영국식_상세에는_종료_시각이_그대로_있다() {
             // 하향식 숨김 처리가 영국식 응답을 건드리지 않았는지 대조
-            EnglishAuction english = EnglishAuction.create(10L, SELLER_ID, 10_000L, null, 3_000L, SNAPSHOT,
+            EnglishAuction english = EnglishAuction.create(10L, SELLER_ID, 10_000L, null, 3_000L, CATEGORY,
                     START_AT.plusDays(1), START_AT);
 
             String json = json(EnglishAuctionDetailResponseDto.of(english, BUYER_ID, MIDDLE));

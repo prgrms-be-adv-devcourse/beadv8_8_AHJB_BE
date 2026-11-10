@@ -20,9 +20,9 @@ public class EnglishAuction extends Auction{
     private Long highestBidderId;
     private Integer bidCount;
     private EnglishAuction(Long productId, Long sellerId, Long startPrice, Long instantWinPrice,
-                           Long shippingFee, ProductSnapshot productSnapshot,
+                           Long shippingFee, String category,
                            LocalDateTime startAt, LocalDateTime endAt) {
-        super(productId, sellerId, startPrice, shippingFee, productSnapshot, startAt, endAt);
+        super(productId, sellerId, startPrice, shippingFee, category, startAt, endAt);
         this.instantWinPrice = instantWinPrice;
         this.bidCount = 0;
     }
@@ -30,10 +30,10 @@ public class EnglishAuction extends Auction{
     // 경매 조건은 상품 컨텍스트에서 검증된 값을 받는다.
     public static EnglishAuction create(Long productId, Long sellerId, Long startPrice,
                                         Long instantWinPrice, Long shippingFee,
-                                        ProductSnapshot productSnapshot,
+                                        String category,
                                         LocalDateTime endAt, LocalDateTime now) {
         return new EnglishAuction(productId, sellerId, startPrice, instantWinPrice,
-                shippingFee, productSnapshot, now, endAt);
+                shippingFee, category, now, endAt);
     }
     //오버라이드
     @Override

@@ -1,7 +1,6 @@
 package com.jjinmak.auction.app;
 
 import com.jjinmak.auction.domain.EnglishAuction;
-import com.jjinmak.auction.domain.ProductSnapshot;
 import com.jjinmak.auction.exception.AuctionErrorCode;
 import com.jjinmak.auction.out.AuctionRepository;
 import com.jjinmak.common.exception.BusinessException;
@@ -30,7 +29,7 @@ class AuctionTradeResultUseCaseTest {
     private static final Long WINNER_ID = 200L;
     private static final LocalDateTime END_AT = LocalDateTime.of(2026, 10, 20, 21, 0);
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 21, 10, 0);
-    private static final ProductSnapshot SNAPSHOT = ProductSnapshot.of("테스트 상품", "CONSOLE", null);
+    private static final String CATEGORY = "CONSOLE";
 
     @Mock AuctionRepository auctionRepository;
     @Mock AuctionEventPublisher auctionEventPublisher;
@@ -39,7 +38,7 @@ class AuctionTradeResultUseCaseTest {
 
     // ── 상태별 경매 ──
     private EnglishAuction 진행중_경매() {
-        return EnglishAuction.create(1L, SELLER_ID, 10_000L, null, 3_000L, SNAPSHOT, END_AT, END_AT.minusDays(3));
+        return EnglishAuction.create(1L, SELLER_ID, 10_000L, null, 3_000L, CATEGORY, END_AT, END_AT.minusDays(3));
     }
 
     private EnglishAuction 낙찰_경매() {

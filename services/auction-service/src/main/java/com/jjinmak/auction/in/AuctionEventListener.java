@@ -75,9 +75,7 @@ public class AuctionEventListener {
                 event.instantWinPrice(),
                 event.shippingFee(),
                 resolveEndAt(event, now),
-                event.productName(),
-                event.category(),
-                event.thumbnailUrl()
+                event.category()
         );
     }
 

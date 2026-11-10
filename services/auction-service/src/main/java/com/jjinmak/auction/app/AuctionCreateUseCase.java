@@ -1,7 +1,6 @@
 package com.jjinmak.auction.app;
 
 import com.jjinmak.auction.domain.EnglishAuction;
-import com.jjinmak.auction.domain.ProductSnapshot;
 import com.jjinmak.auction.dto.AuctionCreateDto;
 import com.jjinmak.auction.out.AuctionRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +27,7 @@ public class AuctionCreateUseCase {
                 dto.startPrice(),
                 dto.instantWinPrice(),
                 dto.shippingFee(),
-                ProductSnapshot.of(dto.productName(), dto.category(), dto.thumbnailUrl()),
+                dto.category(),
                 dto.endAt(),
                 LocalDateTime.now()
         );

@@ -2,7 +2,6 @@ package com.jjinmak.auction.app;
 
 import com.jjinmak.auction.domain.DutchAuction;
 import com.jjinmak.auction.domain.EnglishAuction;
-import com.jjinmak.auction.domain.ProductSnapshot;
 import com.jjinmak.auction.domain.Bid;
 import com.jjinmak.auction.exception.AuctionErrorCode;
 import com.jjinmak.auction.out.AuctionRepository;
@@ -36,7 +35,7 @@ class AuctionInstantWinUseCaseTest {
     private static final Long INSTANT_WIN_PRICE = 50_000L;
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 20, 20, 0);   // 요청 시각
     private static final LocalDateTime END_AT = NOW.plusDays(1);
-    private static final ProductSnapshot SNAPSHOT = ProductSnapshot.of("테스트 상품", "CONSOLE", null);
+    private static final String CATEGORY = "CONSOLE";
 
     @Mock AuctionRepository auctionRepository;
     @Mock BidRepository bidRepository;
@@ -52,7 +51,7 @@ class AuctionInstantWinUseCaseTest {
     }
 
     private EnglishAuction 경매(Long instantWinPrice, LocalDateTime endAt) {
-        return EnglishAuction.create(1L, SELLER_ID, 10_000L, instantWinPrice, 3_000L, SNAPSHOT, endAt, NOW.minusDays(3));
+        return EnglishAuction.create(1L, SELLER_ID, 10_000L, instantWinPrice, 3_000L, CATEGORY, endAt, NOW.minusDays(3));
     }
 
     private EnglishAuction 즉시낙찰_가능_경매() {
@@ -163,7 +162,7 @@ class AuctionInstantWinUseCaseTest {
         @Test
         void 하향식_경매는_즉시낙찰할_수_없다() {
             DutchAuction dutch = DutchAuction.create(1L, SELLER_ID, 300_000L, 150_000L, 2, 60,
-                    3_000L, SNAPSHOT, NOW.minusMinutes(1));
+                    3_000L, CATEGORY, NOW.minusMinutes(1));
             given(auctionRepository.findById(AUCTION_ID)).willReturn(Optional.of(dutch));
 
             즉시낙찰이_거부된다(BIDDER_ID, AuctionErrorCode.AUCTION_TYPE_MISMATCH);

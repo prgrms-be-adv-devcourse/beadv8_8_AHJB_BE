@@ -22,12 +22,12 @@ class AuctionTest {
     private static final Long SHIPPING_FEE = 3_000L;
     private static final LocalDateTime START_AT = LocalDateTime.of(2026, 10, 17, 21, 0);
     private static final LocalDateTime END_AT = LocalDateTime.of(2026, 10, 20, 21, 0);
-    private static final ProductSnapshot SNAPSHOT = ProductSnapshot.of("테스트 상품", "CONSOLE", null);
+    private static final String CATEGORY = "CONSOLE";
 
     // 상태별 경매는 실제 메서드 순서대로 만든다
     private EnglishAuction 진행중_경매() {
         return EnglishAuction.create(PRODUCT_ID, SELLER_ID, START_PRICE, INSTANT_WIN_PRICE,
-                SHIPPING_FEE, SNAPSHOT, END_AT, START_AT);
+                SHIPPING_FEE, CATEGORY, END_AT, START_AT);
     }
 
     private EnglishAuction 낙찰된_경매() {

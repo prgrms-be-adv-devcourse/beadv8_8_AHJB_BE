@@ -2,31 +2,24 @@ package com.jjinmak.auction.dto;
 
 import com.jjinmak.auction.domain.AuctionStatus;
 import com.jjinmak.auction.domain.EnglishAuction;
-import com.jjinmak.auction.domain.ProductSnapshot;
 
 import java.time.LocalDateTime;
 
-// 경매 목록 카드 한 장
 public record EnglishAuctionListItemDto(
         Long auctionId,
         Long productId,
-        String productName,
         String category,
-        String thumbnailUrl,
         AuctionStatus status,
-        Long currentPrice,      // 종료된 경매는 낙찰가
-        Long instantWinPrice,   // 미설정이면 null
+        Long currentPrice,
+        Long instantWinPrice,
         int bidCount,
         LocalDateTime endAt
 ) {
     public static EnglishAuctionListItemDto from(EnglishAuction auction, LocalDateTime now) {
-        ProductSnapshot snapshot = auction.getProductSnapshot();
         return new EnglishAuctionListItemDto(
                 auction.getId(),
                 auction.getProductId(),
-                snapshot != null ? snapshot.getProductName() : null,
-                snapshot != null ? snapshot.getCategory() : null,
-                snapshot != null ? snapshot.getThumbnailUrl() : null,
+                auction.getCategory(),
                 auction.getStatus(),
                 auction.getWinningPrice() != null ? auction.getWinningPrice() : auction.currentPriceAt(now),
                 auction.getInstantWinPrice(),
