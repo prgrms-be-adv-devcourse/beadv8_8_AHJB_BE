@@ -1,16 +1,7 @@
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/delivery_db
-    username: ${DELIVERY_DB_USERNAME:delivery_svc}
-    password: ${DELIVERY_DB_PASSWORD:delivery-db-secret}
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: 5
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        format_sql: true
+    username: postgres
+    password: p@ssword
   kafka:
     bootstrap-servers: localhost:9092
