@@ -26,6 +26,7 @@ public class AuctionBidUseCase {
         if(auction.getInstantWinPrice()!=null && bidPrice>= auction.getInstantWinPrice()){
             auction.winInstantly(bidderId,now);
             Bid bid = bidRepository.save(new Bid(auction.getId(),bidderId, auction.getInstantWinPrice(), now));
+            auctionEventPublisher.publishBidSucceed(auction, bid);
             auctionEventPublisher.publishWon(auction);
             return new AuctionBidResponseDto(
                     bid.getId(),

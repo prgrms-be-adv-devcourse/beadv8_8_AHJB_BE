@@ -14,7 +14,8 @@ public class AuctionKafkaConfig {
         return new KafkaAdmin.NewTopics(
                 TopicBuilder.name(AuctionEventTopics.AUCTION_STARTED).build(),
                 TopicBuilder.name(AuctionEventTopics.AUCTION_WON).build(),
-                TopicBuilder.name(AuctionEventTopics.AUCTION_FAILED).build()
+                TopicBuilder.name(AuctionEventTopics.AUCTION_FAILED).build(),
+                TopicBuilder.name(AuctionEventTopics.AUCTION_BID_SUCCEED).build()
         );
     }
 }
