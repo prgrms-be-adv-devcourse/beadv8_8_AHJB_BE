@@ -1,0 +1,23 @@
+package com.jjinmak.refund.exception;
+
+import com.jjinmak.common.exception.ErrorCode;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+
+@Getter
+@RequiredArgsConstructor
+public enum RefundErrorCode implements ErrorCode {
+    REFUND_NOT_FOUND("REFUND001", "존재하지 않는 환불", HttpStatus.NOT_FOUND),
+    NOT_REFUND_PARTICIPANT("REFUND002", "환불 당사자만 조회 가능", HttpStatus.FORBIDDEN),
+    ALREADY_REQUESTED("REFUND003", "이미 환불 요청된 주문", HttpStatus.CONFLICT),
+    NOT_REFUND_SELLER("REFUND004", "판매자만 처리 가능", HttpStatus.FORBIDDEN),
+    ALREADY_PROCESSED("REFUND005", "이미 처리된 환불", HttpStatus.CONFLICT),
+    NOT_ACCEPTED("REFUND006", "수락되지 않은 환불", HttpStatus.CONFLICT)
+    ;
+
+
+    private final String code;
+    private final String message;
+    private final HttpStatus status;
+}
