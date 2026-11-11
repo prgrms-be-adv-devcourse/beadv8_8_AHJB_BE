@@ -6,6 +6,7 @@ import com.jjinmak.auction.domain.EnglishAuction;
 import com.jjinmak.auction.domain.FailureReason;
 import com.jjinmak.auction.out.eventPublisher.EventPublisher;
 import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
+import com.jjinmak.contracts.auction.event.AuctionEndingSoonEvent;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.then;
@@ -85,6 +87,23 @@ class AuctionEventPublisherTest {
         assertThat(event.endAt()).isEqualTo(START_AT.plusDays(3).plusMinutes(5));
         assertThat(event.bidAt()).isEqualTo(START_AT.plusDays(3).minusMinutes(1));
         assertThat(event.previousHighestBidderId()).isEqualTo(200L);
+    }
+
+    @Test
+    void 마감_임박_이벤트에는_종료_시각과_입찰자_목록과_발행_시각이_담긴다() {
+        EnglishAuction auction = EnglishAuction.create(1L, 100L, 10_000L, null, 3_000L, "CONSOLE",
+                START_AT.plusDays(3), START_AT);
+        LocalDateTime now = START_AT.plusDays(3).minusMinutes(10);
+
+        auctionEventPublisher.publishEndingSoon(auction, List.of(200L, 300L), now);
+
+        ArgumentCaptor<AuctionEndingSoonEvent> captor = ArgumentCaptor.forClass(AuctionEndingSoonEvent.class);
+        then(eventPublisher).should().publish(captor.capture());
+        AuctionEndingSoonEvent event = captor.getValue();
+        assertThat(event.productId()).isEqualTo(1L);
+        assertThat(event.endAt()).isEqualTo(START_AT.plusDays(3));
+        assertThat(event.bidderIds()).containsExactly(200L, 300L);
+        assertThat(event.occurredAt()).isEqualTo(now);
     }
 
     @Test
