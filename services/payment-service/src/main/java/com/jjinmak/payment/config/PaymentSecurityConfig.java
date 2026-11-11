@@ -28,7 +28,7 @@ public class PaymentSecurityConfig {
             "/swagger-ui.html",
             "/v3/api-docs/**",
             "/actuator/health/**",
-            "/api/v1/payments/webhooks/toss"
+            "/webhooks/toss"                     // 토스 웹훅 (토스 서버가 호출, 회원 헤더 없음)
     };
 
     private static final String INTERNAL_URLS = "/internal/**";

@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "토스 웹훅", description = "토스페이먼츠가 호출하는 웹훅 수신 API (프론트에서 호출하지 않음)")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/payments/webhooks")
+@RequestMapping("/webhooks")
 public class TossWebhookController {
 
     private final TossWebhookFacade tossWebhookFacade;
