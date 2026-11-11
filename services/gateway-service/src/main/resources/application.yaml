@@ -31,12 +31,17 @@ spring:
               uri: ${service-uri.recommend}
               predicates:
                 - Path=/api/v1/recommend/**
+            - id: payment-service
+              uri: ${service-uri.payment}
+              predicates:
+                - PATH=/api/v1/payments/**, /api/v1/wallet/**, /webhooks/toss
 
 service-uri:
   member: http://member-service
   order: http://order-service
   delivery: http://delivery-service
   recommend: http://recommend-service
+  payment: http://payments-service
 
 management:
   endpoint:
