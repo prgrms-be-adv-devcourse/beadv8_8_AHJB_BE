@@ -43,6 +43,10 @@ spring:
               uri: ${service-uri.settlement}
               predicates:
                 - Path=/api/v1/settlements/**
+            - id: product-service
+              uri: ${service-uri.product}
+              predicates:
+                - Path=/api/v1/products/**,/api/v1/wishes/**,/api/v1/qnas/**,/api/v1/reviews/**
 
 service-uri:
   member: http://member-service
@@ -52,6 +56,7 @@ service-uri:
   payment: http://payment-service
   refund: http://refund-service
   settlement: http://settlement-service
+  product: http://product-service
 
 management:
   endpoint:
