@@ -34,7 +34,15 @@ spring:
             - id: payment-service
               uri: ${service-uri.payment}
               predicates:
-                - Path=/api/v1/payments/**, /api/v1/wallet/**, /webhooks/toss
+                - Path=/api/v1/payments/**, /api/v1/wallet/**, /webhooks/
+            - id: refund-service
+              uri: ${service-uri.refund}
+              predicates:
+                - Path=/api/v1/refunds/**
+            - id: settlement-service
+              uri: ${service-uri.settlement}
+              predicates:
+                - Path=/api/v1/settlements/**
 
 service-uri:
   member: http://member-service
@@ -42,6 +50,8 @@ service-uri:
   delivery: http://delivery-service
   recommend: http://recommend-service
   payment: http://payment-service
+  refund: http://refund-service
+  settlement: http://settlement-service
 
 management:
   endpoint:
