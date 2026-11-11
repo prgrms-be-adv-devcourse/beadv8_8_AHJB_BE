@@ -29,6 +29,8 @@ dependencies {
     implementation("software.amazon.awssdk:s3")
 
     runtimeOnly("org.postgresql:postgresql")
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
+    runtimeOnly("org.flywaydb:flyway-database-postgresql")
 
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
@@ -46,4 +48,8 @@ dependencies {
 tasks.withType<Test> {
     useJUnitPlatform()
     jvmArgs("-javaagent:${mockitoAgent.asPath}", "-Xshare:off")
+}
+
+tasks.bootJar {
+    archiveFileName.set("app.jar")
 }
