@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.KafkaAdmin;
 
+import static com.jjinmak.contracts.auction.event.AuctionEventTopics.AUCTION_FAILED;
 import static com.jjinmak.contracts.auction.event.AuctionEventTopics.AUCTION_WON;
 
 @Configuration
@@ -16,7 +17,9 @@ public class NotificationKafkaTopicsConfig {
     KafkaAdmin.NewTopics notificationTopics() {
         return new KafkaAdmin.NewTopics(
                 TopicBuilder.name(AUCTION_WON).build(),
-                TopicBuilder.name(AUCTION_WON + DLT).build()
+                TopicBuilder.name(AUCTION_WON + DLT).build(),
+                TopicBuilder.name(AUCTION_FAILED).build(),
+                TopicBuilder.name(AUCTION_FAILED + DLT).build()
         );
     }
 }

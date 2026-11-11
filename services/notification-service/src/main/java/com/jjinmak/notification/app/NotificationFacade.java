@@ -1,5 +1,6 @@
 package com.jjinmak.notification.app;
 
+import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
 import com.jjinmak.notification.app.mapper.AuctionNotificationMapper;
 import com.jjinmak.notification.domain.NotificationCategory;
@@ -42,5 +43,10 @@ public class NotificationFacade {
     @Transactional
     public int readAll(Long memberId, LocalDateTime now) {
         return notificationReadUseCase.readAll(memberId, now);
+    }
+
+    @Transactional
+    public int notifyAuctionFailed(AuctionFailedEvent event, LocalDateTime now) {
+        return notificationCreateUseCase.create(auctionNotificationMapper.fromFailed(event), now);
     }
 }
