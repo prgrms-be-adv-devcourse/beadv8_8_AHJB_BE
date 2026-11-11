@@ -3,8 +3,10 @@ package com.jjinmak.auction.app;
 import com.jjinmak.auction.domain.Bid;
 import com.jjinmak.auction.domain.DutchAuction;
 import com.jjinmak.auction.domain.EnglishAuction;
+import com.jjinmak.auction.domain.FailureReason;
 import com.jjinmak.auction.out.eventPublisher.EventPublisher;
 import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
+import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -82,5 +84,24 @@ class AuctionEventPublisherTest {
         assertThat(event.bidCount()).isEqualTo(2);
         assertThat(event.endAt()).isEqualTo(START_AT.plusDays(3).plusMinutes(5));
         assertThat(event.bidAt()).isEqualTo(START_AT.plusDays(3).minusMinutes(1));
+        assertThat(event.previousHighestBidderId()).isEqualTo(200L);
+    }
+
+    @Test
+    void 무산_이벤트에는_판매자_id와_무산_사유가_담긴다() {
+        EnglishAuction auction = EnglishAuction.create(1L, 100L, 10_000L, null, 3_000L, "CONSOLE",
+                START_AT.plusDays(3), START_AT);
+        auction.fail(FailureReason.NO_BID);
+        LocalDateTime failedAt = START_AT.plusDays(3);
+
+        auctionEventPublisher.publishFailed(auction, failedAt);
+
+        ArgumentCaptor<AuctionFailedEvent> captor = ArgumentCaptor.forClass(AuctionFailedEvent.class);
+        then(eventPublisher).should().publish(captor.capture());
+        AuctionFailedEvent event = captor.getValue();
+        assertThat(event.sellerId()).isEqualTo(100L);
+        assertThat(event.productId()).isEqualTo(1L);
+        assertThat(event.failureReason()).isEqualTo("NO_BID");
+        assertThat(event.failedAt()).isEqualTo(failedAt);
     }
 }

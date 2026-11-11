@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 
@@ -466,6 +467,29 @@ class AuctionBidUseCaseTest {
             InOrder order = inOrder(auctionEventPublisher);
             order.verify(auctionEventPublisher).publishBidSucceed(any(), any(), any());
             order.verify(auctionEventPublisher).publishWon(auction);
+        }
+
+        @Test
+        void 기존_최고_입찰자가_있으면_밀려난_입찰자를_이전_최고_입찰자로_발행한다() {
+            EnglishAuction auction = 입찰_있는_경매(OTHER_BIDDER_ID, 10_000L);
+            경매가_조회된다(auction);
+            입찰이_저장된다();
+
+            auctionBidUseCase.bid(AUCTION_ID, BIDDER_ID, 11_000L, NOW);
+
+            then(auctionEventPublisher).should().publishBidSucceed(eq(auction), any(), eq(OTHER_BIDDER_ID));
+        }
+
+        @Test
+        void 즉시낙찰가_이상_입찰도_갱신_전_최고_입찰자를_이전_최고_입찰자로_발행한다() {
+            EnglishAuction auction = 즉시낙찰가_있는_경매();
+            auction.updateHighestBid(OTHER_BIDDER_ID, 10_000L);
+            경매가_조회된다(auction);
+            입찰이_저장된다();
+
+            auctionBidUseCase.bid(AUCTION_ID, BIDDER_ID, INSTANT_WIN_PRICE, NOW);
+
+            then(auctionEventPublisher).should().publishBidSucceed(eq(auction), any(), eq(OTHER_BIDDER_ID));
         }
     }
 }
