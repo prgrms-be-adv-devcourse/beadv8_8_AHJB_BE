@@ -451,7 +451,7 @@ class AuctionBidUseCaseTest {
             auctionBidUseCase.bid(AUCTION_ID, BIDDER_ID, 10_000L, NOW);
 
             then(bidRepository).should().save(captor.capture());
-            then(auctionEventPublisher).should().publishBidSucceed(auction, captor.getValue());
+            then(auctionEventPublisher).should().publishBidSucceed(auction, captor.getValue(), null);
             then(auctionEventPublisher).should(never()).publishWon(any());
         }
 
@@ -464,7 +464,7 @@ class AuctionBidUseCaseTest {
             auctionBidUseCase.bid(AUCTION_ID, BIDDER_ID, INSTANT_WIN_PRICE, NOW);
 
             InOrder order = inOrder(auctionEventPublisher);
-            order.verify(auctionEventPublisher).publishBidSucceed(any(), any());
+            order.verify(auctionEventPublisher).publishBidSucceed(any(), any(), any());
             order.verify(auctionEventPublisher).publishWon(auction);
         }
     }

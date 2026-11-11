@@ -237,7 +237,7 @@ class AuctionInstantWinUseCaseTest {
 
             then(bidRepository).should().save(captor.capture());
             InOrder order = inOrder(auctionEventPublisher);
-            order.verify(auctionEventPublisher).publishBidSucceed(auction, captor.getValue());
+            order.verify(auctionEventPublisher).publishBidSucceed(auction, captor.getValue(), null);
             order.verify(auctionEventPublisher).publishWon(auction);
         }
     }

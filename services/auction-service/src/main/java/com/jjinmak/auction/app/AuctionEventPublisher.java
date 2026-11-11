@@ -52,7 +52,7 @@ public class AuctionEventPublisher {
         ));
     }
 
-    public void publishBidSucceed(EnglishAuction auction, Bid bid) {
+    public void publishBidSucceed(EnglishAuction auction, Bid bid, Long previousHighestBidderId) {
         eventPublisher.publish(new AuctionBidSucceedEvent(
                 bid.getId(),
                 auction.getId(),
@@ -61,8 +61,8 @@ public class AuctionEventPublisher {
                 bid.getBidPrice(),
                 auction.getBidCount(),
                 auction.getEndAt(),
-                bid.getBidAt()
+                bid.getBidAt(),
+                previousHighestBidderId
         ));
     }
-
 }

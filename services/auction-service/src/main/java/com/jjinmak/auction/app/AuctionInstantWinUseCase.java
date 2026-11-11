@@ -24,10 +24,11 @@ public class AuctionInstantWinUseCase {
         EnglishAuction auction = auctionReader.getEnglish(auctionId);
         // 공통검증
         validateInstantWin(auction,bidderId,now);
+        Long previousHighestBidderId = auction.getHighestBidderId();
         auction.winInstantly(bidderId,now);
         Bid bid = new Bid(auction.getId(), bidderId, auction.getInstantWinPrice(), now);
         bidRepository.save(bid);
-        auctionEventPublisher.publishBidSucceed(auction, bid);
+        auctionEventPublisher.publishBidSucceed(auction, bid, previousHighestBidderId);
         auctionEventPublisher.publishWon(auction);
         return new AuctionInstantWinResponseDto(
                 auctionId,

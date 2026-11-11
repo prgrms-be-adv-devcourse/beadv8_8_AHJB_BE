@@ -70,7 +70,7 @@ class AuctionEventPublisherTest {
         Bid bid = new Bid(auction.getId(), 300L, 11_000L, START_AT.plusDays(3).minusMinutes(1));
         ReflectionTestUtils.setField(bid, "id", 7L);
 
-        auctionEventPublisher.publishBidSucceed(auction, bid);
+        auctionEventPublisher.publishBidSucceed(auction, bid, 200L);
 
         ArgumentCaptor<AuctionBidSucceedEvent> captor = ArgumentCaptor.forClass(AuctionBidSucceedEvent.class);
         then(eventPublisher).should().publish(captor.capture());
