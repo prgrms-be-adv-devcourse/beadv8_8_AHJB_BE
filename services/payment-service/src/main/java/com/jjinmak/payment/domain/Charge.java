@@ -64,20 +64,16 @@ public class Charge extends BaseIdAndTime {
 
     private static final String PG_ORDER_ID_PREFIX = "CHG-";
 
-    /** 충전 받을 지갑 */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(nullable = false)
     private Wallet wallet;
 
-    /** 구매자 회원 id (= WalletMember id) */
     @Column(nullable = false)
     private Long holderId;
 
-    /** 충전 금액. 결제창 요청 전에 서버가 정한 값이며, 승인 시 클라이언트가 보낸 amount 와 반드시 대조한다 */
     @Column(nullable = false)
     private long amount;
 
-    /** 아직 쓰이지 않은 금액. REQUESTED 동안은 0, CHARGED 가 되면 amount, 소비될수록 감소, USED/CANCELED 면 0 */
     @Column(nullable = false)
     private long remainingAmount;
 
@@ -86,7 +82,6 @@ public class Charge extends BaseIdAndTime {
     @Column(nullable = false, length = 20)
     private ChargePurpose purpose;
 
-    /** FOR_PAYMENT 일 때만. MANUAL 은 null */
     @ManyToOne(fetch = FetchType.LAZY)
     private Payment payment;
 
@@ -96,11 +91,9 @@ public class Charge extends BaseIdAndTime {
     @Column(length = 200)
     private String paymentKey;
 
-    /** 토스 결제수단 (카드, 간편결제 등). 표시용 */
     @Column(length = 30)
     private String method;
 
-    /** 토스 매출전표 링크. 표시용 */
     @Column(length = 500)
     private String receiptUrl;
 
@@ -109,20 +102,13 @@ public class Charge extends BaseIdAndTime {
     @Column(nullable = false, length = 20)
     private ChargeStatus status;
 
-    /**
-     * 낙관적 락. 충전 복구 스케줄러와 웹훅 처리처럼 같은 충전 건을 동시에 바꾸는 경로가 있어,
-     * 늦게 커밋한 쪽이 OptimisticLockingFailureException 으로 실패하게 한다 (실패한 쪽은 다음 주기에 다시 보고 이미 처리된 건으로 넘긴다).
-     * 기존 행이 있는 DB 에 컬럼이 추가될 때를 위해 기본값 0 을 둔다.
-     */
     @Version
     @ColumnDefault("0")
     @Column(nullable = false)
     private long version;
 
-    /** 토스 승인 시각 (토스 응답의 approvedAt) */
     private LocalDateTime approvedAt;
 
-    /** 지갑 원장에 CHARGE 가 기록된 시각 */
     private LocalDateTime chargedAt;
 
     private LocalDateTime usedAt;
@@ -155,17 +141,17 @@ public class Charge extends BaseIdAndTime {
         this.remainingAmount = 0L;
     }
 
-    /** 사용자가 직접 예치금을 충전 */
+    // 사용자가 직접 예치금을 충전
     public static Charge requestManual(Wallet wallet, Long holderId, long amount) {
         return new Charge(wallet, holderId, amount, MANUAL, null);
     }
 
-    /** 주문 결제 중 부족분만 충전. 금액은 Payment.chargeAmount 를 그대로 쓴다 */
+    // 주문 결제 중 부족분만 충전. 금액은 Payment.chargeAmount 를 그대로 쓴다
     public static Charge requestForPayment(Wallet wallet, Payment payment) {
         return new Charge(wallet, payment.getHolderId(), payment.getChargeAmount(), FOR_PAYMENT, payment);
     }
 
-    /** 토스 orderId 규칙(6~64자, 영문·숫자·-·_)에 맞는 유일한 값. "CHG-" + 32자 hex = 36자 */
+    // 토스 orderId 규칙(6~64자, 영문·숫자·-·_)에 맞는 유일한 값. "CHG-" + 32자 hex = 36자
     private static String generatePgOrderId() {
         return PG_ORDER_ID_PREFIX + UUID.randomUUID().toString().replace("-", "");
     }
@@ -180,12 +166,12 @@ public class Charge extends BaseIdAndTime {
         }
     }
 
-    /** 토스 승인 성공 + 지갑 CHARGE 기록 완료. 이미 CHARGED 이상이면 아무 것도 하지 않는다 (멱등) */
+    // 토스 승인 성공 + 지갑 CHARGE 기록 완료. 이미 CHARGED 이상이면 아무 것도 하지 않는다 (멱등)
     public void markCharged(String paymentKey, LocalDateTime approvedAt, LocalDateTime chargedAt) {
         markCharged(paymentKey, approvedAt, chargedAt, null, null);
     }
 
-    /** 토스 승인 응답의 결제수단·영수증 링크까지 함께 남긴다 */
+    // 토스 승인 응답의 결제수단·영수증 링크까지 함께 남긴다
     public void markCharged(String paymentKey, LocalDateTime approvedAt, LocalDateTime chargedAt,
                             String method, String receiptUrl) {
         if (status != REQUESTED) {
@@ -212,7 +198,7 @@ public class Charge extends BaseIdAndTime {
         return consumed;
     }
 
-    /** FOR_PAYMENT 충전이 해당 주문의 홀딩에 소비됨. 같은 트랜잭션에서 홀딩 직후 호출 */
+    // FOR_PAYMENT 충전이 해당 주문의 홀딩에 소비됨. 같은 트랜잭션에서 홀딩 직후 호출
     public void markUsed(LocalDateTime usedAt) {
         if (status == USED) return;
         if (purpose != FOR_PAYMENT) {
@@ -224,7 +210,7 @@ public class Charge extends BaseIdAndTime {
         this.remainingAmount = 0L;
     }
 
-    /** 충전 취소 (토스 취소 + 지갑 CHARGE_CANCEL 완료 후) */
+    // 충전 취소 (토스 취소 + 지갑 CHARGE_CANCEL 완료 후)
     public void markCanceled(LocalDateTime canceledAt) {
         if (status == CANCELED) return;
         if (!isCancelable()) {
@@ -235,7 +221,7 @@ public class Charge extends BaseIdAndTime {
         this.remainingAmount = 0L;
     }
 
-    /** 토스 승인 실패 또는 만료. 토스 failure 객체의 code / message 를 남긴다 */
+    // 토스 승인 실패 또는 만료. 토스 failure 객체의 code / message 를 남긴다
     public void markAborted(LocalDateTime abortedAt, String failureCode, String failureMessage) {
         if (status == ABORTED) return;
         requireStatus(REQUESTED);
@@ -245,22 +231,22 @@ public class Charge extends BaseIdAndTime {
         this.failureMessage = failureMessage;
     }
 
-    /** 돈이 들어와 있고 한 푼도 쓰이지 않은 충전만 취소할 수 있다 (선입선출 기준). 일부라도 쓰였으면 영구히 불가 */
+    // 돈이 들어와 있고 한 푼도 쓰이지 않은 충전만 취소할 수 있다 (선입선출 기준). 일부라도 쓰였으면 영구히 불가
     public boolean isCancelable() {
         return status == CHARGED && remainingAmount == amount;
     }
 
-    /** 이 충전으로 들어온 돈 중 이미 쓰인 금액 */
+    // 이 충전으로 들어온 돈 중 이미 쓰인 금액
     public long getUsedAmount() {
         return isCharged() || status == CANCELED ? amount - remainingAmount : 0L;
     }
 
-    /** 선입선출 소비 대상인지: 돈이 들어와 있고 남은 금액이 있는 건 */
+    // 선입선출 소비 대상인지: 돈이 들어와 있고 남은 금액이 있는 건
     public boolean hasRemaining() {
         return status == CHARGED && remainingAmount > 0;
     }
 
-    /** 돈은 들어왔는데 주문 결제가 끝나지 않은 건인지 (복구 대상 판별) */
+    // 돈은 들어왔는데 주문 결제가 끝나지 않은 건인지 (복구 대상 판별)
     public boolean isChargedButUnused() {
         return purpose == FOR_PAYMENT && status == CHARGED;
     }

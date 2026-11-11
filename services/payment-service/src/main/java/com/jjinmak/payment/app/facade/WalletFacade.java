@@ -50,19 +50,11 @@ public class WalletFacade {
         walletRefundOrderUseCase.refund(refundId, orderId, amount);
     }
 
-    /** 예치금 잔액만 (주문 포트용) */
-    @Transactional(readOnly = true)
-    public long getBalance(Long holderId) {
-        return walletGetBalanceUseCase.getBalance(holderId);
-    }
-
-    /** 예치금 + 정산금 (내 지갑 화면용) */
     @Transactional(readOnly = true)
     public WalletBalanceDto getBalances(Long holderId) {
         return walletGetBalanceUseCase.getBalances(holderId);
     }
 
-    /** 주문 그룹 삭제(결제 기한 만료 등) → 그 그룹의 미완료 결제를 FAILED 로 닫는다 */
     @Transactional
     public void closePaymentByOrderGroupDeleted(Long orderGroupId) {
         paymentCloseOnOrderDeletedUseCase.close(orderGroupId);
@@ -78,7 +70,6 @@ public class WalletFacade {
         walletReleaseHoldingUseCase.release(orderId);
     }
 
-    /** 정산 요청 이벤트로 들어오는 릴리즈. 요청에 실린 정산액·수수료를 홀딩과 대조한다 */
     @Transactional
     public void releaseHolding(Long orderId, Long expectedSettlementAmount, Long expectedFeeAmount) {
         walletReleaseHoldingUseCase.release(orderId, expectedSettlementAmount, expectedFeeAmount);
@@ -94,7 +85,6 @@ public class WalletFacade {
         return walletGetLedgerUseCase.get(holderId, account, type, page, size);
     }
 
-    /** 예치금 전액 출금 (명목상). 지갑을 바꾸므로 호출하는 어댑터에서 낙관적 락 재시도로 감싼다 */
     @Transactional
     public WithdrawalDto withdrawAll(Long holderId) {
         return walletWithdrawUseCase.withdrawAll(holderId);

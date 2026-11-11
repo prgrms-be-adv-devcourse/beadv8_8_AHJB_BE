@@ -45,7 +45,7 @@ public class WalletReleaseHoldingUseCase {
         release(orderId, null, null);
     }
 
-    /** 정산 요청에 실린 금액과 대조한 뒤 릴리즈. 기대값이 null 이면 대조하지 않는다 */
+    // 정산 요청에 실린 금액과 대조한 뒤 릴리즈. 기대값이 null 이면 대조하지 않는다
     public void release(Long orderId, Long expectedSettlementAmount, Long expectedFeeAmount) {
         Holding holding = holdingRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new BusinessException(HOLDING_NOT_FOUND));
