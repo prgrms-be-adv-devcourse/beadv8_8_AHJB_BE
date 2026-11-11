@@ -14,6 +14,8 @@ service-uri:
   delivery: http://localhost:8082
   recommend: http://localhost:8090
   payment: http://localhost:8085
+  auction: http://localhost:8081
+  notification: http://localhost:8088
   refund: http://localhost:8087
   settlement: http://localhost:8089
 

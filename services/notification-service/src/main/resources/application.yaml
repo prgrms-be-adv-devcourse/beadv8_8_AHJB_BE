@@ -1,9 +1,23 @@
+server:
+  port: 8088
+
 spring:
   application:
-    name: notification
+    name: notification-service
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 5
   jpa:
     open-in-view: false
+    hibernate:
+      ddl-auto: validate
   kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
@@ -13,10 +27,13 @@ spring:
         "[spring.json.add.type.headers]": false
     consumer:
       group-id: ${spring.application.name}
-      auto-offset-reset: latest   # 첫 기동 때 토픽에 쌓인 과거 이벤트로 알림이 몰리지 않게
+      auto-offset-reset: latest
       enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
 
-server:
-  port: 8088
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true

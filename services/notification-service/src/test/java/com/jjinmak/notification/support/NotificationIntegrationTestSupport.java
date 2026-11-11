@@ -17,7 +17,6 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 // - Kafka는 띄우지 않는다: 리스너 자동 시작·토픽 생성을 끄고 KafkaTemplate은 mock으로 바꾼다
 @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest(properties = {
-        "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.kafka.listener.auto-startup=false",
         "spring.kafka.admin.auto-create=false"
 })

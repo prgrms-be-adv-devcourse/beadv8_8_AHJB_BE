@@ -1,14 +1,9 @@
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/auction_db
-    username: ${DB_USERNAME:auction_svc}
-    password: ${DB_PASSWORD:auction-db-secret}
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: 5
+    username: postgres
+    password: p@ssword
   jpa:
-    hibernate:
-      ddl-auto: update
     properties:
       hibernate:
         format_sql: true

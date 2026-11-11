@@ -49,8 +49,9 @@ import static org.mockito.Mockito.times;
 
 @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest(properties = {
-        "spring.jpa.hibernate.ddl-auto=create-drop",
-        "spring.kafka.consumer.auto-offset-reset=earliest"
+        "spring.kafka.consumer.auto-offset-reset=earliest",
+        "spring.kafka.listener.auto-startup=true",
+        "spring.kafka.admin.auto-create=true"
 })
 @Import(NotificationKafkaIntegrationTest.Containers.class)
 class NotificationKafkaIntegrationTest {
