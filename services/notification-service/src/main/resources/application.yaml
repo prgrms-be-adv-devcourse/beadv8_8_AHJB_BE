@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: notification
+  jpa:
+    open-in-view: false
+  kafka:
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      acks: all
+      properties:
+        "[enable.idempotence]": true
+        "[spring.json.add.type.headers]": false
+    consumer:
+      group-id: ${spring.application.name}
+      auto-offset-reset: latest   # 첫 기동 때 토픽에 쌓인 과거 이벤트로 알림이 몰리지 않게
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+
+server:
+  port: 8088
