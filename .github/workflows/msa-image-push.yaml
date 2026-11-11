@@ -13,6 +13,7 @@ on:
           - order-service
           - delivery-service
           - recommend-service
+          - payment-service
 
 permissions:
   contents: read

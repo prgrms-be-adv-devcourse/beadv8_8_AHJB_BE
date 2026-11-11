@@ -1,20 +1,14 @@
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/payment_db
-    username: ${PAYMENT_DB_USERNAME:payment_svc}
-    password: ${PAYMENT_DB_PASSWORD:payment-db-secret}
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: 5
+    username: postgres
+    password: p@ssword
   jpa:
-    hibernate:
-      ddl-auto: update
     properties:
       hibernate:
         format_sql: true
   kafka:
     bootstrap-servers: localhost:9092
-
 logging:
   level:
     org.hibernate.SQL: debug
