@@ -35,6 +35,14 @@ spring:
               uri: ${service-uri.payment}
               predicates:
                 - Path=/api/v1/payments/**, /api/v1/wallet/**, /webhooks/toss
+            - id: auction-service
+              uri: ${service-uri.auction}
+              predicates:
+                - Path=/api/v1/auctions/**
+            - id: notification-service
+              uri: ${service-uri.notification}
+              predicates:
+                - Path=/api/v1/notifications/**
 
 service-uri:
   member: http://member-service
@@ -42,6 +50,8 @@ service-uri:
   delivery: http://delivery-service
   recommend: http://recommend-service
   payment: http://payment-service
+  auction: http://auction-service
+  notification: http://notification-service
 
 management:
   endpoint:
