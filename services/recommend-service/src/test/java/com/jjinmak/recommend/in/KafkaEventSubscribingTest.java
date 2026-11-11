@@ -5,13 +5,13 @@ import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
 import com.jjinmak.contracts.product.event.ProductChangedEvent;
+import com.jjinmak.recommend.support.RecommendIntegrationTestSupport;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.kafka.support.converter.RecordMessageConverter;
 import org.springframework.kafka.support.serializer.JacksonJsonSerializer;
 import org.springframework.messaging.Message;
@@ -24,8 +24,7 @@ import static com.jjinmak.contracts.product.event.ProductChangeType.DELETED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Named.named;
 
-@SpringBootTest
-class KafkaEventSubscribingTest {
+class KafkaEventSubscribingTest extends RecommendIntegrationTestSupport {
 
     static final LocalDateTime AT = LocalDateTime.of(2026, 11, 10, 10, 0, 30);
 

@@ -1,12 +1,4 @@
 spring:
-  datasource:
-    url: jdbc:h2:mem:testdb;MODE=PostgreSQL
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
   kafka:
     bootstrap-servers: localhost:1
     admin:
@@ -16,3 +8,16 @@ spring:
     producer:
       properties:
         "[max.block.ms]": 0
+  ai:
+    model:
+      embedding: none
+      chat: none
+      image: none
+      audio:
+        speech: none
+        transcription: none
+      moderation: none
+
+recommend:
+  embedding-scheduler:
+    enabled: false

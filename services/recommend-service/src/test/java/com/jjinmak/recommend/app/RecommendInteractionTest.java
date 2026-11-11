@@ -14,15 +14,16 @@ import com.jjinmak.recommend.domain.RecommendProduct;
 import com.jjinmak.recommend.in.RecommendKafkaListener;
 import com.jjinmak.recommend.out.InteractionLogRepository;
 import com.jjinmak.recommend.out.InteractionRepository;
+import com.jjinmak.recommend.out.ProductEmbeddingRepository;
 import com.jjinmak.recommend.out.RecommendAuctionRepository;
 import com.jjinmak.recommend.out.RecommendMemberRepository;
 import com.jjinmak.recommend.out.RecommendProductRepository;
+import com.jjinmak.recommend.support.RecommendIntegrationTestSupport;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -42,8 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@SpringBootTest
-class RecommendInteractionTest {
+class RecommendInteractionTest extends RecommendIntegrationTestSupport {
 
     static final long AUCTION_ID = 100L;
     static final long PRODUCT_ID = 55L;
@@ -75,6 +75,9 @@ class RecommendInteractionTest {
     InteractionLogRepository interactionLogRepository;
 
     @Autowired
+    ProductEmbeddingRepository productEmbeddingRepository;
+
+    @Autowired
     JdbcTemplate jdbcTemplate;
 
     @BeforeEach
@@ -91,6 +94,7 @@ class RecommendInteractionTest {
         interactionRepository.deleteAll();
         recommendAuctionRepository.deleteAll();
         recommendMemberRepository.deleteAll();
+        productEmbeddingRepository.deleteAll();
         recommendProductRepository.deleteAll();
     }
 
