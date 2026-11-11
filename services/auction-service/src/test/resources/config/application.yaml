@@ -1,0 +1,10 @@
+spring:
+  kafka:
+    bootstrap-servers: localhost:1
+    admin:
+      auto-create: false
+    listener:
+      auto-startup: false
+    producer:
+      properties:
+        "[max.block.ms]": 0
