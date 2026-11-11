@@ -6,15 +6,19 @@ import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
 import com.jjinmak.contracts.product.event.ProductChangeType;
 import com.jjinmak.contracts.product.event.ProductChangedEvent;
+import com.jjinmak.recommend.domain.ProductEmbedding;
 import com.jjinmak.recommend.domain.RecommendAuction;
 import com.jjinmak.recommend.domain.RecommendProduct;
+import com.jjinmak.recommend.out.ProductEmbeddingRepository;
 import com.jjinmak.recommend.out.RecommendAuctionRepository;
 import com.jjinmak.recommend.out.RecommendProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.security.MessageDigest;
+
 import static com.jjinmak.recommend.domain.AuctionStatus.ENDED;
-import static com.jjinmak.recommend.exception.RecommendErrorCode.AUCTION_NOT_FOUND;
+import static com.jjinmak.recommend.exception.RecommendErrorCode.*;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +26,7 @@ public class RecommendSyncUseCase {
 
     private final RecommendProductRepository recommendProductRepository;
     private final RecommendAuctionRepository recommendAuctionRepository;
+    private final ProductEmbeddingRepository embeddingRepository;
 
     public void syncProduct(ProductChangedEvent event){
         Long productId = event.productId();
@@ -39,6 +44,11 @@ public class RecommendSyncUseCase {
                     event.productName(), event.category(),
                     event.manufacturer(), event.thumbnailUrl()
             ));
+
+            String inputText = product.createInputText();
+            String textHash = encryptSHA256(inputText);
+
+            embeddingRepository.save(new ProductEmbedding(productId, textHash));
         }
         else {
             product.sync(
@@ -46,6 +56,15 @@ public class RecommendSyncUseCase {
                     event.productName(), event.category(),
                     event.manufacturer(), event.thumbnailUrl()
             );
+
+            ProductEmbedding embedding = embeddingRepository.findById(productId)
+                    .orElseThrow(() -> new BusinessException(EMBEDDING_NOT_FOUND));
+
+            String inputText = product.createInputText();
+            String textHash = encryptSHA256(inputText);
+
+            if (!textHash.equals(embedding.getTextHash()))
+                embedding.reset(textHash);
         }
 
         if (event.changeType() == ProductChangeType.DELETED){
@@ -80,5 +99,28 @@ public class RecommendSyncUseCase {
             return;
 
         auction.fail(event.failedAt());
+    }
+
+    private String encryptSHA256(String s){
+        String res = "";
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+            byte[] hash = digest.digest(s.getBytes("UTF-8"));
+
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            res = hexString.toString();
+
+        } catch (Exception e) {
+            throw new BusinessException(HASH_FAIL);
+        }
+        return res;
     }
 }

@@ -4,12 +4,13 @@ import com.jjinmak.contracts.product.event.ProductChangeType;
 import com.jjinmak.contracts.product.event.ProductChangedEvent;
 import com.jjinmak.recommend.domain.RecommendProduct;
 import com.jjinmak.recommend.in.RecommendKafkaListener;
+import com.jjinmak.recommend.out.ProductEmbeddingRepository;
 import com.jjinmak.recommend.out.RecommendProductRepository;
+import com.jjinmak.recommend.support.RecommendIntegrationTestSupport;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDateTime;
 
@@ -19,8 +20,7 @@ import static com.jjinmak.contracts.product.event.ProductChangeType.UPDATED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-@SpringBootTest
-class RecommendProductSyncTest {
+class RecommendProductSyncTest extends RecommendIntegrationTestSupport {
 
     static final long PRODUCT_ID = 10L;
 
@@ -30,8 +30,12 @@ class RecommendProductSyncTest {
     @Autowired
     RecommendProductRepository recommendProductRepository;
 
+    @Autowired
+    ProductEmbeddingRepository productEmbeddingRepository;
+
     @AfterEach
     void tearDown() {
+        productEmbeddingRepository.deleteAll();
         recommendProductRepository.deleteAll();
     }
 

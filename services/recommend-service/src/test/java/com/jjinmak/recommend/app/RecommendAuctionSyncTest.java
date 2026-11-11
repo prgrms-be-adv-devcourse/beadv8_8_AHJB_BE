@@ -10,15 +10,16 @@ import com.jjinmak.recommend.domain.RecommendMember;
 import com.jjinmak.recommend.in.RecommendKafkaListener;
 import com.jjinmak.recommend.out.InteractionLogRepository;
 import com.jjinmak.recommend.out.InteractionRepository;
+import com.jjinmak.recommend.out.ProductEmbeddingRepository;
 import com.jjinmak.recommend.out.RecommendAuctionRepository;
 import com.jjinmak.recommend.out.RecommendMemberRepository;
 import com.jjinmak.recommend.out.RecommendProductRepository;
+import com.jjinmak.recommend.support.RecommendIntegrationTestSupport;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -30,8 +31,7 @@ import static com.jjinmak.recommend.exception.RecommendErrorCode.AUCTION_NOT_FOU
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@SpringBootTest
-class RecommendAuctionSyncTest {
+class RecommendAuctionSyncTest extends RecommendIntegrationTestSupport {
 
     static final long AUCTION_ID = 100L;
     static final LocalDateTime START_AT = LocalDateTime.of(2026, 11, 10, 10, 0);
@@ -57,6 +57,9 @@ class RecommendAuctionSyncTest {
     @Autowired
     InteractionLogRepository interactionLogRepository;
 
+    @Autowired
+    ProductEmbeddingRepository productEmbeddingRepository;
+
     @BeforeEach
     void createProductAndWinnerCopies() {
         recommendKafkaListener.handle(new ProductChangedEvent(55L, CREATED, 0L, 9L, "듀얼센스", "ACCESSORY", "SONY", null,
@@ -70,6 +73,7 @@ class RecommendAuctionSyncTest {
         interactionRepository.deleteAll();
         recommendAuctionRepository.deleteAll();
         recommendMemberRepository.deleteAll();
+        productEmbeddingRepository.deleteAll();
         recommendProductRepository.deleteAll();
     }
 

@@ -1,11 +1,11 @@
 package com.jjinmak.recommend.config;
 
 import com.jjinmak.recommend.in.RecommendKafkaListener;
+import com.jjinmak.recommend.support.RecommendIntegrationTestSupport;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -17,8 +17,7 @@ import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
-class KafkaTopicDeclarationTest {
+class KafkaTopicDeclarationTest extends RecommendIntegrationTestSupport {
 
     @Autowired
     List<KafkaAdmin.NewTopics> newTopics;
