@@ -2,14 +2,12 @@ package com.jjinmak.auction.app;
 
 import com.jjinmak.auction.domain.*;
 import com.jjinmak.auction.out.eventPublisher.EventPublisher;
-import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
-import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
-import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
-import com.jjinmak.contracts.auction.event.AuctionWonEvent;
+import com.jjinmak.contracts.auction.event.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -63,6 +61,16 @@ public class AuctionEventPublisher {
                 auction.getEndAt(),
                 bid.getBidAt(),
                 previousHighestBidderId
+        ));
+    }
+
+    public void publishEndingSoon(EnglishAuction auction, List<Long> bidderIds, LocalDateTime now) {
+        eventPublisher.publish(new AuctionEndingSoonEvent(
+                auction.getId(),
+                auction.getProductId(),
+                auction.getEndAt(),
+                bidderIds,
+                now
         ));
     }
 }

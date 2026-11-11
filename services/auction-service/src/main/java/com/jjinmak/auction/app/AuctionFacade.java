@@ -1,9 +1,6 @@
 package com.jjinmak.auction.app;
 
-import com.jjinmak.auction.domain.AuctionCloseResult;
-import com.jjinmak.auction.domain.AuctionListStatus;
-import com.jjinmak.auction.domain.AuctionMember;
-import com.jjinmak.auction.domain.AuctionSortType;
+import com.jjinmak.auction.domain.*;
 import com.jjinmak.auction.dto.*;
 import com.jjinmak.contracts.member.dto.MemberDto;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +24,8 @@ public class AuctionFacade {
     private final AuctionMyBidsUseCase auctionMyBidsUseCase;
     private final AuctionListUseCase auctionListUseCase;
     private final AuctionDutchBuyUseCase auctionDutchBuyUseCase;
+    private final AuctionEndingSoonUseCase auctionEndingSoonUseCase;
+
 
     @Transactional
     public AuctionMember syncMember(MemberDto dto){
@@ -79,5 +78,11 @@ public class AuctionFacade {
 
     @Transactional(readOnly = true)
     public DutchAuctionListResponseDto dutchList(AuctionListStatus status, int page, int size) {return auctionListUseCase.dutchList(status, page, size, LocalDateTime.now());}
+
+    @Transactional(readOnly = true)
+    public List<Long> findEndingSoonTargetIds(LocalDateTime now, int batchSize) {return auctionEndingSoonUseCase.findTargetIds(now, batchSize);}
+
+    @Transactional
+    public boolean notifyEndingSoon(Long auctionId, LocalDateTime now) {return auctionEndingSoonUseCase.notifyEndingSoon(auctionId, now);}
 }
 

@@ -19,6 +19,7 @@ public class EnglishAuction extends Auction{
     private Long highestBidPrice;
     private Long highestBidderId;
     private Integer bidCount;
+    private LocalDateTime endingSoonNotifiedAt;
     private EnglishAuction(Long productId, Long sellerId, Long startPrice, Long instantWinPrice,
                            Long shippingFee, String category,
                            LocalDateTime startAt, LocalDateTime endAt) {
