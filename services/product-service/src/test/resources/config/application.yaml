@@ -1,0 +1,24 @@
+# 테스트 전용 설정. 서버용 application.yaml은 환경변수 기본값이 없어서 테스트에서 채운다.
+# (classpath:/config/ 는 main의 application.yaml보다 우선한다)
+spring:
+  datasource:
+    url: jdbc:h2:mem:product;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  kafka:
+    bootstrap-servers: localhost:9092
+    admin:
+      auto-create: false
+    listener:
+      auto-startup: false
+
+product-image:
+  storage: local
+  bucket: ""
+  region: ap-northeast-2
+  key-prefix: test/
+  public-base-url: http://localhost:8086/local-images
