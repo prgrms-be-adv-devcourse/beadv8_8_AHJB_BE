@@ -15,7 +15,8 @@ public class AuctionKafkaConfig {
                 TopicBuilder.name(AuctionEventTopics.AUCTION_STARTED).build(),
                 TopicBuilder.name(AuctionEventTopics.AUCTION_WON).build(),
                 TopicBuilder.name(AuctionEventTopics.AUCTION_FAILED).build(),
-                TopicBuilder.name(AuctionEventTopics.AUCTION_BID_SUCCEED).build()
+                TopicBuilder.name(AuctionEventTopics.AUCTION_BID_SUCCEED).build(),
+                TopicBuilder.name(AuctionEventTopics.AUCTION_ENDING_SOON).build()
         );
     }
 }

@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.times;
 
@@ -237,8 +238,33 @@ class AuctionInstantWinUseCaseTest {
 
             then(bidRepository).should().save(captor.capture());
             InOrder order = inOrder(auctionEventPublisher);
-            order.verify(auctionEventPublisher).publishBidSucceed(auction, captor.getValue());
+            order.verify(auctionEventPublisher).publishBidSucceed(auction, captor.getValue(), null);
             order.verify(auctionEventPublisher).publishWon(auction);
+        }
+
+        @Test
+        void 기존_최고_입찰자가_있으면_밀려난_입찰자를_이전_최고_입찰자로_발행한다() {
+            EnglishAuction auction = 즉시낙찰_가능_경매();
+            auction.updateHighestBid(OTHER_BIDDER_ID, 10_000L);
+            경매가_조회된다(auction);
+            입찰이_저장된다();
+
+            auctionInstantWinUseCase.instantWin(AUCTION_ID, BIDDER_ID, NOW);
+
+            then(auctionEventPublisher).should().publishBidSucceed(eq(auction), any(), eq(OTHER_BIDDER_ID));
+        }
+
+        @Test
+        void 현재_최고_입찰자가_즉시낙찰하면_이전_최고_입찰자는_본인이다() {
+            // 알림은 본인이면 상위 입찰 알림을 보내지 않는다. 경매는 사실 그대로 발행한다.
+            EnglishAuction auction = 즉시낙찰_가능_경매();
+            auction.updateHighestBid(BIDDER_ID, 10_000L);
+            경매가_조회된다(auction);
+            입찰이_저장된다();
+
+            auctionInstantWinUseCase.instantWin(AUCTION_ID, BIDDER_ID, NOW);
+
+            then(auctionEventPublisher).should().publishBidSucceed(eq(auction), any(), eq(BIDDER_ID));
         }
     }
 }

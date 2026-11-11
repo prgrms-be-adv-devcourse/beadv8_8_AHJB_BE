@@ -24,9 +24,10 @@ public class AuctionBidUseCase {
         validateBid(auction,bidderId,now);
         // 즉시낙찰 저장
         if(auction.getInstantWinPrice()!=null && bidPrice>= auction.getInstantWinPrice()){
+            Long previousHighestBidderId = auction.getHighestBidderId();
             auction.winInstantly(bidderId,now);
             Bid bid = bidRepository.save(new Bid(auction.getId(),bidderId, auction.getInstantWinPrice(), now));
-            auctionEventPublisher.publishBidSucceed(auction, bid);
+            auctionEventPublisher.publishBidSucceed(auction, bid, previousHighestBidderId);
             auctionEventPublisher.publishWon(auction);
             return new AuctionBidResponseDto(
                     bid.getId(),
@@ -44,6 +45,7 @@ public class AuctionBidUseCase {
         // 금액 검증
         validatePrice(auction,bidPrice);
         // 입찰
+        Long previousHighestBidderId = auction.getHighestBidderId();
         auction.updateHighestBid(bidderId,bidPrice);
         // 연장여부 -> 5분 연장
         boolean extended = !now.isBefore(auction.getEndAt().minus(Duration.ofMinutes(5)));
@@ -52,7 +54,7 @@ public class AuctionBidUseCase {
         }
         // 입찰 저장
         Bid bid = bidRepository.save(new Bid(auction.getId(),bidderId,bidPrice,now));
-        auctionEventPublisher.publishBidSucceed(auction, bid);
+        auctionEventPublisher.publishBidSucceed(auction, bid, previousHighestBidderId);
         return new AuctionBidResponseDto(
                 bid.getId(),
                 bidPrice,
