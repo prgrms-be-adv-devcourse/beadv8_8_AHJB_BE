@@ -1,9 +1,6 @@
 package com.jjinmak.auction.out;
 
-import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
-import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
-import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
-import com.jjinmak.contracts.auction.event.AuctionWonEvent;
+import com.jjinmak.contracts.auction.event.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -36,5 +33,9 @@ public class AuctionKafkaEventPublisher {
     @TransactionalEventListener(phase = AFTER_COMMIT)
     public void publish(AuctionBidSucceedEvent event) {
         kafkaTemplate.send(AUCTION_BID_SUCCEED, String.valueOf(event.auctionId()), event);
+    }
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    public void publish(AuctionEndingSoonEvent event) {
+        kafkaTemplate.send(AUCTION_ENDING_SOON, String.valueOf(event.auctionId()), event);
     }
 }
