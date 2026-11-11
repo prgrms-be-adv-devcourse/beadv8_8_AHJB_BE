@@ -18,6 +18,7 @@ service-uri:
   notification: http://localhost:8088
   refund: http://localhost:8087
   settlement: http://localhost:8089
+  product: http://localhost:8086
 
 jwt:
   public-key: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAz0E97L/pDJ6nxZpLvih9jk9xwPsAfI8+6Cj6kz8+AIOnLhbi2G5Qn0EnJPDP08tjtnX6mrJrGFgFiK+g8I/mVc33AZ2iLwk+wzXIZQkKmMzZ9KGSMopYdfx3yyyV/DZTNVn/xIvOL1KtpTAKhy3uSWjPxSLmwLGo6SV+pTaHH1Z9d6jVOIAPrqPCnVrd7Hwnrbd43ImSGThvseC8fxj5dlqqL0b2i2NvYrEda4Nwr4Co/bFrLoxIx7AT3tgIBamuKXqlU+D+2QMxA/RkWd5NrlmhU4q3mpKFYxms81U+9D4iUKosdViYnu1ss5y6nPxibgQnmtv+t2rZPDhvmmPB8wIDAQAB
