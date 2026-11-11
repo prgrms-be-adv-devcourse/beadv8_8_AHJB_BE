@@ -5,6 +5,7 @@ import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
 import com.jjinmak.contracts.product.event.ProductChangedEvent;
+import com.jjinmak.recommend.app.dto.AuctionResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,7 @@ public class RecommendFacade {
     private final RecommendSyncUseCase recommendSyncUseCase;
     private final RecommendInteractionUseCase interactionUseCase;
     private final RecommendEmbeddingUseCase embeddingUseCase;
+    private final RecommendAuctionUseCase recommendAuctionUseCase;
 
     @Transactional
     public void syncProduct(ProductChangedEvent event){
@@ -52,5 +54,10 @@ public class RecommendFacade {
 
     public void requestEmbedding(Long productId){
         embeddingUseCase.requestEmbedding(productId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AuctionResponseDto> readRecommendedAuctionList(Long auctionId){
+        return recommendAuctionUseCase.readRecommendedAuctionList(auctionId);
     }
 }
