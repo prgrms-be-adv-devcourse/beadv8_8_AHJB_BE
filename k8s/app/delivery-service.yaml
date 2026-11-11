@@ -34,6 +34,8 @@ spec:
                 name: delivery-config
             - secretRef:
                 name: delivery-db-secret
+            - secretRef:
+                name: delivery-secret
 ---
 apiVersion: v1
 kind: Service
