@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auction-config
+  namespace: app
+data:
+  DB_URL: jdbc:postgresql://postgres.infra.svc.cluster.local:5432/auction_db
+  KAFKA_BOOTSTRAP_SERVERS: kafka.infra.svc.cluster.local:19092
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auction-service
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auction-service
+  template:
+    metadata:
+      labels:
+        app: auction-service
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: auction-service
+          image: ghcr.io/prgrms-be-adv-devcourse/beadv8_8_ahjb_be/auction-service:a432bd84d45936dd6defe32c3d8ad4c183c573ec
+          ports:
+            - containerPort: 8081
+          envFrom:
+            - configMapRef:
+                name: auction-config
+            - secretRef:
+                name: auction-db-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auction-service
+  namespace: app
+spec:
+  selector:
+    app: auction-service
+  ports:
+    - port: 80
+      targetPort: 8081
