@@ -16,6 +16,7 @@ on:
           - payment-service
           - refund-service
           - settlement-service
+          - product-service
 
 permissions:
   contents: read
