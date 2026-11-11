@@ -5,6 +5,7 @@ import com.jjinmak.recommend.app.dto.AuctionResponseDto;
 import com.jjinmak.recommend.domain.ProductEmbedding;
 import com.jjinmak.recommend.domain.RecommendAuction;
 import com.jjinmak.recommend.out.AuctionRow;
+import com.jjinmak.recommend.out.InteractionRepository;
 import com.jjinmak.recommend.out.ProductEmbeddingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +24,7 @@ public class RecommendAuctionUseCase {
 
     private final RecommendSupport recommendSupport;
     private final ProductEmbeddingRepository embeddingRepository;
+    private final InteractionRepository interactionRepository;
 
     public List<AuctionResponseDto> readRecommendedAuctionList(Long auctionId){
         RecommendAuction auction = recommendSupport.findAuctionById(auctionId);
@@ -33,6 +35,13 @@ public class RecommendAuctionUseCase {
                 .orElseThrow(() -> new BusinessException(EMBEDDING_NOT_FOUND));
 
         List<AuctionRow> rows = embeddingRepository.findSimilarAuctions(productId, auctionId, model, 10);
+
+        return rows.stream().map(AuctionResponseDto::from).toList();
+    }
+
+    public List<AuctionResponseDto> readPopularAuctionList(){
+
+        List<AuctionRow> rows = interactionRepository.findPopularAuctions();
 
         return rows.stream().map(AuctionResponseDto::from).toList();
     }

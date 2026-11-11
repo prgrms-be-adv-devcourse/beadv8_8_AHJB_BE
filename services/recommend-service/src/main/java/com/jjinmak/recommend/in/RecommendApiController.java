@@ -29,4 +29,10 @@ public class RecommendApiController {
         List<AuctionResponseDto> response = recommendFacade.readRecommendedAuctionList(auctionId);
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }
+
+    @GetMapping("/popular")
+    public ResponseEntity<RsData<List<AuctionResponseDto>>> readPopularAuctionList(){
+        List<AuctionResponseDto> response = recommendFacade.readPopularAuctionList();
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
 }
