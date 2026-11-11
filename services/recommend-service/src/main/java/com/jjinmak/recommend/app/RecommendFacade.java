@@ -9,12 +9,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class RecommendFacade {
 
     private final RecommendSyncUseCase recommendSyncUseCase;
     private final RecommendInteractionUseCase interactionUseCase;
+    private final RecommendEmbeddingUseCase embeddingUseCase;
 
     @Transactional
     public void syncProduct(ProductChangedEvent event){
@@ -40,5 +43,14 @@ public class RecommendFacade {
     @Transactional
     public void bidAuction(AuctionBidSucceedEvent event){
         interactionUseCase.bidAuction(event);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> findPendingEmbedding(){
+        return embeddingUseCase.findPendingEmbedding();
+    }
+
+    public void requestEmbedding(Long productId){
+        embeddingUseCase.requestEmbedding(productId);
     }
 }

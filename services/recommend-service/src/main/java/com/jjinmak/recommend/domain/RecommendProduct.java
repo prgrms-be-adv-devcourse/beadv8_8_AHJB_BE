@@ -60,4 +60,8 @@ public class RecommendProduct extends BaseManualIdAndTime {
     public void delete(){
         this.deleted = true;
     }
+
+    public String createInputText(){
+        return "상품명: %s / 카테고리: %s / 제조사: %s".formatted(productName, category, manufacturer);
+    }
 }
