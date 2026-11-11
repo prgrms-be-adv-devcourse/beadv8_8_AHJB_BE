@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: member-config
+  namespace: app
+data:
+  DB_URL: jdbc:postgresql://postgres.infra.svc.cluster.local:5432/member_db
+  KAFKA_BOOTSTRAP_SERVERS: kafka.infra.svc.cluster.local:19092
+  CORS_ALLOWED_ORIGINS: https://jjinmak.kro.kr
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: member-service
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: member-service
+  template:
+    metadata:
+      labels:
+        app: member-service
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: member-service
+          image: ghcr.io/prgrms-be-adv-devcourse/beadv8_8_ahjb_be/member-service:bb2970ed59aa04f7570469ec13c81572a3bf656b
+          ports:
+            - containerPort: 8083
+          envFrom:
+            - configMapRef:
+                name: member-config
+            - secretRef:
+                name: member-db-secret
+            - secretRef:
+                name: member-jwt-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: member-service
+  namespace: app
+  spec:
+    selector:
+      app: member-service
+    ports:
+      - port: 80
+        targetPort: 8083
