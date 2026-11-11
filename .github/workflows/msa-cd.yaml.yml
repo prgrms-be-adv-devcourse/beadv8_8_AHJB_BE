@@ -1,0 +1,119 @@
+name: MSA CD
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'services/**'
+      - 'libs/**'
+      - 'k8s/app/**'
+      - 'gradle/**'
+      - 'settings.gradle.kts'
+      - 'build.gradle.kts'
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 배포할 서비스
+        required: true
+        type: choice
+        options:
+          - member-service
+          - gateway-service
+          - delivery-service
+          - order-service
+          - payment-service
+          - recommend-service
+
+permissions:
+  contents: read
+
+concurrency:
+  group: msa-cd
+  cancel-in-progress: false
+
+env:
+  SERVICES: "member-service gateway-service delivery-service order-service payment-service recommend-service"
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.pick.outputs.services }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 배포를 진행할 서비스 선택합니다.
+        id: pick
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TARGETS="${{ inputs.service }}"
+          else
+            CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+            if echo "$CHANGED" | grep -qE '^(libs/|gradle/|settings\.gradle\.kts|build\.gradle\.kts)'; then
+              TARGETS="$SERVICES"
+            else
+              TARGETS=""
+              for s in $SERVICES; do
+                if echo "$CHANGED" | grep -qE "^(services/$s/|k8s/app/$s\.yaml)"; then
+                  TARGETS="$TARGETS $s"
+                fi
+              done
+            fi
+          fi
+          echo "services=$(echo $TARGETS | jq -R -c 'split(" ") | map(select(. != ""))')" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: changes
+    if: needs.changes.outputs.services != '[]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service: ${{ fromJSON(needs.changes.outputs.services) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 서버에 배포될 이미지 이름 설정
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}/${{ matrix.service }}" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: services/${{ matrix.service }}/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE }}:${{ github.sha }}
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
+
+  deploy:
+    needs: [changes, build]
+    runs-on: [self-hosted, k3s]
+    strategy:
+      max-parallel: 1
+      matrix:
+        service: ${{ fromJSON(needs.changes.outputs.services) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 이미지 태그 적용
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}/${{ matrix.service }}:${{ github.sha }}"
+          sed -i "s|image: .*/${{ matrix.service }}:.*|image: ${IMAGE}|" k8s/app/${{ matrix.service }}.yaml
+          grep "image:" k8s/app/${{ matrix.service }}.yaml
+
+      - name: 배포 개시!
+        run: |
+          export KUBECONFIG="$HOME/.kube/cd-config"
+          kubectl apply -f k8s/app/${{ matrix.service }}.yaml
+          kubectl rollout status deploy/${{ matrix.service }} -n app --timeout=300s

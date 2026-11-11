@@ -34,6 +34,8 @@ spec:
                 name: payment-config
             - secretRef:
                 name: payment-db-secret
+            - secretRef:
+                name: payment-secret
 ---
 apiVersion: v1
 kind: Service
