@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notification-config
+  namespace: app
+data:
+  DB_URL: jdbc:postgresql://postgres.infra.svc.cluster.local:5432/notification_db
+  KAFKA_BOOTSTRAP_SERVERS: kafka.infra.svc.cluster.local:19092
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: notification-service
+          image: ghcr.io/prgrms-be-adv-devcourse/beadv8_8_ahjb_be/notification-service:a432bd84d45936dd6defe32c3d8ad4c183c573ec
+          ports:
+            - containerPort: 8088
+          envFrom:
+            - configMapRef:
+                name: notification-config
+            - secretRef:
+                name: notification-db-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: app
+spec:
+  selector:
+    app: notification-service
+  ports:
+    - port: 80
+      targetPort: 8088
