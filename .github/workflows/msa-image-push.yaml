@@ -16,6 +16,8 @@ on:
           - payment-service
           - auction-service
           - notification-service
+          - refund-service
+          - settlement-service
 
 permissions:
   contents: read
