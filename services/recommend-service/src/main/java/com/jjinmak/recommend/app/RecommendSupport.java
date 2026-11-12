@@ -4,9 +4,9 @@ import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.recommend.domain.RecommendAuction;
 import com.jjinmak.recommend.domain.RecommendMember;
 import com.jjinmak.recommend.domain.RecommendProduct;
-import com.jjinmak.recommend.out.RecommendAuctionRepository;
-import com.jjinmak.recommend.out.RecommendMemberRepository;
-import com.jjinmak.recommend.out.RecommendProductRepository;
+import com.jjinmak.recommend.out.repository.RecommendAuctionRepository;
+import com.jjinmak.recommend.out.repository.RecommendMemberRepository;
+import com.jjinmak.recommend.out.repository.RecommendProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

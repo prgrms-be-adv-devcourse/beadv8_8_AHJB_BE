@@ -1,4 +1,4 @@
-package com.jjinmak.recommend.out;
+package com.jjinmak.recommend.out.row;
 
 import java.time.LocalDateTime;
 
