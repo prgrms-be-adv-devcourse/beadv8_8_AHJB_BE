@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
+
 import static com.jjinmak.payment.exception.PaymentErrorCode.PG_NOT_APPROVED;
 import static com.jjinmak.payment.exception.PaymentErrorCode.PG_UNAVAILABLE;
 import static com.jjinmak.payment.out.toss.TossPaymentsClient.ALREADY_PROCESSED_PAYMENT;
@@ -36,6 +38,8 @@ public class PgApprovalSupport {
      *  - 이미 승인된 paymentKey(ALREADY_PROCESSED_PAYMENT)면 조회로 대체 (승인 응답을 못 받고 재시도한 경우)
      *  - 승인 실패(4xx)면 Charge 를 ABORTED 로 기록(별도 트랜잭션)하고 예외
      *  - 네트워크 오류면 상태를 알 수 없으므로 기록 없이 예외 (복구 스케줄러가 조회해 정리)
+     *  - 응답이 Charge 와 다르면 예외. 토스가 DONE 이면 자동 취소하되, 승인 요청한 바로 그 결제일 때만 한다
+     *    (주문번호나 결제 키가 다른 결제를 돌려받았으면 취소하지 않고 로그만 남긴다)
      */
     public TossPaymentResponse approve(Charge charge, String paymentKey) {
         TossPaymentResponse response;
@@ -63,7 +67,14 @@ public class PgApprovalSupport {
                     response.status(), response.orderId(), response.totalAmount(), response.paymentKey(),
                     charge.getStatus(), charge.getPgOrderId(), charge.getAmount());
             if (response.isDone()) {
-                cancelApproved(charge, response.paymentKey(), "승인 내용 불일치로 자동 취소");
+                if (isRequestedPayment(charge, paymentKey, response)) {
+                    cancelApproved(charge, response.paymentKey(), "승인 내용 불일치로 자동 취소");
+                } else {
+                    // 토스가 돌려준 결제가 승인 요청한 결제가 아니다. 취소하면 다른 정상 결제가 취소되므로 건드리지 않는다
+                    log.error("토스가 돌려준 결제가 승인 요청한 결제와 달라 자동 취소하지 않음. chargeId={} "
+                                    + "requested[orderId='{}' paymentKey={}] toss[orderId='{}' paymentKey={}]",
+                            charge.getId(), charge.getPgOrderId(), paymentKey, response.orderId(), response.paymentKey());
+                }
             } else {
                 failureRecorder.recordAborted(charge.getId(), response.status(), response.failureMessage());
             }
@@ -72,8 +83,14 @@ public class PgApprovalSupport {
         return response;
     }
 
+    // 토스가 돌려준 결제가 서버 쪽에서 취소 요청을 보낸 결제 건이 맞는지 검증한다.
+    private boolean isRequestedPayment(Charge charge, String requestedPaymentKey, TossPaymentResponse response) {
+        return Objects.equals(charge.getPgOrderId(), response.orderId())
+                && Objects.equals(requestedPaymentKey, response.paymentKey());
+    }
+
     /**
-     * 보상: 토스는 승인됐는데 우리 DB 반영이 실패했을 때 토스 결제를 취소한다.
+     * 토스는 승인됐는데 우리 DB 반영이 실패했을 때 토스 결제를 취소한다.
      * 호출한 트랜잭션은 롤백되므로 Charge 는 REQUESTED 로 남고, 복구 스케줄러가 토스 상태(CANCELED)를 보고 ABORTED 로 닫는다.
      * 취소마저 실패하면 로그만 남긴다. 역시 복구 스케줄러 대상.
      */
