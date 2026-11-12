@@ -5,6 +5,7 @@ import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
 import com.jjinmak.contracts.product.event.ProductChangedEvent;
+import com.jjinmak.contracts.product.event.ProductWishChangedEvent;
 import com.jjinmak.recommend.app.RecommendFacade;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import static com.jjinmak.contracts.auction.event.AuctionEventTopics.*;
 import static com.jjinmak.contracts.product.event.ProductEventTopics.PRODUCT_CHANGED;
+import static com.jjinmak.contracts.product.event.ProductEventTopics.PRODUCT_WISH_CHANGED;
 
 @Component
 @RequiredArgsConstructor
@@ -43,5 +45,10 @@ public class RecommendKafkaListener {
     @KafkaListener(topics = AUCTION_BID_SUCCEED, groupId = groupId)
     public void handle(AuctionBidSucceedEvent event) {
         recommendFacade.bidAuction(event);
+    }
+
+    @KafkaListener(topics = PRODUCT_WISH_CHANGED, groupId = groupId)
+    public void handle(ProductWishChangedEvent event){
+        recommendFacade.changeWish(event);
     }
 }
