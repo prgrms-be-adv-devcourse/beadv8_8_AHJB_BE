@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # 변경 파일을 보고 테스트/배포 대상을 판별한다.
 # 사용법: changed-services.sh <base> <head> <test|deploy>
-# 결과: $GITHUB_OUTPUT 에 services=<JSON 배열>, monolith=<true|false>
+# 결과: $GITHUB_OUTPUT 에 services=<JSON 배열>
+# 모놀리스(루트 src)는 사용 중단 예정이라 판별 대상에서 제외
 set -euo pipefail
 
 BASE="$1"; HEAD="$2"; MODE="$3"
@@ -42,15 +43,6 @@ else
   done
 fi
 
-# 4) 모놀리스 (test 모드에서만 의미 있음, libs와는 무관)
-MONOLITH=false
-if [ "$MODE" = "test" ]; then
-  if [ "$FORCE_ALL" = true ] || grep -qE "^src/|$BUILD_RE" <<< "$CHANGED"; then
-    MONOLITH=true
-  fi
-fi
-
 JSON=$(printf '%s\n' $TARGETS | jq -R -s -c 'split("\n") | map(select(. != ""))')
 echo "services=$JSON" >> "$OUT"
-echo "monolith=$MONOLITH" >> "$OUT"
-echo "[$MODE] 대상: $JSON / 모놀리스: $MONOLITH"
+echo "[$MODE] 대상: $JSON"

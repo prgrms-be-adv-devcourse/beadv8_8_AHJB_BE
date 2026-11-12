@@ -3,13 +3,6 @@ name: MSA CD
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'services/**'
-      - 'libs/**'
-      - 'k8s/app/**'
-      - 'gradle/**'
-      - 'settings.gradle.kts'
-      - 'build.gradle.kts'
   workflow_dispatch:
     inputs:
       service:
@@ -33,9 +26,6 @@ concurrency:
   group: msa-cd
   cancel-in-progress: false
 
-env:
-  SERVICES: "member-service gateway-service delivery-service order-service payment-service recommend-service auction-service notification-service"
-
 jobs:
   changes:
     runs-on: ubuntu-latest
@@ -50,21 +40,10 @@ jobs:
         id: pick
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TARGETS="${{ inputs.service }}"
+            echo "services=[\"${{ inputs.service }}\"]" >> "$GITHUB_OUTPUT"
           else
-            CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
-            if echo "$CHANGED" | grep -qE '^(libs/|gradle/|settings\.gradle\.kts|build\.gradle\.kts)'; then
-              TARGETS="$SERVICES"
-            else
-              TARGETS=""
-              for s in $SERVICES; do
-                if echo "$CHANGED" | grep -qE "^(services/$s/|k8s/app/$s\.yaml)"; then
-                  TARGETS="$TARGETS $s"
-                fi
-              done
-            fi
-          fi
-          echo "services=$(echo $TARGETS | jq -R -c 'split(" ") | map(select(. != ""))')" >> "$GITHUB_OUTPUT"
+            bash .github/scripts/changed-services.sh "${{ github.event.before }}" "${{ github.sha }}" deploy
+          fi        
 
   build:
     needs: changes
