@@ -12,6 +12,8 @@ import com.jjinmak.notification.app.mapper.*;
 import com.jjinmak.notification.domain.Notification;
 import com.jjinmak.notification.domain.NotificationCategory;
 import com.jjinmak.notification.dto.NotificationListResponseDto;
+import com.jjinmak.notification.dto.NotificationSettingsResponseDto;
+import com.jjinmak.notification.dto.NotificationSettingsUpdateRequestDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +34,7 @@ public class NotificationFacade {
     private final NotificationQueryUseCase notificationQueryUseCase;
     private final NotificationReadUseCase notificationReadUseCase;
     private final NotificationDeviceUseCase notificationDeviceUseCase;
+    private final NotificationSettingUseCase notificationSettingUseCase;
 
     @Transactional
     public int notifyAuctionWon(AuctionWonEvent event, LocalDateTime now) {
@@ -130,5 +133,17 @@ public class NotificationFacade {
     @Transactional
     public void unregisterDevice(Long memberId, String token) {
         notificationDeviceUseCase.unregister(memberId, token);
+    }
+
+    @Transactional(readOnly = true)
+    public NotificationSettingsResponseDto getSettings(Long memberId) {
+        return notificationSettingUseCase.get(memberId);
+    }
+
+    @Transactional
+    public NotificationSettingsResponseDto updateSettings(Long memberId,
+                                                          List<NotificationSettingsUpdateRequestDto.Item> items,
+                                                          LocalDateTime now) {
+        return notificationSettingUseCase.update(memberId, items, now);
     }
 }
