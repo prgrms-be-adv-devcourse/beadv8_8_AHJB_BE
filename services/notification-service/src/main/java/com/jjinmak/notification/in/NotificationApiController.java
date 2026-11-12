@@ -4,11 +4,13 @@ import com.jjinmak.common.rsData.RsData;
 import com.jjinmak.common.security.AuthPrincipal;
 import com.jjinmak.notification.app.NotificationFacade;
 import com.jjinmak.notification.domain.NotificationCategory;
+import com.jjinmak.notification.dto.DeviceRegisterRequestDto;
 import com.jjinmak.notification.dto.NotificationListResponseDto;
 import com.jjinmak.notification.dto.ReadAllResponseDto;
 import com.jjinmak.notification.dto.UnreadCountResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 
-@Tag(name = "알림", description = "알림함 조회, 안 읽은 수, 읽음 처리 API")
+@Tag(name = "알림", description = "알림함 조회, 안 읽은 수, 읽음 처리, 푸시 기기 등록 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/notifications")
@@ -58,5 +60,25 @@ public class NotificationApiController {
     public ResponseEntity<RsData<ReadAllResponseDto>> readAll(@AuthenticationPrincipal AuthPrincipal principal) {
         int readCount = notificationFacade.readAll(principal.memberId(), LocalDateTime.now());
         return ResponseEntity.ok(new RsData<>(true, "모든 알림을 읽음 처리했습니다.", new ReadAllResponseDto(readCount)));
+    }
+
+    @Operation(summary = "푸시 기기 등록", description = "브라우저 알림 허용 후 받은 FCM 토큰을 등록. 로그인할 때마다 호출. 같은 토큰이 있으면 주인과 갱신 시각을 바꾼다")
+    @PostMapping("/devices")
+    public ResponseEntity<RsData<Void>> registerDevice(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @Valid @RequestBody DeviceRegisterRequestDto request
+    ) {
+        notificationFacade.registerDevice(principal.memberId(), request.token(), LocalDateTime.now());
+        return ResponseEntity.ok(new RsData<>(true, "푸시 기기를 등록했습니다.", null));
+    }
+
+    @Operation(summary = "푸시 기기 해제", description = "로그아웃할 때 호출. 본인 토큰만 삭제되며, 없는 토큰이어도 성공으로 응답")
+    @DeleteMapping("/devices/{token}")
+    public ResponseEntity<RsData<Void>> unregisterDevice(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @PathVariable String token
+    ) {
+        notificationFacade.unregisterDevice(principal.memberId(), token);
+        return ResponseEntity.ok(new RsData<>(true, "푸시 기기를 해제했습니다.", null));
     }
 }

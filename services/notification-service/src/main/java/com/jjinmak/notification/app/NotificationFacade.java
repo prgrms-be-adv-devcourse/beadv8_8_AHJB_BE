@@ -31,6 +31,7 @@ public class NotificationFacade {
     private final NotificationCreateUseCase notificationCreateUseCase;
     private final NotificationQueryUseCase notificationQueryUseCase;
     private final NotificationReadUseCase notificationReadUseCase;
+    private final NotificationDeviceUseCase notificationDeviceUseCase;
 
     @Transactional
     public int notifyAuctionWon(AuctionWonEvent event, LocalDateTime now) {
@@ -119,5 +120,15 @@ public class NotificationFacade {
 
     private int save(List<Notification> notifications, LocalDateTime now) {
         return notificationCreateUseCase.create(notifications, now);
+    }
+
+    @Transactional
+    public void registerDevice(Long memberId, String token, LocalDateTime now) {
+        notificationDeviceUseCase.register(memberId, token, now);
+    }
+
+    @Transactional
+    public void unregisterDevice(Long memberId, String token) {
+        notificationDeviceUseCase.unregister(memberId, token);
     }
 }
