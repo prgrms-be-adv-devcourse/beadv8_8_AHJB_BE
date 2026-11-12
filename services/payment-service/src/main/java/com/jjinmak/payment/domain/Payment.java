@@ -111,7 +111,7 @@ public class Payment extends BaseIdAndTime {
         return item;
     }
 
-    /** 아이템 금액 합 == totalPrice 를 검증한다. 아이템을 다 넣은 뒤 한 번 호출 */
+    //  아이템 금액 합 == totalPrice 를 검증한다. 아이템을 다 넣은 뒤 한 번 호출
     public void validateItems() {
         if (items.isEmpty()) {
             throw new BusinessException(PAYMENT_ITEMS_EMPTY);
@@ -141,7 +141,7 @@ public class Payment extends BaseIdAndTime {
         return chargeAmount > 0;
     }
 
-    /** 지갑 차감 + 주문별 Holding 생성이 끝난 뒤 호출. 이미 PAID 면 아무 것도 하지 않는다 (멱등) */
+    // 지갑 차감 + 주문별 Holding 생성이 끝난 뒤 호출. 이미 PAID 면 아무 것도 하지 않는다 (멱등)
     public void markPaid(LocalDateTime paidAt) {
         if (isPaid()) return;
         requireStatus(PENDING, CHARGING);
@@ -149,7 +149,7 @@ public class Payment extends BaseIdAndTime {
         this.paidAt = paidAt;
     }
 
-    /** PG 승인 실패 등으로 결제를 끝내지 못했을 때. 이미 FAILED 면 아무 것도 하지 않는다 (멱등) */
+    // PG 승인 실패 등으로 결제를 끝내지 못했을 때. 이미 FAILED 면 아무 것도 하지 않는다 (멱등)
     public void markFailed(LocalDateTime failedAt, String reason) {
         if (status == FAILED) return;
         requireStatus(PENDING, CHARGING);
@@ -162,7 +162,7 @@ public class Payment extends BaseIdAndTime {
         return status == FAILED;
     }
 
-    /** 주문 1건 환불 완료 표시. 돈의 이동은 Holding/원장이 담당하고 여기는 시각만 남긴다 */
+    // 주문 1건 환불 완료 표시. 돈의 이동은 Holding/원장이 담당하고 여기는 시각만 남긴다
     public void markItemRefunded(Long orderId, LocalDateTime refundedAt) {
         requireStatus(PAID);
         findItem(orderId).markRefunded(refundedAt);
@@ -187,7 +187,7 @@ public class Payment extends BaseIdAndTime {
         return status == CHARGING;
     }
 
-    /** 모든 주문이 환불됐는지. Payment 단위의 환불 시각은 이걸로 파생한다 */
+    // 모든 주문이 환불됐는지. Payment 단위의 환불 시각은 이걸로 파생한다
     public boolean isAllRefunded() {
         return !items.isEmpty() && items.stream().allMatch(PaymentOrderItem::isRefunded);
     }

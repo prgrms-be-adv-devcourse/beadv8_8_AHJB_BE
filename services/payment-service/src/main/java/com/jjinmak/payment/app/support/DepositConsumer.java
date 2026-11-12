@@ -21,9 +21,9 @@ import static com.jjinmak.payment.exception.WalletErrorCode.INSUFFICIENT_BALANCE
  *   · 환불금 풀 : 충전이 아닌 입금(환불). 별도 컬럼 없이 잔액 − Σremaining 으로 구한다
  *
  * 차감 순서
- *   ① earmarked (이 결제를 위해 방금 충전한 FOR_PAYMENT 건) 전액
- *   ② 환불금 풀
- *   ③ 나머지 CHARGED 충전을 오래된 순(chargedAt ASC)으로
+ *   1. earmarked (이 결제를 위해 방금 충전한 FOR_PAYMENT 건) 전액
+ *   2. 환불금 풀
+ *   3. 나머지 CHARGED 충전을 오래된 순(chargedAt ASC)으로
  *
  * 유스케이스가 아니라 LedgerRecorder 처럼 유스케이스·지원 컴포넌트가 쓰는 지원 컴포넌트다.
  * 반드시 지갑에서 돈을 빼기 **전에**, 그리고 같은 트랜잭션 안에서 호출한다 (풀 계산이 현재 잔액을 쓰기 때문).
@@ -39,14 +39,12 @@ public class DepositConsumer {
 
     private final ChargeRepository chargeRepository;
 
-    /** 일반 출금 (전액 예치금 결제 등). earmarked 없음 */
+    // 일반 출금 (전액 예치금 결제 등). earmarked 없음
     public void consume(Wallet wallet, long amount) {
         consume(wallet, amount, null);
     }
 
-    /**
-     * @param earmarked 이 출금을 위해 방금 충전한 건. 가장 먼저 전액 소비된다. 없으면 null
-     */
+    // earmarked: 이 출금을 위해 방금 충전한 건. 가장 먼저 전액 소비된다. 없으면 null
     public void consume(Wallet wallet, long amount, Charge earmarked) {
         if (amount <= 0) return;
 
@@ -54,17 +52,17 @@ public class DepositConsumer {
                 .findByWalletAndStatusAndRemainingAmountGreaterThanOrderByChargedAtAscIdAsc(wallet, CHARGED, 0L);
 
         long reserved = open.stream().mapToLong(Charge::getRemainingAmount).sum();
-        long refundPool = wallet.getBalance() - reserved;          // 충전이 아닌 돈 (환불금)
+        long refundPool = wallet.getBalance() - reserved; // 충전이 아닌 돈 (환불금)
         long left = amount;
 
-        // ① 이 결제를 위한 충전부터
+        // 1. 이 결제를 위한 충전부터
         if (earmarked != null) {
             left -= earmarked.consume(left);
         }
-        // ② 환불금
+        // 2. 환불금
         long fromPool = Math.min(left, Math.max(refundPool, 0L));
         left -= fromPool;
-        // ③ 오래된 충전부터
+        // 3. 오래된 충전부터
         for (Charge charge : open) {
             if (left == 0) break;
             if (earmarked != null && charge.getId().equals(earmarked.getId())) continue;

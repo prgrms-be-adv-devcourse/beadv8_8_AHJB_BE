@@ -23,7 +23,6 @@ public interface HoldingRepository extends JpaRepository<Holding, Long> {
 
     Page<Holding> findByBuyerWalletAndStatus(Wallet buyerWallet, HoldingStatus status, Pageable pageable);
 
-    /** 구매자 돈이 묶여 있는 총액 (amount 합) */
     @Query("select coalesce(sum(h.amount), 0) from Holding h where h.buyerWallet = :wallet and h.status in :statuses")
     long sumAmountByBuyerWalletAndStatusIn(@Param("wallet") Wallet wallet, @Param("statuses") Collection<HoldingStatus> statuses);
 
@@ -33,7 +32,6 @@ public interface HoldingRepository extends JpaRepository<Holding, Long> {
 
     Page<Holding> findBySellerWalletAndStatus(Wallet sellerWallet, HoldingStatus status, Pageable pageable);
 
-    /** 판매자가 받을 정산액 합 (amount − feeAmount) */
     @Query("select coalesce(sum(h.amount - h.feeAmount), 0) from Holding h where h.sellerWallet = :wallet and h.status in :statuses")
     long sumSettlementBySellerWalletAndStatusIn(@Param("wallet") Wallet wallet, @Param("statuses") Collection<HoldingStatus> statuses);
 }

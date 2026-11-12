@@ -86,7 +86,6 @@ public class Wallet extends BaseIdAndTime {
         this.balance -= amount;
     }
 
-    /** 정산금 입금. 구매 확정 릴리즈 시 판매자 지갑에만 사용한다 */
     public void depositSettlement(long amount) {
         validatePositive(amount);
         this.settlementBalance += amount;

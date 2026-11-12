@@ -53,10 +53,6 @@ public class PaymentEventListener {
         walletFacade.confirmHolding(event.orderId());
     }
 
-    /**
-     * 정산 요청 → 구매 확정된 홀딩의 대금을 ESCROW 에서 판매자 정산금·FEE 지갑으로 옮기고 WalletReleasedEvent 로 회신한다.
-     * 요청에 실린 정산액·수수료가 홀딩과 다르면 돈을 옮기지 않는다. 이미 릴리즈된 건은 회신만 다시 보낸다 (멱등).
-     */
     @TransactionalEventListener(phase = AFTER_COMMIT)
     @Transactional(propagation = REQUIRES_NEW)
     public void handle(SettlementRequestedEvent event) {

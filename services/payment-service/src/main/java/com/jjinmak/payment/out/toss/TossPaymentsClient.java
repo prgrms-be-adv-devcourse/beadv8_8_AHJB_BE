@@ -42,7 +42,7 @@ public class TossPaymentsClient {
 
     private final RestClient tossPaymentsRestClient;
 
-    /** 결제 승인. idempotencyKey 로 같은 요청이 두 번 가도 한 번만 승인된다 */
+    // 결제 승인. idempotencyKey 로 같은 요청이 두 번 가도 한 번만 승인된다
     public TossPaymentResponse confirm(String paymentKey, String pgOrderId, long amount, String idempotencyKey) {
         TossConfirmRequest body = new TossConfirmRequest(paymentKey, pgOrderId, amount);
         return call(() -> tossPaymentsRestClient.post()
@@ -52,7 +52,7 @@ public class TossPaymentsClient {
                 .exchange((req, res) -> readOrThrow(res, TossPaymentResponse.class, PG_APPROVE_FAILED)));
     }
 
-    /** 전액 취소 */
+    // 전액 취소
     public TossPaymentResponse cancel(String paymentKey, String reason, String idempotencyKey) {
         TossCancelRequest body = new TossCancelRequest(reason);
         return call(() -> tossPaymentsRestClient.post()
@@ -68,7 +68,7 @@ public class TossPaymentsClient {
                 .exchange((req, res) -> readOrThrow(res, TossPaymentResponse.class, PG_INQUIRY_FAILED)));
     }
 
-    /** 우리가 만든 pgOrderId 로 조회. 승인 전(paymentKey 를 모를 때) 복구용 */
+    // 우리가 만든 pgOrderId 로 조회. 승인 전(paymentKey 를 모를 때) 복구용
     public TossPaymentResponse findByOrderId(String pgOrderId) {
         return call(() -> tossPaymentsRestClient.get()
                 .uri("/v1/payments/orders/{orderId}", pgOrderId)

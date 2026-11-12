@@ -73,7 +73,6 @@ public class TossWebhookPayloadParser {
         return new TossWebhookReceiveDto(UNKNOWN, null, null, rawBody);
     }
 
-    /** eventType 이 있으면 그대로, 없고 secret 이 있으면 DEPOSIT_CALLBACK, 둘 다 없으면 UNKNOWN */
     private String resolveEventType(JsonNode root) {
         String eventType = text(root.path("eventType"));
         if (eventType != null) {
@@ -85,7 +84,6 @@ public class TossWebhookPayloadParser {
         return UNKNOWN;
     }
 
-    /** secret 은 저장하지 않는다 */
     private String maskSecret(ObjectNode root, String originalBody) {
         if (!root.has("secret")) {
             return originalBody;

@@ -19,12 +19,6 @@ import java.util.List;
 import static com.jjinmak.payment.domain.enums.HoldingStatus.CONFIRMED;
 import static com.jjinmak.payment.domain.enums.HoldingStatus.HELD;
 
-/**
- * 내 홀딩 조회.
- *  - BUYER  : 내가 결제한 돈이 어느 주문에 묶여 있는지 (환불·정산 전). 합계는 묶인 금액(amount)
- *  - SELLER : 내가 받을 정산 예정 금액. 합계는 정산액(amount − 수수료)
- * status 를 주면 그 상태만, 없으면 전체(정산·환불 끝난 것 포함)를 최신순으로 돌려준다.
- */
 @Service
 @RequiredArgsConstructor
 public class WalletGetHoldingsUseCase {
