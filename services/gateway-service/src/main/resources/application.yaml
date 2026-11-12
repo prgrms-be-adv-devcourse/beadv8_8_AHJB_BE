@@ -56,6 +56,10 @@ spring:
               uri: ${service-uri.product}
               predicates:
                 - Path=/api/v1/products/**,/api/v1/wishes/**,/api/v1/qnas/**,/api/v1/reviews/**
+            - id: search-service
+              uri: ${service-uri.search}
+              predicates:
+                - Path=/api/v1/search/**
 
 service-uri:
   member: http://member-service
@@ -68,6 +72,7 @@ service-uri:
   refund: http://refund-service
   settlement: http://settlement-service
   product: http://product-service
+  search: http://search-service
 
 management:
   endpoint:
