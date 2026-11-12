@@ -1,5 +1,7 @@
 package com.jjinmak.chat.domain;
 
+import com.jjinmak.chat.in.dto.ChatRoomDetailDto;
+import com.jjinmak.chat.in.dto.ChatRoomItemDto;
 import com.jjinmak.common.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -77,5 +79,40 @@ public class ChatRoom extends BaseIdAndTime {
 
     public void close() {
         this.status = ChatRoomStatus.CLOSED;
+    }
+
+    public ChatRole roleOf(Long memberId) {
+        return winnerId.equals(memberId) ? ChatRole.WINNER : ChatRole.SELLER;
+    }
+
+    public Long counterpartId(Long memberId) {
+        return winnerId.equals(memberId) ? sellerId : winnerId;
+    }
+
+    public ChatRoomItemDto itemDto(Long memberId, String counterpartNickname) {
+        return new ChatRoomItemDto(
+                getId(),
+                productName,
+                productThumbnailUrl,
+                counterpartNickname,
+                roleOf(memberId),
+                status,
+                lastMessageAt
+        );
+    }
+
+    public ChatRoomDetailDto detailDto(Long memberId, String counterpartNickname) {
+        return new ChatRoomDetailDto(
+                getId(),
+                auctionId,
+                productId,
+                productName,
+                productThumbnailUrl,
+                counterpartNickname,
+                roleOf(memberId),
+                status,
+                lastMessageAt,
+                getCreatedAt()
+        );
     }
 }
