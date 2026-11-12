@@ -1,0 +1,97 @@
+# 상품 검색(search-service)용 Elasticsearch
+# - 검색 서비스가 시작할 때 nori 분석기로 인덱스를 만들기 때문에, 검색 서비스보다 먼저 떠 있어야 한다.
+# - 설정은 docker-compose.local.yaml과 같다. (단일 노드, 보안 꺼짐, 힙 512m)
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+  namespace: infra
+spec:
+  clusterIP: None
+  selector:
+    app: elasticsearch
+  ports:
+    - name: http
+      port: 9200
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: elasticsearch
+  namespace: infra
+spec:
+  serviceName: elasticsearch
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      enableServiceLinks: false
+      nodeSelector:
+        jjinmak/role: infra
+      # ES는 1000번 사용자로 실행된다. 데이터 폴더에 쓸 수 있도록 그룹 권한을 맞춘다.
+      securityContext:
+        fsGroup: 1000
+      # 한국어 형태소 분석기(nori) 설치. 설치된 플러그인 폴더를 본 컨테이너와 나눠 쓴다.
+      # (Pod가 뜰 때마다 artifacts.elastic.co에서 내려받는다)
+      initContainers:
+        - name: install-nori
+          image: docker.elastic.co/elasticsearch/elasticsearch:9.4.5
+          command: ["bin/elasticsearch-plugin", "install", "--batch", "analysis-nori"]
+          volumeMounts:
+            - name: plugins
+              mountPath: /usr/share/elasticsearch/plugins
+      containers:
+        - name: elasticsearch
+          # Spring Boot 4.1.1의 Elasticsearch 클라이언트(9.4.5)와 버전을 맞춘다.
+          image: docker.elastic.co/elasticsearch/elasticsearch:9.4.5
+          env:
+            - name: TZ
+              value: Asia/Seoul
+            - name: discovery.type
+              value: single-node
+            - name: xpack.security.enabled   # 로그인·HTTPS 끔 (클러스터 안에서만 접근)
+              value: "false"
+            - name: ES_JAVA_OPTS
+              value: "-Xms512m -Xmx512m"
+          ports:
+            - name: http
+              containerPort: 9200
+          resources:
+            requests:
+              cpu: 250m
+              memory: 1Gi
+            limits:
+              memory: 1536Mi
+          readinessProbe:
+            httpGet:
+              path: /_cluster/health?local=true
+              port: 9200
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 9200
+            initialDelaySeconds: 90
+            periodSeconds: 20
+          volumeMounts:
+            - name: plugins
+              mountPath: /usr/share/elasticsearch/plugins
+            - name: data
+              mountPath: /usr/share/elasticsearch/data
+      volumes:
+        - name: plugins
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 10Gi
