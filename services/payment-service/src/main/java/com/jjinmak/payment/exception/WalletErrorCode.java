@@ -13,8 +13,6 @@ public enum WalletErrorCode implements ErrorCode {
     // ===== 지갑 (Wallet) =====
     WALLET_NOT_FOUND("WALLET001", "존재하지 않는 지갑입니다.", HttpStatus.NOT_FOUND),
     SYSTEM_WALLET_NOT_FOUND("WALLET002", "시스템 지갑(ESCROW/FEE)이 존재하지 않습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
-    WALLET_FORBIDDEN("WALLET003", "지갑에 대한 권한이 없습니다.", HttpStatus.FORBIDDEN),
-    WALLET_ALREADY_EXISTS("WALLET004", "이미 지갑이 존재하는 회원입니다.", HttpStatus.BAD_REQUEST),
     INVALID_SYSTEM_WALLET_TYPE("WALLET005", "USER 타입은 시스템 지갑이 될 수 없습니다.", HttpStatus.BAD_REQUEST),
 
 //    // ===== 지갑 상태 (WalletStatus) =====
@@ -34,8 +32,6 @@ public enum WalletErrorCode implements ErrorCode {
     HOLDING_NOT_FOUND("WALLET301", "존재하지 않는 홀딩입니다.", HttpStatus.NOT_FOUND),
     HOLD_ITEMS_EMPTY("WALLET307", "홀딩할 주문 내역이 없습니다.", HttpStatus.BAD_REQUEST),
     HOLD_AMOUNT_MISMATCH("WALLET308", "주문 금액 합이 결제 총액과 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
-    HOLDING_ALREADY_EXISTS("WALLET302", "이미 홀딩이 존재하는 주문입니다.", HttpStatus.BAD_REQUEST),
-    HOLDING_NOT_HELD("WALLET303", "HELD 상태의 홀딩만 처리할 수 있습니다.", HttpStatus.BAD_REQUEST),
     HOLDING_ALREADY_RELEASED("WALLET304", "이미 정산(구매 확정)된 홀딩입니다.", HttpStatus.BAD_REQUEST),
     HOLDING_ALREADY_REFUNDED("WALLET305", "이미 환불된 홀딩입니다.", HttpStatus.BAD_REQUEST),
     HOLDING_ALREADY_CONFIRMED("WALLET310", "이미 구매 확정된 홀딩입니다.", HttpStatus.BAD_REQUEST),
@@ -45,9 +41,7 @@ public enum WalletErrorCode implements ErrorCode {
 
     // ===== 원장 (WalletTransaction) =====
     TRANSACTION_NOT_FOUND("WALLET401", "존재하지 않는 거래 내역입니다.", HttpStatus.NOT_FOUND),
-    DUPLICATE_TRANSACTION("WALLET402", "이미 처리된 요청입니다. (idempotencyKey 중복)", HttpStatus.CONFLICT),
     INVALID_TRANSACTION_AMOUNT("WALLET403", "원장 금액은 0일 수 없습니다.", HttpStatus.BAD_REQUEST),
-    TRANSACTION_GROUP_NOT_BALANCED("WALLET404", "거래 그룹의 금액 합이 0이 아닙니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // ===== 동시성 =====
     WALLET_CONCURRENT_MODIFICATION("WALLET501", "지갑이 동시에 수정되었습니다. 다시 시도해 주세요.", HttpStatus.CONFLICT),

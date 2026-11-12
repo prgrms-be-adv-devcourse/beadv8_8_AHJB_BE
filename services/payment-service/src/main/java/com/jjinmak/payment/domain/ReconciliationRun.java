@@ -1,5 +1,6 @@
 package com.jjinmak.payment.domain;
 
+import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.jpa.entity.BaseIdAndTime;
 import com.jjinmak.payment.domain.enums.ReconciliationRunStatus;
 import com.jjinmak.payment.domain.enums.ReconciliationType;
@@ -13,6 +14,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import static com.jjinmak.payment.domain.enums.ReconciliationRunStatus.*;
+import static com.jjinmak.payment.exception.PaymentErrorCode.INVALID_RECONCILIATION_STATUS;
 
 /**
  * 대사 실행 1회. "targetDate 의 PG(또는 원장) 대사는 일치했는가" 에 답하는 기록이다.
@@ -93,11 +95,13 @@ public class ReconciliationRun extends BaseIdAndTime {
 
     // 끝난 실행(MATCHED / MISMATCHED / FAILED)을 다시 돌린다. 이전 결과는 지우고 시도 횟수를 올린다
     public void restart(LocalDateTime now) {
+        // 이미 실행 중인 대사는 다시 시작할 수 없다
         if (status == RUNNING) {
-            throw new IllegalStateException("이미 실행 중인 대사는 다시 시작할 수 없습니다. runId=" + getId());
+            throw new BusinessException(INVALID_RECONCILIATION_STATUS);
         }
+        // 불일치가 0건인 대사는 재실행하지 않는다
         if (status == MATCHED) {
-            throw new IllegalStateException("불일치가 0건인 대사는 재실행하지 않습니다. runId=" + getId());
+            throw new BusinessException(INVALID_RECONCILIATION_STATUS);
         }
         this.status = RUNNING;
         this.attempt++;
@@ -137,7 +141,7 @@ public class ReconciliationRun extends BaseIdAndTime {
 
     private void requireRunning() {
         if (status != RUNNING) {
-            throw new IllegalStateException("실행 중인 대사가 아닙니다. runId=" + getId() + ", status=" + status);
+            throw new BusinessException(INVALID_RECONCILIATION_STATUS);   // 실행 중인 대사가 아님
         }
     }
 

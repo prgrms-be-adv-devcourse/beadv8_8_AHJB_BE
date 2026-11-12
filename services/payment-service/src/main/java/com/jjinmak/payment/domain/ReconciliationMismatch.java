@@ -1,5 +1,6 @@
 package com.jjinmak.payment.domain;
 
+import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.jpa.entity.BaseIdAndTime;
 import com.jjinmak.payment.domain.enums.MismatchStatus;
 import com.jjinmak.payment.domain.enums.MismatchTargetType;
@@ -13,6 +14,7 @@ import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 
 import static com.jjinmak.payment.domain.enums.MismatchStatus.*;
+import static com.jjinmak.payment.exception.PaymentErrorCode.*;
 
 /**
  * 대사에서 발견한 불일치 1건. 운영자가 보고 처리하는 단위다. (일치한 건은 저장하지 않는다)
@@ -110,11 +112,10 @@ public class ReconciliationMismatch extends BaseIdAndTime {
                                    String expectedState, Long expectedAmount,
                                    String actualState, Long actualAmount, String detail) {
         if (!type.belongsTo(run.getType())) {
-            throw new IllegalArgumentException(
-                    "대사 종류에 맞지 않는 불일치 유형입니다. runType=" + run.getType() + ", mismatchType=" + type);
+            throw new BusinessException(MISMATCH_TYPE_NOT_ALLOWED);
         }
         if (targetKey == null || targetKey.isBlank()) {
-            throw new IllegalArgumentException("불일치 대상 식별자(targetKey)는 비어 있을 수 없습니다.");
+            throw new BusinessException(MISMATCH_TARGET_KEY_REQUIRED);
         }
         this.run = run;
         this.type = type;
@@ -177,13 +178,13 @@ public class ReconciliationMismatch extends BaseIdAndTime {
 
     private void close(MismatchStatus next, LocalDateTime now, String resolvedBy, String note) {
         if (status != OPEN) {
-            throw new IllegalStateException("이미 처리된 불일치 건입니다. mismatchId=" + getId() + ", status=" + status);
+            throw new BusinessException(INVALID_MISMATCH_STATUS);
         }
         if (resolvedBy == null || resolvedBy.isBlank()) {
-            throw new IllegalArgumentException("처리자는 비어 있을 수 없습니다.");
+            throw new BusinessException(MISMATCH_RESOLVER_REQUIRED);
         }
         if (note == null || note.isBlank()) {
-            throw new IllegalArgumentException("불일치 처리 사유는 필수입니다.");
+            throw new BusinessException(MISMATCH_RESOLUTION_NOTE_REQUIRED);
         }
         this.status = next;
         this.resolvedAt = now;
