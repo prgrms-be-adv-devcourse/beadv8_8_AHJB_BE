@@ -29,21 +29,30 @@ class SecurityConfigTest extends RecommendIntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("비슷한 경매 조회는 회원 헤더가 없으면 401 COMMON002를 돌려준다")
-    void similar_withoutMemberHeader_returnsUnauthorized() throws Exception {
-        mockMvc.perform(get("/api/v1/recommend/{auctionId}", 9999L))
+    @DisplayName("비슷한 경매 조회는 회원 헤더 없이도 열려 조회까지 진행한다 (없는 경매면 404 recommend002)")
+    void similar_withoutMemberHeader_isOpen() throws Exception {
+        mockMvc.perform(get("/api/v1/recommend/auction/{auctionId}", 9999L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorCode").value("recommend002"));
+    }
+
+    @Test
+    @DisplayName("회원 맞춤 추천은 회원 헤더가 없으면 401 COMMON002를 돌려준다")
+    void personal_withoutMemberHeader_returnsUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/recommend/me"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.isSuccess").value(false))
                 .andExpect(jsonPath("$.errorCode").value("COMMON002"));
     }
 
     @Test
-    @DisplayName("회원 헤더가 있으면 인증을 통과해 비슷한 경매 조회까지 진행한다 (없는 경매면 404 recommend002)")
-    void similar_withMemberHeader_passesAuthentication() throws Exception {
-        mockMvc.perform(get("/api/v1/recommend/{auctionId}", 9999L)
+    @DisplayName("회원 헤더가 있으면 인증을 통과해 회원 맞춤 추천을 돌려준다")
+    void personal_withMemberHeader_passesAuthentication() throws Exception {
+        mockMvc.perform(get("/api/v1/recommend/me")
                         .header(AuthHeaders.MEMBER_ID, 1L))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.errorCode").value("recommend002"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isSuccess").value(true))
+                .andExpect(jsonPath("$.data").isArray());
     }
 
     @ParameterizedTest(name = "{0}")

@@ -4,7 +4,7 @@ import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
 import com.jjinmak.recommend.domain.*;
-import com.jjinmak.recommend.out.*;
+import com.jjinmak.recommend.out.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

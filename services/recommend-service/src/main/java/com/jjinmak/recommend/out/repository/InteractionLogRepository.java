@@ -1,4 +1,4 @@
-package com.jjinmak.recommend.out;
+package com.jjinmak.recommend.out.repository;
 
 import com.jjinmak.recommend.domain.InteractionLog;
 import com.jjinmak.recommend.domain.InteractionType;

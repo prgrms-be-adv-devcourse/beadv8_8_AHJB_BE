@@ -9,9 +9,9 @@ import com.jjinmak.contracts.product.event.ProductChangedEvent;
 import com.jjinmak.recommend.domain.ProductEmbedding;
 import com.jjinmak.recommend.domain.RecommendAuction;
 import com.jjinmak.recommend.domain.RecommendProduct;
-import com.jjinmak.recommend.out.ProductEmbeddingRepository;
-import com.jjinmak.recommend.out.RecommendAuctionRepository;
-import com.jjinmak.recommend.out.RecommendProductRepository;
+import com.jjinmak.recommend.out.repository.ProductEmbeddingRepository;
+import com.jjinmak.recommend.out.repository.RecommendAuctionRepository;
+import com.jjinmak.recommend.out.repository.RecommendProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

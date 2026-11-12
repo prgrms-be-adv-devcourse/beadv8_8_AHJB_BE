@@ -24,7 +24,8 @@ public class SecurityConfig {
             "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**",
             "/actuator/health/**",
             // 로그인 없이 열리는 경로 추가
-            "/api/v1/recommend/popular"
+            "/api/v1/recommend/popular",
+            "/api/v1/recommend/auction/{auctionId}"
     };
 
     @Bean
