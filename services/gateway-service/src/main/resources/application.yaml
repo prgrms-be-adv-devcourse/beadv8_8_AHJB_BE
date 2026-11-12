@@ -59,6 +59,10 @@ spring:
               uri: ${service-uri.search}
               predicates:
                 - Path=/api/v1/search/**
+            - id: chat-service
+              uri: ${service-uri.chat}
+              predicates:
+                - Path=/api/v1/chat-rooms/**,/ws/chat/**
 
 service-uri:
   member: http://member-service
@@ -72,6 +76,7 @@ service-uri:
   settlement: http://settlement-service
   product: http://product-service
   search: http://search-service
+  chat: http://chat-service
 
 management:
   endpoint:
