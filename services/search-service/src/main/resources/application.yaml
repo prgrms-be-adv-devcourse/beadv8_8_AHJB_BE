@@ -1,7 +1,18 @@
+# 서버용 설정. 값은 k8s ConfigMap 환경변수로 받는다. (기본값을 두지 않는다)
+# 로컬 실행은 application-local.yaml (Active profiles: local)
+server:
+  port: 8092
+
 spring:
   application:
-    name: search
+    name: search-service
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+  # 검색 저장소. 클러스터 ES는 보안(로그인)을 끄고 쓰므로 계정은 두지 않는다.
+  elasticsearch:
+    uris: ${ES_URIS}
   kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
@@ -15,5 +26,9 @@ spring:
       enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
-server:
-  port: 8092
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
