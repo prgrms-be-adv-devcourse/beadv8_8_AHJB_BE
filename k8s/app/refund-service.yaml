@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: refund-config
+  namespace: app
+data:
+  DB_URL: jdbc:postgresql://postgres.infra.svc.cluster.local:5432/refund_db
+  KAFKA_BOOTSTRAP_SERVERS: kafka.infra.svc.cluster.local:19092
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: refund-service
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: refund-service
+  template:
+    metadata:
+      labels:
+        app: refund-service
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: refund-service
+          image: ghcr.io/prgrms-be-adv-devcourse/beadv8_8_ahjb_be/refund-service:14811a1f595ccac4415dbeef6ad3b436c8e8685e
+          ports:
+            - containerPort: 8087
+          envFrom:
+            - configMapRef:
+                name: refund-config
+            - secretRef:
+                name: refund-db-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: refund-service
+  namespace: app
+spec:
+  selector:
+    app: refund-service
+  ports:
+    - port: 80
+      targetPort: 8087
