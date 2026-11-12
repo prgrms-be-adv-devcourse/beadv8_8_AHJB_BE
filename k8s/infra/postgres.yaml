@@ -26,6 +26,13 @@ spec:
       labels:
         app: postgres
     spec:
+      # 커널 7.0.0-1017-aws에서 AppArmor(cri-containerd 프로필)가 컨테이너 내부 SIGURG를 차단해
+      # gosu/postgres가 기동하지 못하는 문제 우회. 커널/k3s 수정 후 Unconfined 제거 검토.
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        appArmorProfile:
+          type: Unconfined
       nodeSelector:
         jjinmak/role: infra
       containers:
