@@ -43,9 +43,9 @@ kind: Service
 metadata:
   name: member-service
   namespace: app
-  spec:
-    selector:
-      app: member-service
-    ports:
-      - port: 80
-        targetPort: 8083
+spec:
+  selector:
+    app: member-service
+  ports:
+    - port: 80
+      targetPort: 8083
