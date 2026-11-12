@@ -69,4 +69,13 @@ public class ProductAuctionTerms {
 
         return new ProductAuctionTerms(startPrice, instantWinPrice, duration, customEndAt);
     }
+
+    // 경매 종료 시각. 직접 지정이면 그 시각, 아니면 경매 시작 예정 시각 + 기간(1/3/7일)
+    // 상품에서 확정해서 보내야 이벤트가 늦게 도착해도 안내한 종료 시각과 같아진다.
+    public LocalDateTime resolveEndAt(LocalDateTime auctionScheduledAt) {
+        if (duration == AuctionDuration.CUSTOM) {
+            return customEndAt;
+        }
+        return auctionScheduledAt.plusDays(duration.getDays());
+    }
 }
