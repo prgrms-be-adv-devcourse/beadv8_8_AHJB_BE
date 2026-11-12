@@ -20,6 +20,7 @@ on:
           - settlement-service
           - product-service
           - search-service
+          - chat-service
 
 permissions:
   contents: read
