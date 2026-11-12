@@ -13,7 +13,8 @@ public class ProductKafkaConfig {
     KafkaAdmin.NewTopics productTopics() {
         return new KafkaAdmin.NewTopics(
                 TopicBuilder.name(ProductEventTopics.PRODUCT_REGISTERED).build(),
-                TopicBuilder.name(ProductEventTopics.PRODUCT_CHANGED).build()
+                TopicBuilder.name(ProductEventTopics.PRODUCT_CHANGED).build(),
+                TopicBuilder.name(ProductEventTopics.PRODUCT_WISH_CHANGED).build()
         );
     }
 }

@@ -1,5 +1,7 @@
 package com.jjinmak.product.product.app;
 
+import com.jjinmak.contracts.product.event.ProductWishChangeType;
+import com.jjinmak.contracts.product.event.ProductWishChangedEvent;
 import com.jjinmak.product.product.domain.Product;
 import com.jjinmak.product.product.domain.ProductErrorCode;
 import com.jjinmak.product.product.domain.ProductMember;
@@ -11,8 +13,11 @@ import com.jjinmak.product.product.out.ProductWishRepository;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.exception.CommonErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +26,7 @@ public class ProductWishCreateUseCase {
     private final ProductRepository productRepository;
     private final ProductMemberRepository productMemberRepository;
     private final ProductWishRepository productWishRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ProductWishResponseDto wish(Long memberId, Long productId){
         Product product = productRepository.findByIdAndDeletedAtIsNull(productId)
@@ -41,6 +47,10 @@ public class ProductWishCreateUseCase {
         }
 
         productRepository.increaseWishCount(productId);
+
+        // 찜 등록 이벤트 (실제 Kafka 전송은 커밋 후)
+        eventPublisher.publishEvent(new ProductWishChangedEvent(
+                productId, memberId, ProductWishChangeType.WISHED, product.getCurrentAuctionId(), LocalDateTime.now()));
 
         return new ProductWishResponseDto(productId, true, productRepository.findWishCount(productId));
     }
