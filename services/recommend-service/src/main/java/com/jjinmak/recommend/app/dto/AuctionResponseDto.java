@@ -1,6 +1,6 @@
 package com.jjinmak.recommend.app.dto;
 
-import com.jjinmak.recommend.out.AuctionRow;
+import com.jjinmak.recommend.out.row.AuctionRow;
 
 import java.time.LocalDateTime;
 

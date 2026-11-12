@@ -65,4 +65,9 @@ public class RecommendFacade {
     public List<AuctionResponseDto> readPopularAuctionList(){
         return recommendAuctionUseCase.readPopularAuctionList();
     }
+
+    @Transactional(readOnly = true)
+    public List<AuctionResponseDto> readPersonalRecommendedAuctionList(Long memberId){
+        return recommendAuctionUseCase.readPersonalRecommendedAuctionList(memberId);
+    }
 }

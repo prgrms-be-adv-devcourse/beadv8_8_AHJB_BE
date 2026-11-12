@@ -2,12 +2,12 @@ package com.jjinmak.recommend.in;
 
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.product.event.ProductChangedEvent;
-import com.jjinmak.recommend.out.InteractionLogRepository;
-import com.jjinmak.recommend.out.InteractionRepository;
-import com.jjinmak.recommend.out.ProductEmbeddingRepository;
-import com.jjinmak.recommend.out.RecommendAuctionRepository;
-import com.jjinmak.recommend.out.RecommendMemberRepository;
-import com.jjinmak.recommend.out.RecommendProductRepository;
+import com.jjinmak.recommend.out.repository.InteractionLogRepository;
+import com.jjinmak.recommend.out.repository.InteractionRepository;
+import com.jjinmak.recommend.out.repository.ProductEmbeddingRepository;
+import com.jjinmak.recommend.out.repository.RecommendAuctionRepository;
+import com.jjinmak.recommend.out.repository.RecommendMemberRepository;
+import com.jjinmak.recommend.out.repository.RecommendProductRepository;
 import com.jjinmak.recommend.support.RecommendIntegrationTestSupport;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
