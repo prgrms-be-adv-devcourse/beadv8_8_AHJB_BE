@@ -28,8 +28,6 @@ import static com.jjinmak.payment.exception.WalletErrorCode.*;
 @NoArgsConstructor
 public class Holding extends BaseIdAndTime {
 
-
-    /** order 컨텍스트의 주문 id. FK 없음 */
     @Column(nullable = false)
     private Long orderId;
 
@@ -44,14 +42,12 @@ public class Holding extends BaseIdAndTime {
     @JoinColumn(nullable = false)
     private Wallet sellerWallet;
 
-    /** 구매자가 지불한 총액 */
     @Column(nullable = false)
     private long amount;
 
     @Column(nullable = false)
     private long winningPrice;
 
-    /** 구매 확정 시 FEE 지갑으로 가는 금액. 정책 변경에 대비해 홀딩 시점 값으로 고정 */
     @Column(nullable = false)
     private long feeAmount;
 

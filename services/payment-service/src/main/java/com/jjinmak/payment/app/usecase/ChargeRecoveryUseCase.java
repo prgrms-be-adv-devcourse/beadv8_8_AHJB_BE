@@ -36,14 +36,14 @@ public class ChargeRecoveryUseCase {
     private final TossPaymentsClient toss;
     private final ChargeRecoverySupport chargeRecoverySupport;
 
-    /** REQUESTED 에 너무 오래 머문 건의 id */
+    // REQUESTED 에 너무 오래 머문 건의 id
     public List<Long> findStaleRequestedIds() {
         return chargeRepository.findTop100ByStatusAndCreatedAtBeforeOrderByCreatedAtAsc(
                         REQUESTED, LocalDateTime.now().minus(STALE_AFTER))
                 .stream().map(Charge::getId).toList();
     }
 
-    /** 있으면 안 되는 상태. 홀딩과 같은 트랜잭션에서 USED 가 돼야 하므로 여기 걸리면 버그다 */
+    // 있으면 안 되는 상태. 홀딩과 같은 트랜잭션에서 USED 가 돼야 하므로 여기 걸리면 버그다
     public List<Long> findChargedButUnusedIds() {
         return chargeRepository.findTop100ByPurposeAndStatusAndCreatedAtBeforeOrderByCreatedAtAsc(
                         FOR_PAYMENT, CHARGED, LocalDateTime.now().minus(STALE_AFTER))

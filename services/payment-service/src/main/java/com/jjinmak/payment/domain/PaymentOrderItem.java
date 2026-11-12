@@ -30,11 +30,9 @@ public class PaymentOrderItem extends BaseIdAndTime {
     @JoinColumn(nullable = false)
     private Payment payment;
 
-    /** order 컨텍스트의 주문 id. FK 없음 */
     @Column(nullable = false)
     private Long orderId;
 
-    /** 판매자 회원 id (= WalletMember id). FK 없음 */
     @Column(nullable = false)
     private Long sellerId;
 
@@ -57,12 +55,10 @@ public class PaymentOrderItem extends BaseIdAndTime {
         this.deliveryFee = deliveryFee;
     }
 
-    /** 이 주문 몫의 결제 금액 (낙찰가 + 배송비). Holding.amount 와 같아야 한다 */
     public long getAmount() {
         return winningPrice + deliveryFee;
     }
 
-    /** 환불 완료 표시. 이미 환불됐으면 아무 것도 하지 않는다 (멱등) */
     public void markRefunded(LocalDateTime refundedAt) {
         if (isRefunded()) return;
         this.refundedAt = refundedAt;

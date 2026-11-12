@@ -23,6 +23,8 @@ on:
           - order-service
           - payment-service
           - recommend-service
+          - auction-service
+          - notification-service
 
 permissions:
   contents: read
@@ -32,7 +34,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  SERVICES: "member-service gateway-service delivery-service order-service payment-service recommend-service"
+  SERVICES: "member-service gateway-service delivery-service order-service payment-service recommend-service auction-service notification-service"
 
 jobs:
   changes:

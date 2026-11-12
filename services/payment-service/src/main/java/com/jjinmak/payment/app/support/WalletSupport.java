@@ -30,7 +30,6 @@ public class WalletSupport {
         return walletRepository.findByHolderId(holderId);
     }
 
-    /** 없으면 WALLET_NOT_FOUND */
     public Wallet getWalletByHolderId(Long holderId) {
         return findWalletByHolderId(holderId)
                 .orElseThrow(() -> new BusinessException(WALLET_NOT_FOUND));

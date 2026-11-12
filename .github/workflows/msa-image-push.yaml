@@ -19,6 +19,7 @@ on:
           - refund-service
           - settlement-service
           - product-service
+          - search-service
 
 permissions:
   contents: read

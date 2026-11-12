@@ -6,7 +6,6 @@ import com.jjinmak.payment.out.repository.WithdrawalRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-/** 내 출금 내역 조회. 최신순, 한 페이지 최대 50건 */
 @Service
 @RequiredArgsConstructor
 public class WalletGetWithdrawalsUseCase {

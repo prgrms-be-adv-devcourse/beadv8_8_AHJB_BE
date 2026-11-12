@@ -1,8 +1,0 @@
-spring:
-  # 클러스터 ES 주소·계정은 환경변수로 주입한다. (보안이 꺼진 ES면 계정은 비워둔다)
-  elasticsearch:
-    uris: ${SEARCH_ES_URIS}
-    username: ${SEARCH_ES_USERNAME:}
-    password: ${SEARCH_ES_PASSWORD:}
-  kafka:
-    bootstrap-servers: kafka.infra.svc.cluster.local:19092

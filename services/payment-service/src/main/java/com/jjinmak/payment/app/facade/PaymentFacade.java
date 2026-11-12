@@ -59,7 +59,6 @@ public class PaymentFacade {
         return paymentRequestUseCase.request(dto);
     }
 
-    /** 클라이언트가 결제 API 로 직접 호출. 주문은 관여하지 않는다 */
     @Transactional
     public PaymentSummaryDto confirmPayment(Long holderId, String pgOrderId, String paymentKey, long amount) {
         return paymentConfirmUseCase.confirm(holderId, pgOrderId, paymentKey, amount);

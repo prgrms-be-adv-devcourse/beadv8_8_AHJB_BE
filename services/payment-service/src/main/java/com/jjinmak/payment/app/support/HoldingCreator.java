@@ -20,11 +20,7 @@ import static com.jjinmak.payment.domain.enums.WalletTransactionType.HOLD_RECEIV
 import static com.jjinmak.payment.exception.WalletErrorCode.*;
 
 /**
- * 주문 결제의 홀딩 생성: 구매자 지갑 → ESCROW 로 총액을 옮기고 주문당 Holding 을 만든다.
- *
- * 유스케이스가 아니라 LedgerRecorder 처럼 유스케이스가 쓰는 지원 컴포넌트다.
- * (전액 예치금 결제와 부족분 충전 후 결제, 두 유스케이스가 같이 쓴다)
- * 반드시 호출하는 유스케이스의 트랜잭션 안에서 실행된다 (MANDATORY).
+ * 반드시 호출하는 유스케이스의 트랜잭션 안에서 실행된다.
  *
  * 멱등: 같은 paymentId 로 이미 홀딩이 있으면 아무 것도 하지 않는다.
  * 락 순서: 구매자 USER(낙관적) → ESCROW(비관적). 다른 지갑 로직과 같은 순서.
@@ -42,14 +38,11 @@ public class HoldingCreator {
     private final HoldingRepository holdingRepository;
     private final DepositConsumer depositConsumer;
 
-    /** 전액 예치금 결제 */
     public void hold(HoldDto dto) {
         hold(dto, null);
     }
 
-    /**
-     * @param earmarked 이 결제를 위해 방금 충전한 FOR_PAYMENT 건. 선입선출에서 가장 먼저 소비된다. 전액 예치금 결제면 null
-     */
+    // earmarked 이 결제를 위해 방금 충전한 FOR_PAYMENT 건. 선입선출에서 가장 먼저 소비된다. 전액 예치금 결제면 null
     public void hold(HoldDto dto, Charge earmarked) {
         if (alreadyHeld(dto.paymentId())) return;
         validateTotal(dto);
