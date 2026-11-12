@@ -38,6 +38,10 @@ dependencies {
     mockitoAgent("org.mockito:mockito-core") { isTransitive = false }
 }
 
+tasks.bootJar {
+    archiveFileName.set("app.jar")
+}
+
 tasks.withType<Test> {
     useJUnitPlatform()
     jvmArgs("-javaagent:${mockitoAgent.asPath}", "-Xshare:off")
