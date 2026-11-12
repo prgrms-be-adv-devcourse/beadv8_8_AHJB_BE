@@ -1,6 +1,7 @@
 package com.jjinmak.chat.app;
 
 import com.jjinmak.chat.in.dto.ChatMessageListDto;
+import com.jjinmak.chat.in.dto.ChatMessagePushDto;
 import com.jjinmak.chat.in.dto.ChatRoomDetailDto;
 import com.jjinmak.chat.in.dto.ChatRoomListDto;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
@@ -20,6 +21,7 @@ public class ChatFacade {
     private final ChatGetRoomsUseCase chatGetRoomsUseCase;
     private final ChatGetRoomUseCase chatGetRoomUseCase;
     private final ChatGetMessagesUseCase chatGetMessagesUseCase;
+    private final ChatSendMessageUseCase chatSendMessageUseCase;
 
     @Transactional
     public void createRoom(AuctionWonEvent event) {
@@ -49,5 +51,15 @@ public class ChatFacade {
     @Transactional(readOnly = true)
     public ChatMessageListDto getMessages(Long memberId, Long roomId, int page, int size) {
         return ChatMessageListDto.from(chatGetMessagesUseCase.getMessages(memberId, roomId, page, size));
+    }
+
+    @Transactional(readOnly = true)
+    public void checkParticipant(Long memberId, Long roomId) {
+        chatGetRoomUseCase.getParticipantRoom(memberId, roomId);
+    }
+
+    @Transactional
+    public ChatMessagePushDto sendMessage(Long memberId, Long roomId, String content) {
+        return chatSendMessageUseCase.sendMessage(memberId, roomId, content);
     }
 }

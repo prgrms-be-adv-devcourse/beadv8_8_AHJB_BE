@@ -1,6 +1,7 @@
 package com.jjinmak.chat.domain;
 
 import com.jjinmak.chat.in.dto.ChatMessageDto;
+import com.jjinmak.chat.in.dto.ChatMessagePushDto;
 import com.jjinmak.common.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -39,6 +40,16 @@ public class ChatMessage extends BaseIdAndTime {
         return new ChatMessageDto(
                 getId(),
                 senderId.equals(memberId),
+                content,
+                getCreatedAt()
+        );
+    }
+
+    public ChatMessagePushDto pushDto(ChatRole senderRole) {
+        return new ChatMessagePushDto(
+                roomId,
+                getId(),
+                senderRole,
                 content,
                 getCreatedAt()
         );
