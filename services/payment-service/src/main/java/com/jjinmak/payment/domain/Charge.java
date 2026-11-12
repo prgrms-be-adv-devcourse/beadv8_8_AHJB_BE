@@ -4,6 +4,7 @@ import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.jpa.entity.BaseIdAndTime;
 import com.jjinmak.payment.domain.enums.ChargePurpose;
 import com.jjinmak.payment.domain.enums.ChargeStatus;
+import com.jjinmak.payment.domain.enums.ReferenceType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,32 +21,6 @@ import static com.jjinmak.payment.domain.enums.ChargePurpose.MANUAL;
 import static com.jjinmak.payment.domain.enums.ChargeStatus.*;
 import static com.jjinmak.payment.exception.PaymentErrorCode.*;
 
-/**
- * PG(토스페이먼츠) 충전 1건. 토스와 주고받은 식별자는 이 엔티티에만 둔다.
- *
- * 수동 충전(MANUAL)과 주문 부족분 충전(FOR_PAYMENT)이 모두 여기에 기록되며,
- * "충전된 예치금이 실제로 주문에 쓰였는가"를 status 로 검증한다.
- *
- *   REQUESTED → CHARGED → USED        (FOR_PAYMENT 정상)
- *   REQUESTED → CHARGED               (MANUAL 정상 종료)
- *   REQUESTED → ABORTED               (승인 실패 / 만료)
- *   CHARGED   → CANCELED              (충전 취소)
- *
- * CHARGED 에 머문 FOR_PAYMENT 건 = 돈은 들어왔는데 홀딩이 안 끝난 건 → 복구 대상
- * REQUESTED 에 오래 머문 건         = pgOrderId 로 토스에 조회해 DONE 이면 반영, 아니면 ABORTED
- *
- * 선입선출(미사용 금액 추적)
- * - remainingAmount : 이 충전으로 들어온 돈 중 아직 쓰이지 않은 금액. CHARGED 가 되는 순간 amount 로 시작하고
- *                     예치금이 빠져나갈 때마다(결제) DepositConsumer 가 오래된 충전부터 줄인다.
- * - 충전 취소는 remainingAmount == amount (한 번도 쓰이지 않음) 일 때만 가능하다. 일부라도 쓰이면 영구히 취소 불가.
- * - 불변식: 지갑 예치금 잔액 == 환불금 풀 + Σ(CHARGED 충전의 remainingAmount)
- *
- * 지갑 원장에서는 ReferenceType.PAYMENT + 이 엔티티의 id 로 참조된다.
- *
- * 토스 식별자
- * - pgOrderId  : 토스에 넘기는 orderId. 우리가 생성. 6~64자, 영문·숫자·-·_ 만 허용. 승인 전 복구 조회에 쓴다
- * - paymentKey : 승인 후 토스가 주는 키 (최대 200자). 취소·조회에 쓴다
- */
 @Entity
 @Table(
         name = "charge",

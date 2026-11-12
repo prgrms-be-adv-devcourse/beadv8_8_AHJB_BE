@@ -15,7 +15,7 @@ public class SystemWalletFinder {
 
     private final WalletRepository walletRepository;
 
-    /** 잔액을 변겨할 때, 호출하는 트랜잭션이 끝날 때까지 락을 잡음 */
+    // 잔액을 변경 할 때, 호출하는 트랜잭션이 끝날 때까지 락을 잡음
     public Wallet escrowForUpdate() {
         return findForUpdate(WalletType.ESCROW);
     }
@@ -24,7 +24,7 @@ public class SystemWalletFinder {
         return findForUpdate(WalletType.FEE);
     }
 
-    /** 읽기만 할 때 사용 */
+    // 읽기만 할 때 사용
     public Wallet escrow() {
         return find(WalletType.ESCROW);
     }

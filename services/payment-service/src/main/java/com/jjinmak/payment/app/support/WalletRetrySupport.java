@@ -12,7 +12,6 @@ import static com.jjinmak.payment.exception.WalletErrorCode.WALLET_CONCURRENT_MO
 /**
  * 사용자 지갑은 낙관적 락(@Version)이라 동시에 잔액이 바뀌면 OptimisticLockingFailureException 이 난다.
  * 트랜잭션 "전체"를 다시 실행해야 하므로, @Transactional 메서드 바깥(파사드)에서 이걸로 감싼다.
- * (옛 WalletPortAdapter.withRetry 를 옮겨온 것)
  */
 @Slf4j
 @Component
@@ -34,7 +33,7 @@ public class WalletRetrySupport {
         }
     }
 
-    /** 반환값이 없는 단계용. (Supplier 오버로드와 람다 모호성을 피하려고 이름을 다르게 둔다) */
+    // 반환값이 없음
     public void withRetryRun(Runnable action) {
         withRetry(() -> {
             action.run();

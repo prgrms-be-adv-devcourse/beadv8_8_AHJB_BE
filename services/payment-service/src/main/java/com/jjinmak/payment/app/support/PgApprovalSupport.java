@@ -13,10 +13,7 @@ import static com.jjinmak.payment.exception.PaymentErrorCode.PG_NOT_APPROVED;
 import static com.jjinmak.payment.exception.PaymentErrorCode.PG_UNAVAILABLE;
 import static com.jjinmak.payment.out.toss.TossPaymentsClient.ALREADY_PROCESSED_PAYMENT;
 
-/**
- * 토스 승인/보상 공통 로직. 충전 승인과 주문 결제 승인 두 유스케이스가 같이 쓴다.
- * UseCase에서 사용하는 지원 컴포넌트
- */
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -88,7 +85,7 @@ public class PgApprovalSupport {
         }
     }
 
-    /** 사용자 요청 충전 취소 (전액). 실패하면 예외를 그대로 올린다 */
+    // 사용자 요청 충전 취소 (전액). 실패하면 예외를 그대로 올린다
     public void cancel(Charge charge, String reason) {
         toss.cancel(charge.getPaymentKey(), reason, CANCEL_KEY_PREFIX + charge.getPgOrderId());
     }

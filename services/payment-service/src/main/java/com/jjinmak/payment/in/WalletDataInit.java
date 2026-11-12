@@ -15,10 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * 앱이 뜰 때 ESCROW, FEE 시스템 지갑이 없으면 만들어 둔다.
- * 이미 있으면 아무것도 하지 않으므로 여러 번 실행돼도 안전하다(멱등).
- */
 
 @Component
 @Order(1)

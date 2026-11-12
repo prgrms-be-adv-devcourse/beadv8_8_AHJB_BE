@@ -23,25 +23,21 @@ public class TossWebhookFacade {
     private final TossWebhookReceiveUseCase tossWebhookReceiveUseCase;
     private final TossWebhookProcessUseCase tossWebhookProcessUseCase;
 
-    /** 웹훅 저장. 반환값은 저장된 이벤트 id */
     @Transactional
     public Long receive(TossWebhookReceiveDto dto) {
         return tossWebhookReceiveUseCase.receive(dto);
     }
 
-    /** 처리 대상 웹훅 id */
     @Transactional(readOnly = true)
     public List<Long> findProcessableIds() {
         return tossWebhookProcessUseCase.findProcessableIds();
     }
 
-    /** 웹훅 1건 처리 */
     @Transactional
     public void process(Long eventId) {
         tossWebhookProcessUseCase.process(eventId);
     }
 
-    /** 처리 중 예외로 롤백된 웹훅의 실패 기록 */
     @Transactional
     public void recordFailure(Long eventId, String error) {
         tossWebhookProcessUseCase.recordFailure(eventId, error);

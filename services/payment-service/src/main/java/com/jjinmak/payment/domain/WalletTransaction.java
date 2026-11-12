@@ -105,9 +105,7 @@ public class WalletTransaction {
         this.createdAt = LocalDateTime.now();
     }
 
-    /**
-     * 예치금(DEPOSIT) 변동 기록. 지갑 잔액을 먼저 변경한 뒤 호출한다.
-     */
+    // 예치금(DEPOSIT) 변동 기록. 지갑 잔액을 먼저 변경한 뒤 호출한다.
     public static WalletTransaction of(Wallet wallet,
                                        WalletTransactionType type,
                                        long signedAmount,
@@ -117,10 +115,9 @@ public class WalletTransaction {
         return of(wallet, WalletAccount.DEPOSIT, type, signedAmount, transactionGroupId, referenceType, referenceId);
     }
 
-    /**
-     * 주머니를 지정한 변동 기록. 지갑 잔액을 먼저 변경한 뒤 호출한다.
-     * balanceAfter 는 호출 시점의 해당 주머니 잔액을 그대로 저장한다.
-     */
+
+    // 주머니를 지정한 변동 기록. 지갑 잔액을 먼저 변경한 뒤 호출한다.
+    // balanceAfter 는 호출 시점의 해당 주머니 잔액을 그대로 저장한다.
     public static WalletTransaction of(Wallet wallet,
                                        WalletAccount account,
                                        WalletTransactionType type,

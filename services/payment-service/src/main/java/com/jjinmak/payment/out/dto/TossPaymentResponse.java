@@ -29,7 +29,6 @@ public record TossPaymentResponse(
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Failure(String code, String message) {}
 
-    /** 토스 매출전표 링크. 사용자에게 영수증으로 보여준다 */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Receipt(String url) {}
 
@@ -45,7 +44,6 @@ public record TossPaymentResponse(
         return "CANCELED".equals(status) || "PARTIAL_CANCELED".equals(status);
     }
 
-    /** ABORTED / EXPIRED 처럼 다시 승인될 수 없는 상태 */
     public boolean isDead() {
         return "ABORTED".equals(status) || "EXPIRED".equals(status);
     }

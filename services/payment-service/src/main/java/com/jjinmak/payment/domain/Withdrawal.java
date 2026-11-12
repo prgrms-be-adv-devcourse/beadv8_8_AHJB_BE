@@ -38,7 +38,6 @@ public class Withdrawal extends BaseIdAndTime {
     @JoinColumn(nullable = false)
     private Wallet wallet;
 
-    /** 회원 id (= WalletMember id) */
     @Column(nullable = false)
     private Long holderId;
 
@@ -74,12 +73,10 @@ public class Withdrawal extends BaseIdAndTime {
         this.status = WithdrawalStatus.REQUESTED;
     }
 
-    /** 예치금 출금 요청 */
     public static Withdrawal requestDeposit(Wallet wallet, Long holderId, long amount) {
         return new Withdrawal(wallet, holderId, amount, WalletAccount.DEPOSIT);
     }
 
-    /** 지갑 차감 + 원장 기록이 끝난 뒤 호출. 지금은 송금이 없으므로 같은 트랜잭션에서 바로 완료 처리한다 */
     public void complete(LocalDateTime completedAt) {
         if (status == WithdrawalStatus.COMPLETED) return;
         requireRequested();
@@ -87,7 +84,7 @@ public class Withdrawal extends BaseIdAndTime {
         this.completedAt = completedAt;
     }
 
-    /** 송금 실패 (계좌 송금 연동 후 사용) */
+    // 송금 실패 (계좌 송금 연동 후 사용)
     public void fail(LocalDateTime failedAt, String reason) {
         if (status == WithdrawalStatus.FAILED) return;
         requireRequested();
