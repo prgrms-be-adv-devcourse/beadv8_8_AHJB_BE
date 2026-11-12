@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: product-config
+  namespace: app
+data:
+  DB_URL: jdbc:postgresql://postgres.infra.svc.cluster.local:5432/product_db
+  KAFKA_BOOTSTRAP_SERVERS: kafka.infra.svc.cluster.local:19092
+  # 상품 이미지 저장소 (S3, 서버 IAM 역할로 접근 - Access Key 없음)
+  IMAGE_STORAGE: s3
+  S3_BUCKET: team03-jjinmak-s3-823315816237-ap-northeast-2-an
+  AWS_REGION: ap-northeast-2
+  S3_KEY_PREFIX: dev/
+  S3_PUBLIC_BASE_URL: https://team03-jjinmak-s3-823315816237-ap-northeast-2-an.s3.ap-northeast-2.amazonaws.com
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product-service
+  template:
+    metadata:
+      labels:
+        app: product-service
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: product-service
+          image: ghcr.io/prgrms-be-adv-devcourse/beadv8_8_ahjb_be/product-service:918038209e04bed45a7fb17dc5a6acdebe9b95b7
+          ports:
+            - containerPort: 8086
+          envFrom:
+            - configMapRef:
+                name: product-config
+            - secretRef:
+                name: product-db-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+  namespace: app
+spec:
+  selector:
+    app: product-service
+  ports:
+    - port: 80
+      targetPort: 8086
