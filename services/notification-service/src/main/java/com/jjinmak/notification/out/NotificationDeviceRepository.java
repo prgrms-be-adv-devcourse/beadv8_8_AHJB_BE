@@ -7,8 +7,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 
 public interface NotificationDeviceRepository extends JpaRepository<NotificationDevice, Long> {
+
+    List<NotificationDevice> findByMemberIdIn(Collection<Long> memberIds);
 
     @Modifying
     @Query(nativeQuery = true, value = """

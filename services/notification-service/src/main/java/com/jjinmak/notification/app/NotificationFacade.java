@@ -8,6 +8,7 @@ import com.jjinmak.contracts.order.event.*;
 import com.jjinmak.contracts.payment.event.WalletReleasedEvent;
 import com.jjinmak.contracts.refund.event.RefundCompletedEvent;
 import com.jjinmak.contracts.refund.event.RefundRejectedEvent;
+import com.jjinmak.notification.app.event.NotificationsCreatedEvent;
 import com.jjinmak.notification.app.mapper.*;
 import com.jjinmak.notification.domain.Notification;
 import com.jjinmak.notification.domain.NotificationCategory;
@@ -15,6 +16,7 @@ import com.jjinmak.notification.dto.NotificationListResponseDto;
 import com.jjinmak.notification.dto.NotificationSettingsResponseDto;
 import com.jjinmak.notification.dto.NotificationSettingsUpdateRequestDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +37,7 @@ public class NotificationFacade {
     private final NotificationReadUseCase notificationReadUseCase;
     private final NotificationDeviceUseCase notificationDeviceUseCase;
     private final NotificationSettingUseCase notificationSettingUseCase;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public int notifyAuctionWon(AuctionWonEvent event, LocalDateTime now) {
@@ -122,7 +125,11 @@ public class NotificationFacade {
     }
 
     private int save(List<Notification> notifications, LocalDateTime now) {
-        return notificationCreateUseCase.create(notifications, now);
+        List<Long> savedIds = notificationCreateUseCase.create(notifications, now);
+        if (!savedIds.isEmpty()) {
+            eventPublisher.publishEvent(new NotificationsCreatedEvent(savedIds));
+        }
+        return savedIds.size();
     }
 
     @Transactional
