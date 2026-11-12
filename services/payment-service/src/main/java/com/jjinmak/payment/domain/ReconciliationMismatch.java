@@ -21,6 +21,7 @@ import static com.jjinmak.payment.exception.PaymentErrorCode.*;
  *
  *   OPEN → RESOLVED   (돈이나 상태를 맞춰서 해결)
  *   OPEN → IGNORED    (확인했고 조치가 필요 없음)
+ *   RESOLVED → OPEN   (해결했다고 닫았는데 재실행에서 다시 발견됨)
  *
  * 무엇이 어긋났는지
  * - type       : 어떻게 어긋났는지 (MismatchType)
@@ -164,6 +165,19 @@ public class ReconciliationMismatch extends BaseIdAndTime {
     public void resolveBySystem(LocalDateTime now) {
         if (status != OPEN) return;
         close(RESOLVED, now, RESOLVED_BY_SYSTEM, "재실행에서 더 이상 발견되지 않음");
+    }
+
+    // 해결했다고 닫은 건(RESOLVED)이 재실행에서 다시 발견됨. 실제로는 해결되지 않았으므로 OPEN 으로 되돌리고 처리 기록을 비운다.
+    // 이미 OPEN 이면 아무 것도 하지 않는다 (멱등). IGNORED 는 운영자가 조치 불필요로 판단한 건이라 되돌리지 않는다
+    public void reopen() {
+        if (status == OPEN) return;
+        if (status != RESOLVED) {
+            throw new BusinessException(INVALID_MISMATCH_STATUS);
+        }
+        this.status = OPEN;
+        this.resolvedAt = null;
+        this.resolvedBy = null;
+        this.resolutionNote = null;
     }
 
     public boolean isOpen() {
