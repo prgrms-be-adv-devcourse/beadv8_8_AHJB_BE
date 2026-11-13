@@ -8,7 +8,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -22,25 +24,30 @@ public class NotificationPushUseCase {
     public void push(List<Long> notificationIds) {
         List<PushTarget> targets = notificationPushReader.read(notificationIds);
         List<Long> pushedIds = new ArrayList<>();
+        Set<String> invalidTokens = new LinkedHashSet<>();
 
         for (PushTarget target : targets) {
-            if (send(target)) {
+            List<PushResult> results = send(target);
+            if (results.stream().anyMatch(PushResult::isSuccess)) {
                 pushedIds.add(target.message().notificationId());
             }
+            results.stream()
+                    .filter(PushResult::isInvalidToken)
+                    .map(PushResult::token)
+                    .forEach(invalidTokens::add);
         }
 
-        if (!pushedIds.isEmpty()) {
-            notificationPushWriter.markPushed(pushedIds, LocalDateTime.now());
+        if (!pushedIds.isEmpty() || !invalidTokens.isEmpty()) {
+            notificationPushWriter.record(pushedIds, invalidTokens, LocalDateTime.now());
         }
     }
 
-    private boolean send(PushTarget target) {
+    private List<PushResult> send(PushTarget target) {
         try {
-            List<PushResult> results = pushSender.send(target.message(), target.tokens());
-            return results.stream().anyMatch(PushResult::isSuccess);
+            return pushSender.send(target.message(), target.tokens());
         } catch (Exception e) {
             log.warn("푸시 발송 실패. notificationId={}", target.message().notificationId(), e);
-            return false;
+            return List.of();
         }
     }
 }

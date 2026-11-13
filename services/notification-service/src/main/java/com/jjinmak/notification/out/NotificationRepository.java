@@ -59,4 +59,5 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
         where n.id in :ids and n.pushedAt is null
         """)
     int markPushed(@Param("ids") Collection<Long> ids, @Param("now") LocalDateTime now);
+
 }

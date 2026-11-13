@@ -119,7 +119,7 @@ class NotificationPushTest extends NotificationIntegrationTestSupport {
     @Test
     void 발송이_느려도_알림_저장은_기다리지_않는다() {
         given(pushSender.send(any(), anyList())).willAnswer(invocation -> {
-            Thread.sleep(3000);
+            Thread.sleep(2000);
             return List.of();
         });
 
@@ -129,6 +129,9 @@ class NotificationPushTest extends NotificationIntegrationTestSupport {
 
         assertThat(saved).isEqualTo(2);
         assertThat(elapsed).isLessThan(1000);
+        // 한 이벤트의 알림 2건은 푸시 스레드 하나에서 차례로 보낸다(2초 + 2초).
+        // 둘 다 이 테스트 안에서 호출될 때까지 기다려야 다음 테스트에 호출이 섞이지 않는다
+        verify(pushSender, timeout(5000).times(2)).send(any(), anyList());
     }
 
     @Test
@@ -147,5 +150,21 @@ class NotificationPushTest extends NotificationIntegrationTestSupport {
         assertThat(notificationDeviceRepository.findAll())
                 .extracting(device -> device.getToken())
                 .containsExactly("token-seller");
+    }
+
+    @Test
+    void 무효_토큰이_아닌_실패_응답이면_기기를_지우지_않는다() throws Exception {
+        given(pushSender.send(any(), anyList())).willAnswer(invocation -> {
+            List<String> tokens = invocation.getArgument(1);
+            return tokens.stream().map(PushResult::failed).toList();
+        });
+
+        notificationFacade.notifyAuctionWon(WON, NOW);
+
+        verify(pushSender, timeout(3000).times(2)).send(any(), anyList());
+        Thread.sleep(300);
+        assertThat(notificationDeviceRepository.count()).isEqualTo(2);
+        assertThat(notificationRepository.findAll())
+                .allMatch(n -> n.getPushedAt() == null);
     }
 }

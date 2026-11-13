@@ -30,4 +30,8 @@ public interface NotificationDeviceRepository extends JpaRepository<Notification
     @Modifying
     @Query("delete from NotificationDevice d where d.token = :token and d.memberId = :memberId")
     int deleteByTokenAndMemberId(@Param("token") String token, @Param("memberId") Long memberId);
+
+    @Modifying
+    @Query("delete from NotificationDevice d where d.token in :tokens")
+    int deleteByTokenIn(@Param("tokens") Collection<String> tokens);
 }

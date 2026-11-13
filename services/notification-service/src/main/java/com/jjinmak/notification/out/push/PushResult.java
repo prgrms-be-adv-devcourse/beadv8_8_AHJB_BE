@@ -23,4 +23,8 @@ public record PushResult(String token, Status status) {
     public boolean isSuccess() {
         return status == Status.SUCCESS;
     }
+
+    public boolean isInvalidToken() {
+        return status == Status.INVALID_TOKEN;
+    }
 }
