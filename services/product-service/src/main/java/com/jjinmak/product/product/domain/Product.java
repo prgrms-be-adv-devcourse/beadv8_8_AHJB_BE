@@ -157,6 +157,14 @@ public class Product extends BaseIdAndTime {
         this.auctionRequestedAt = now;
     }
 
+    // 경매를 요청했지만 아직 경매 소식(시작·결과)을 하나도 받지 못했으면 요청을 다시 보낼 수 있다.
+    public boolean isAuctionResendable() {
+        return deletedAt == null
+                && auctionRequestedAt != null
+                && currentAuctionId == null
+                && getAuctionStatus() == ProductAuctionStatus.SCHEDULED;
+    }
+
     // 경매 컨텍스트에서 경매가 시작되면 현재 회차의 경매 id와 종료 시각을 기록한다.
     public void startAuction(Long auctionId, LocalDateTime endAt) {
         ProductAuctionState state = auctionState(); // currentAuctionId를 바꾸기 전에 기존 상태를 확정한다
