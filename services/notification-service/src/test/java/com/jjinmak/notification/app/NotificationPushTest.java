@@ -130,4 +130,22 @@ class NotificationPushTest extends NotificationIntegrationTestSupport {
         assertThat(saved).isEqualTo(2);
         assertThat(elapsed).isLessThan(1000);
     }
+
+    @Test
+    void FCM이_무효_토큰이라고_응답하면_그_기기를_삭제하고_다른_기기는_남긴다() throws Exception {
+        given(pushSender.send(any(), anyList())).willAnswer(invocation -> {
+            List<String> tokens = invocation.getArgument(1);
+            return tokens.stream()
+                    .map(token -> token.equals("token-winner") ? PushResult.invalidToken(token) : PushResult.success(token))
+                    .toList();
+        });
+
+        notificationFacade.notifyAuctionWon(WON, NOW);
+
+        될_때까지_기다린다(() -> notificationDeviceRepository.findAll().stream()
+                .noneMatch(device -> device.getToken().equals("token-winner")));
+        assertThat(notificationDeviceRepository.findAll())
+                .extracting(device -> device.getToken())
+                .containsExactly("token-seller");
+    }
 }

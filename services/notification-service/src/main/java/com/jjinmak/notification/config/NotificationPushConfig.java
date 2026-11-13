@@ -1,6 +1,7 @@
 package com.jjinmak.notification.config;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -9,6 +10,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 @Slf4j
 @EnableAsync
 @Configuration
+@EnableConfigurationProperties(NotificationPushProperties.class)
 public class NotificationPushConfig {
 
     public static final String PUSH_EXECUTOR = "pushExecutor";
