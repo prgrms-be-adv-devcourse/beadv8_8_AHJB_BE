@@ -21,17 +21,29 @@ public interface ProductEmbeddingRepository extends JpaRepository<ProductEmbeddi
     List<Long> findAllByStatusAndModel(EmbeddingStatus status, String model);
 
     @Query(value = """
-        SELECT a.id AS auctionId, a.product_id AS productId, p.category AS category,
-               a.current_price AS currentPrice, a.end_at AS endAt
-        FROM product_embedding base
-        JOIN product_embedding e ON e.status = 'READY' AND e.model = :model
-        JOIN recommend_product p ON p.id = e.id AND p.deleted = false
-        JOIN recommend_auction a ON a.product_id = e.id
-        WHERE base.id = :productId
-          AND base.status = 'READY' AND base.model = :model
-          AND a.id <> :auctionId
-          AND a.status = 'ACTIVE' AND a.end_at > now()
-        ORDER BY e.embedding <#> base.embedding
+        WITH scored AS MATERIALIZED (
+            SELECT a.id, a.product_id, p.category, a.current_price, a.end_at,
+                   -(e.embedding <#> base.embedding) AS similarity,
+                   COALESCE(s.score, 0) AS cf_score,
+                   CASE WHEN s.product_id IS NULL THEN 0
+                        ELSE LEAST(1, (SELECT count(DISTINCT r.member_id)
+                                       FROM interaction r
+                                       WHERE r.product_id = e.id AND r.active = true) / 5.0)
+                   END AS confidence
+            FROM product_embedding base
+            JOIN product_embedding e ON e.status = 'READY' AND e.model = :model
+            JOIN recommend_product p ON p.id = e.id AND p.deleted = false
+            JOIN recommend_auction a ON a.product_id = e.id
+            LEFT JOIN product_cf_similarity s ON s.product_id = e.id AND s.other_product_id = base.id
+            WHERE base.id = :productId
+              AND base.status = 'READY' AND base.model = :model
+              AND a.id <> :auctionId
+              AND a.status = 'ACTIVE' AND a.end_at > now()
+        )
+        SELECT id AS auctionId, product_id AS productId, category AS category,
+               current_price AS currentPrice, end_at AS endAt
+        FROM scored
+        ORDER BY (1 - 0.3 * confidence) * similarity + 0.3 * confidence * cf_score DESC
         LIMIT :size
         """, nativeQuery = true)
     List<AuctionRow> findSimilarAuctions(Long productId, Long auctionId, String model, int size);
@@ -64,17 +76,31 @@ public interface ProductEmbeddingRepository extends JpaRepository<ProductEmbeddi
             JOIN product_embedding b ON b.id = h.product_id AND b.status = 'READY' AND b.model = :model
             GROUP BY c.id
         ),
+        collaboration AS (
+            SELECT c.id, max(h.weight * s.score) AS cf_score,
+                   LEAST(1, (SELECT count(DISTINCT r.member_id)
+                             FROM interaction r
+                             WHERE r.product_id = c.product_id AND r.active = true) / 5.0) AS confidence
+            FROM candidate c
+            CROSS JOIN history h
+            JOIN product_cf_similarity s ON s.product_id = c.product_id AND s.other_product_id = h.product_id
+            GROUP BY c.id, c.product_id
+        ),
         scored AS (
             SELECT c.*, t.taste_score,
+                   COALESCE(cf.cf_score, 0) AS cf_score,
+                   COALESCE(cf.confidence, 0) AS confidence,
                    COALESCE(ln(1 + c.bidder_count) / NULLIF(max(ln(1 + c.bidder_count)) OVER (), 0), 0) AS popularity,
                    GREATEST(0, 1 - EXTRACT(EPOCH FROM (c.end_at - now())) / 86400) AS urgency
             FROM candidate c
             JOIN taste t ON t.id = c.id
+            LEFT JOIN collaboration cf ON cf.id = c.id
         )
         SELECT id AS auctionId, product_id AS productId, category AS category,
                current_price AS currentPrice, end_at AS endAt
         FROM scored
-        ORDER BY 0.8 * taste_score + 0.1 * popularity + 0.1 * urgency DESC, end_at, id
+        ORDER BY (0.8 - 0.2 * confidence) * taste_score + 0.2 * confidence * cf_score
+                 + 0.1 * popularity + 0.1 * urgency DESC, end_at, id
         LIMIT 10
         """, nativeQuery = true)
     List<AuctionRow> findPersonalAuctions(Long memberId, String model, String productIds, String weights);
