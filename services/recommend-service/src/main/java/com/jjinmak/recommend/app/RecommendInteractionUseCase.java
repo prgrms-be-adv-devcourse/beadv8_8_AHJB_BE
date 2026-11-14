@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 
 import static com.jjinmak.common.exception.CommonErrorCode.USER_NOT_FOUND;
-import static com.jjinmak.contracts.product.event.ProductWishChangeType.WISHED;
 import static com.jjinmak.recommend.exception.RecommendErrorCode.AUCTION_NOT_FOUND;
 import static com.jjinmak.recommend.exception.RecommendErrorCode.PRODUCT_NOT_FOUND;
 
@@ -72,6 +71,7 @@ public class RecommendInteractionUseCase {
                 ));
 
         auction.setEndAt(event.endAt());
+        auction.updateBid(event.bidPrice(), event.bidCount());
 
         interaction.update(event.bidAt());
 

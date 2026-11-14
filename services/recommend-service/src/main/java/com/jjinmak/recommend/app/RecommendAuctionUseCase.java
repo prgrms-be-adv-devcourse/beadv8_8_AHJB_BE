@@ -35,8 +35,8 @@ public class RecommendAuctionUseCase {
 
         Long productId = auction.getProductId();
 
-        ProductEmbedding embedding = embeddingRepository.findById(productId)
-                .orElseThrow(() -> new BusinessException(EMBEDDING_NOT_FOUND));
+        if (!embeddingRepository.existsById(productId))
+            throw new BusinessException(EMBEDDING_NOT_FOUND);
 
         List<AuctionRow> rows = embeddingRepository.findSimilarAuctions(productId, auctionId, model, 10);
 

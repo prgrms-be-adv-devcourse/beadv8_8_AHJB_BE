@@ -93,12 +93,12 @@ class RecommendPopularAuctionTest extends RecommendIntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("응답 항목에는 경매 id, 상품 id, 카테고리, 현재가, 종료 시각이 들어간다")
+    @DisplayName("응답 항목에는 경매 id, 상품 id, 카테고리, 입찰가가 반영된 현재가, 종료 시각이 들어간다")
     void popular_mapsAuctionFields() {
         auction(3001L, 301L, now.plusHours(72), 1L);
 
         assertThat(recommendFacade.readPopularAuctionList())
-                .containsExactly(new AuctionResponseDto(3001L, 301L, CATEGORY, START_PRICE, now.plusHours(72)));
+                .containsExactly(new AuctionResponseDto(3001L, 301L, CATEGORY, START_PRICE + 1000, now.plusHours(72)));
     }
 
     @Test

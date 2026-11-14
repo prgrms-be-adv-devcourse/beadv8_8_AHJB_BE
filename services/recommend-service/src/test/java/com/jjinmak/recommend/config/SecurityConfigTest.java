@@ -5,12 +5,15 @@ import com.jjinmak.recommend.support.RecommendIntegrationTestSupport;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpMethod;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -34,6 +37,25 @@ class SecurityConfigTest extends RecommendIntegrationTestSupport {
         mockMvc.perform(get("/api/v1/recommend/auction/{auctionId}", 9999L))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errorCode").value("recommend002"));
+    }
+
+    @ParameterizedTest(name = "{0} {1}")
+    @CsvSource({
+            "POST, /api/v1/recommend/popular",
+            "PUT, /api/v1/recommend/popular",
+            "PATCH, /api/v1/recommend/popular",
+            "DELETE, /api/v1/recommend/popular",
+            "POST, /api/v1/recommend/auction/1",
+            "PUT, /api/v1/recommend/auction/1",
+            "PATCH, /api/v1/recommend/auction/1",
+            "DELETE, /api/v1/recommend/auction/1"
+    })
+    @DisplayName("회원 헤더 없이 열린 추천 API도 GET이 아닌 요청은 401 COMMON002를 돌려준다")
+    void publicRecommendApis_nonGetWithoutMemberHeader_returnsUnauthorized(String method, String uri) throws Exception {
+        mockMvc.perform(request(HttpMethod.valueOf(method), uri))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.isSuccess").value(false))
+                .andExpect(jsonPath("$.errorCode").value("COMMON002"));
     }
 
     @Test
