@@ -2,6 +2,7 @@ package com.jjinmak.notification.app.mapper;
 
 import com.jjinmak.common.kafka.InvalidEventException;
 import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
+import com.jjinmak.contracts.auction.event.AuctionEndingSoonEvent;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
 import com.jjinmak.notification.domain.Notification;
@@ -54,5 +55,17 @@ public class AuctionNotificationMapper {
                         "더 높은 입찰이 들어왔어요", "참여한 경매의 현재가가 %,d원이 되었어요.".formatted(event.bidPrice()),
                         AUCTION, event.auctionId(), "bid-" + event.bidId(), event.bidAt())
         );
+    }
+    public List<Notification> fromEndingSoon(AuctionEndingSoonEvent event) {
+        if (event.auctionId() == null) {
+            throw new InvalidEventException("마감 임박 이벤트에 경매 id가 없습니다.");
+        }
+        String referenceKey = "auction-" + event.auctionId();
+        return event.bidderIds().stream()
+                .distinct()
+                .map(bidderId -> Notification.create(bidderId, AUCTION_ENDING_SOON,
+                        "경매 마감 10분 전이에요", "참여한 경매가 곧 끝나요. 최고가인지 확인해 보세요.",
+                        AUCTION, event.auctionId(), referenceKey, event.occurredAt()))
+                .toList();
     }
 }

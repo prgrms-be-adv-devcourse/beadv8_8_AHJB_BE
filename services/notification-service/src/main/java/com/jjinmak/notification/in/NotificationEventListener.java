@@ -1,6 +1,7 @@
 package com.jjinmak.notification.in;
 
 import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
+import com.jjinmak.contracts.auction.event.AuctionEndingSoonEvent;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
 import com.jjinmak.contracts.cart.event.CartPaymentDefaultEvent;
@@ -100,6 +101,10 @@ public class NotificationEventListener {
     @KafkaListener(topics = AUCTION_BID_SUCCEED, groupId = GROUP)
     public void handleBidSucceed(AuctionBidSucceedEvent event) {
         log(AUCTION_BID_SUCCEED, notificationFacade.notifyOutbid(event, now()));
+    }
+    @KafkaListener(topics = AUCTION_ENDING_SOON, groupId = GROUP)
+    public void handleEndingSoon(AuctionEndingSoonEvent event) {
+        log(AUCTION_ENDING_SOON, notificationFacade.notifyEndingSoon(event, now()));
     }
 
     private LocalDateTime now() {
