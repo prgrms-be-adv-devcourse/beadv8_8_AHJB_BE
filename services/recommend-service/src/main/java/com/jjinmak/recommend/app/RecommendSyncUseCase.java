@@ -17,7 +17,10 @@ import com.jjinmak.recommend.out.repository.RecommendProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.List;
 
 import static com.jjinmak.recommend.domain.AuctionStatus.ENDED;
@@ -120,25 +123,11 @@ public class RecommendSyncUseCase {
     }
 
     private String encryptSHA256(String s){
-        String res = "";
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
-            byte[] hash = digest.digest(s.getBytes("UTF-8"));
-
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) {
-                    hexString.append('0');
-                }
-                hexString.append(hex);
-            }
-            res = hexString.toString();
-
-        } catch (Exception e) {
+            return HexFormat.of().formatHex(digest.digest(s.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
             throw new BusinessException(HASH_FAIL);
         }
-        return res;
     }
 }
