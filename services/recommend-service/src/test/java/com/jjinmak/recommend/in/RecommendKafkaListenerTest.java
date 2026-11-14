@@ -5,6 +5,7 @@ import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
 import com.jjinmak.contracts.product.event.ProductChangedEvent;
+import com.jjinmak.contracts.product.event.ProductWishChangedEvent;
 import com.jjinmak.recommend.app.RecommendFacade;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.stream.Stream;
 
 import static com.jjinmak.contracts.product.event.ProductChangeType.CREATED;
+import static com.jjinmak.contracts.product.event.ProductWishChangeType.WISHED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.Mockito.verify;
@@ -43,7 +45,8 @@ class RecommendKafkaListenerTest {
                 arguments(AuctionStartedEvent.class, "auction.started"),
                 arguments(AuctionWonEvent.class, "auction.won"),
                 arguments(AuctionFailedEvent.class, "auction.failed"),
-                arguments(AuctionBidSucceedEvent.class, "auction.bid-succeed")
+                arguments(AuctionBidSucceedEvent.class, "auction.bid-succeed"),
+                arguments(ProductWishChangedEvent.class, "product.wish.changed")
         );
     }
 
@@ -110,6 +113,17 @@ class RecommendKafkaListenerTest {
         recommendKafkaListener.handle(event);
 
         verify(recommendFacade).bidAuction(event);
+        verifyNoMoreInteractions(recommendFacade);
+    }
+
+    @Test
+    @DisplayName("찜 변경 이벤트를 받으면 찜 상호작용을 반영한다")
+    void productWishChanged_changesWish() {
+        ProductWishChangedEvent event = new ProductWishChangedEvent(55L, 7L, WISHED, 100L, AT);
+
+        recommendKafkaListener.handle(event);
+
+        verify(recommendFacade).changeWish(event);
         verifyNoMoreInteractions(recommendFacade);
     }
 }
