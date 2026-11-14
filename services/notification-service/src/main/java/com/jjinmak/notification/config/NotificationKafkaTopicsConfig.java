@@ -15,6 +15,7 @@ import static com.jjinmak.contracts.order.event.OrderEventTopics.*;
 import static com.jjinmak.contracts.payment.event.PaymentEventTopics.PAYMENT_RELEASED_EVENT;
 import static com.jjinmak.contracts.refund.event.RefundEventTopics.REFUND_COMPLETED;
 import static com.jjinmak.contracts.refund.event.RefundEventTopics.REFUND_REJECTED;
+import static com.jjinmak.contracts.auction.event.AuctionEventTopics.AUCTION_BID_SUCCEED;
 
 @Configuration
 public class NotificationKafkaTopicsConfig {
@@ -22,7 +23,7 @@ public class NotificationKafkaTopicsConfig {
     private static final String DLT = "-dlt";
 
     static final List<String> SUBSCRIBED_TOPICS = List.of(
-            AUCTION_WON, AUCTION_FAILED,
+            AUCTION_WON, AUCTION_FAILED, AUCTION_BID_SUCCEED,
             CART_PAYMENT_DEFAULT, ORDER_REMIND_PAYMENT_DEFAULT,
             ORDER_PAYMENT_SUCCEED, ORDER_SEND_PRODUCT, ORDER_CONFIRM_PURCHASE,
             ORDER_REMIND_AUTO_CONFIRM, ORDER_REFUND_REQUESTED,

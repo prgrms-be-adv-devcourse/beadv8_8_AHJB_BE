@@ -1,5 +1,6 @@
 package com.jjinmak.notification.in;
 
+import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
 import com.jjinmak.contracts.cart.event.CartPaymentDefaultEvent;
@@ -16,8 +17,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
-import static com.jjinmak.contracts.auction.event.AuctionEventTopics.AUCTION_FAILED;
-import static com.jjinmak.contracts.auction.event.AuctionEventTopics.AUCTION_WON;
+import static com.jjinmak.contracts.auction.event.AuctionEventTopics.*;
 import static com.jjinmak.contracts.delivery.event.DeliveryEventTopics.DELIVERY_STATUS_UPDATED;
 import static com.jjinmak.contracts.order.event.OrderEventTopics.*;
 import static com.jjinmak.contracts.payment.event.PaymentEventTopics.PAYMENT_RELEASED_EVENT;
@@ -96,6 +96,10 @@ public class NotificationEventListener {
     @KafkaListener(topics = PAYMENT_RELEASED_EVENT, groupId = GROUP)
     public void handleSettlementPaid(WalletReleasedEvent event) {
         log(PAYMENT_RELEASED_EVENT, notificationFacade.notifySettlementPaid(event, now()));
+    }
+    @KafkaListener(topics = AUCTION_BID_SUCCEED, groupId = GROUP)
+    public void handleBidSucceed(AuctionBidSucceedEvent event) {
+        log(AUCTION_BID_SUCCEED, notificationFacade.notifyOutbid(event, now()));
     }
 
     private LocalDateTime now() {
