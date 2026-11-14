@@ -6,6 +6,7 @@ metadata:
 data:
   DB_URL: jdbc:postgresql://postgres.infra.svc.cluster.local:5432/notification_db
   KAFKA_BOOTSTRAP_SERVERS: kafka.infra.svc.cluster.local:19092
+  WEB_BASE_URL: https://jjinmak.kro.kr/
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -34,6 +35,9 @@ spec:
                 name: notification-config
             - secretRef:
                 name: notification-db-secret
+            - secretRef:
+                name: notification-fcm-secret
+                optional: true
 ---
 apiVersion: v1
 kind: Service
