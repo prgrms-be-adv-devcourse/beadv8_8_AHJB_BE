@@ -5,6 +5,7 @@ import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
 import com.jjinmak.contracts.product.event.ProductChangedEvent;
+import com.jjinmak.contracts.product.event.ProductWishChangedEvent;
 import com.jjinmak.recommend.support.RecommendIntegrationTestSupport;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.DisplayName;
@@ -21,6 +22,8 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static com.jjinmak.contracts.product.event.ProductChangeType.DELETED;
+import static com.jjinmak.contracts.product.event.ProductWishChangeType.UNWISHED;
+import static com.jjinmak.contracts.product.event.ProductWishChangeType.WISHED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Named.named;
 
@@ -38,7 +41,9 @@ class KafkaEventSubscribingTest extends RecommendIntegrationTestSupport {
                 named("auction.started", new AuctionStartedEvent(100L, 55L, 10000L, 50000L, AT, AT.plusDays(3))),
                 named("auction.won", new AuctionWonEvent(100L, 55L, 7L, 9L, 30000L, 3000L, AT.plusDays(1))),
                 named("auction.failed", new AuctionFailedEvent(100L, 55L, "UNPAID", AT.plusDays(2))),
-                named("auction.bid-succeed", new AuctionBidSucceedEvent(1L, 100L, 55L, 7L, 21000L, 4, AT.plusDays(3), AT.plusHours(1)))
+                named("auction.bid-succeed", new AuctionBidSucceedEvent(1L, 100L, 55L, 7L, 21000L, 4, AT.plusDays(3), AT.plusHours(1))),
+                named("product.wish.changed (경매 시작 전)", new ProductWishChangedEvent(55L, 7L, WISHED, null, AT.minusHours(1))),
+                named("product.wish.changed (경매 진행 중)", new ProductWishChangedEvent(55L, 7L, UNWISHED, 100L, AT.plusHours(1)))
         );
     }
 

@@ -5,6 +5,7 @@ import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
 import com.jjinmak.contracts.product.event.ProductChangedEvent;
+import com.jjinmak.contracts.product.event.ProductWishChangedEvent;
 import com.jjinmak.recommend.app.dto.AuctionResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -69,5 +70,10 @@ public class RecommendFacade {
     @Transactional(readOnly = true)
     public List<AuctionResponseDto> readPersonalRecommendedAuctionList(Long memberId){
         return recommendAuctionUseCase.readPersonalRecommendedAuctionList(memberId);
+    }
+
+    @Transactional
+    public void changeWish(ProductWishChangedEvent event){
+        interactionUseCase.changeWish(event);
     }
 }

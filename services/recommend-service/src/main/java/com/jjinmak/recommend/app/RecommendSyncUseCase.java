@@ -6,9 +6,11 @@ import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
 import com.jjinmak.contracts.product.event.ProductChangeType;
 import com.jjinmak.contracts.product.event.ProductChangedEvent;
+import com.jjinmak.recommend.domain.PendingInteraction;
 import com.jjinmak.recommend.domain.ProductEmbedding;
 import com.jjinmak.recommend.domain.RecommendAuction;
 import com.jjinmak.recommend.domain.RecommendProduct;
+import com.jjinmak.recommend.out.repository.PendingInteractionRepository;
 import com.jjinmak.recommend.out.repository.ProductEmbeddingRepository;
 import com.jjinmak.recommend.out.repository.RecommendAuctionRepository;
 import com.jjinmak.recommend.out.repository.RecommendProductRepository;
@@ -16,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.security.MessageDigest;
+import java.util.List;
 
 import static com.jjinmak.recommend.domain.AuctionStatus.ENDED;
 import static com.jjinmak.recommend.exception.RecommendErrorCode.*;
@@ -27,6 +30,8 @@ public class RecommendSyncUseCase {
     private final RecommendProductRepository recommendProductRepository;
     private final RecommendAuctionRepository recommendAuctionRepository;
     private final ProductEmbeddingRepository embeddingRepository;
+    private final PendingInteractionRepository pendingInteractionRepository;
+    private final RecommendSupport recommendSupport;
 
     public void syncProduct(ProductChangedEvent event){
         Long productId = event.productId();
@@ -73,11 +78,24 @@ public class RecommendSyncUseCase {
     }
 
     public void startAuction(AuctionStartedEvent event){
+        Long auctionId = event.auctionId();
+        Long productId = event.productId();
+
         recommendAuctionRepository.save(new RecommendAuction(
-                event.auctionId(), event.productId(),
+                auctionId, event.productId(),
                 event.instantWinPrice(), event.startPrice(),
                 event.startAt(), event.endAt()
         ));
+
+        List<PendingInteraction> pendingInteractions = pendingInteractionRepository.findAllByProductIdOrderByOccurredAt(productId);
+
+        for (PendingInteraction pendingInteraction : pendingInteractions){
+            recommendSupport.updateWish(
+                    pendingInteraction.getMemberId(), productId, auctionId,
+                    pendingInteraction.getChangeType(), pendingInteraction.getOccurredAt()
+            );
+            pendingInteractionRepository.delete(pendingInteraction);
+        }
     }
 
     public void winAuction(AuctionWonEvent event){

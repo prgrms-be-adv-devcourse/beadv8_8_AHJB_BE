@@ -3,6 +3,8 @@ package com.jjinmak.recommend.app;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
+import com.jjinmak.contracts.product.event.ProductWishChangeType;
+import com.jjinmak.contracts.product.event.ProductWishChangedEvent;
 import com.jjinmak.recommend.domain.*;
 import com.jjinmak.recommend.out.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 
 import static com.jjinmak.common.exception.CommonErrorCode.USER_NOT_FOUND;
+import static com.jjinmak.contracts.product.event.ProductWishChangeType.WISHED;
 import static com.jjinmak.recommend.exception.RecommendErrorCode.AUCTION_NOT_FOUND;
 import static com.jjinmak.recommend.exception.RecommendErrorCode.PRODUCT_NOT_FOUND;
 
@@ -24,6 +27,7 @@ public class RecommendInteractionUseCase {
     private final RecommendMemberRepository recommendMemberRepository;
     private final RecommendProductRepository recommendProductRepository;
     private final RecommendAuctionRepository recommendAuctionRepository;
+    private final PendingInteractionRepository pendingInteractionRepository;
 
     public void winAuction(AuctionWonEvent event){
 
@@ -87,5 +91,20 @@ public class RecommendInteractionUseCase {
         );
 
         interactionLogRepository.save(interactionLog);
+    }
+
+    public void changeWish(ProductWishChangedEvent event){
+        Long memberId = event.memberId();
+        Long productId = event.productId();
+        Long auctionId = event.auctionId();
+        ProductWishChangeType changeType = event.changeType();
+        LocalDateTime occurredAt = event.occurredAt();
+
+        if (auctionId == null){
+            pendingInteractionRepository.save(new PendingInteraction(memberId, productId, changeType, occurredAt));
+            return;
+        }
+
+        recommendSupport.updateWish(memberId, productId, auctionId, changeType, occurredAt);
     }
 }
