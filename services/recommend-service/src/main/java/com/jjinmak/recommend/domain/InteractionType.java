@@ -1,8 +1,11 @@
 package com.jjinmak.recommend.domain;
 
+import lombok.Getter;
+
 import java.time.Duration;
 import java.time.LocalDateTime;
 
+@Getter
 public enum InteractionType {
     WIN(1.0),
     BID(0.6),

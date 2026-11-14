@@ -21,6 +21,7 @@ public class RecommendFacade {
     private final RecommendInteractionUseCase interactionUseCase;
     private final RecommendEmbeddingUseCase embeddingUseCase;
     private final RecommendAuctionUseCase recommendAuctionUseCase;
+    private final RecommendCfSimilarityUseCase cfSimilarityUseCase;
 
     @Transactional
     public void syncProduct(ProductChangedEvent event){
@@ -75,5 +76,10 @@ public class RecommendFacade {
     @Transactional
     public void changeWish(ProductWishChangedEvent event){
         interactionUseCase.changeWish(event);
+    }
+
+    @Transactional
+    public void refreshCfSimilarity(){
+        cfSimilarityUseCase.refreshCfSimilarity();
     }
 }
