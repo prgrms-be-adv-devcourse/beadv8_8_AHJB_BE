@@ -72,6 +72,7 @@ public class RecommendInteractionUseCase {
                 ));
 
         auction.setEndAt(event.endAt());
+        auction.updateBid(event.bidPrice(), event.bidCount());
 
         interaction.update(event.bidAt());
 
