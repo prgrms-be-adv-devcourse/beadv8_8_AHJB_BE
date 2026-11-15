@@ -55,4 +55,33 @@ public interface ChargeRepository extends JpaRepository<Charge, Long> {
             + "or (c.canceledAt >= :startAt and c.canceledAt < :endAt)")
     List<Charge> findApprovedOrCanceledBetween(@Param("startAt") LocalDateTime startAt,
                                                @Param("endAt") LocalDateTime endAt);
+
+    // 대사용 조회 결과: 미사용 충전 금액 합이 예치금보다 큰 지갑
+    interface RemainingGap {
+        Long getWalletId();
+
+        Long getBalance();        // 지갑 예치금
+
+        Long getRemainingSum();   // 그 지갑 충전 건들의 미사용 금액 합
+    }
+
+    // 대사용: 미사용 금액이 남은 충전 건을 가진 지갑 수
+    @Query("select count(distinct c.wallet.id) from Charge c "
+            + "where c.status = :status and c.remainingAmount > 0")
+    long countWalletsWithRemaining(@Param("status") ChargeStatus status);
+
+    // 대사용: 미사용 충전 금액 합이 예치금보다 큰 지갑. 예치금이 그 합 이상인 지갑은 돌려주지 않는다
+    @Query("select w.id as walletId, w.balance as balance, sum(c.remainingAmount) as remainingSum "
+            + "from Charge c join c.wallet w "
+            + "where c.status = :status and c.remainingAmount > 0 "
+            + "group by w.id, w.balance "
+            + "having sum(c.remainingAmount) > w.balance")
+    List<RemainingGap> findWalletsWithRemainingOverBalance(@Param("status") ChargeStatus status);
+
+    // 대사용: 기간 안에 지갑에 반영됐거나(chargedAt) 취소된(canceledAt) 충전 건의 id (startAt 이상, endAt 미만)
+    @Query("select c.id from Charge c "
+            + "where (c.chargedAt >= :startAt and c.chargedAt < :endAt) "
+            + "or (c.canceledAt >= :startAt and c.canceledAt < :endAt)")
+    List<Long> findIdsChargedOrCanceledBetween(@Param("startAt") LocalDateTime startAt,
+                                               @Param("endAt") LocalDateTime endAt);
 }
