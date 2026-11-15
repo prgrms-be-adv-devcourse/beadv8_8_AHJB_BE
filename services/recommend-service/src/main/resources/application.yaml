@@ -32,11 +32,25 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
   ai:
+    model:
+      chat: openai
+      image: none
+      audio:
+        speech: none
+        transcription: none
+      moderation: none
     openai:
       api-key: ${OPENAI_API_KEY}
+      chat:
+        model: gpt-6-luna
+        reasoning-effort: none
+        timeout: 5s
+        max-retries: 0
       embedding:
         model: text-embedding-3-large
         dimensions: 1536
+        timeout: 5s
+        max-retries: 0
 
 
 management:

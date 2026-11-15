@@ -1,14 +1,20 @@
 package com.jjinmak.recommend.in;
 
 import com.jjinmak.common.rsData.RsData;
+import com.jjinmak.common.security.AuthPrincipal;
 import com.jjinmak.recommend.app.RecommendFacade;
 import com.jjinmak.recommend.app.dto.AuctionResponseDto;
+import com.jjinmak.recommend.app.dto.SearchRequestDto;
+import com.jjinmak.recommend.app.dto.SearchResponseDto;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,7 +28,7 @@ public class RecommendApiController {
 
     private final RecommendFacade recommendFacade;
 
-    @GetMapping("/{auctionId}")
+    @GetMapping("/auction/{auctionId}")
     public ResponseEntity<RsData<List<AuctionResponseDto>>> readRecommendedAuctionList(
             @PathVariable Long auctionId
     ){
@@ -33,6 +39,29 @@ public class RecommendApiController {
     @GetMapping("/popular")
     public ResponseEntity<RsData<List<AuctionResponseDto>>> readPopularAuctionList(){
         List<AuctionResponseDto> response = recommendFacade.readPopularAuctionList();
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<RsData<List<AuctionResponseDto>>> readPersonalRecommendedAuctionList(
+            @AuthenticationPrincipal AuthPrincipal authPrincipal
+    ){
+        Long memberId = authPrincipal.memberId();
+
+        List<AuctionResponseDto> response = recommendFacade.readPersonalRecommendedAuctionList(memberId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
+
+    @PostMapping("/search")
+    public ResponseEntity<RsData<SearchResponseDto>> searchAuctions(
+            @AuthenticationPrincipal AuthPrincipal authPrincipal,
+            @RequestBody SearchRequestDto request
+    ){
+        Long memberId = authPrincipal.memberId();
+
+        SearchResponseDto response = recommendFacade.searchAuctions(memberId, request);
+
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }
 }

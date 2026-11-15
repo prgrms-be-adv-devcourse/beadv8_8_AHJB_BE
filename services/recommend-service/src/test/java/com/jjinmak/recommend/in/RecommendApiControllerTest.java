@@ -1,13 +1,17 @@
 package com.jjinmak.recommend.in;
 
+import com.jjinmak.common.security.AuthHeaders;
+import com.jjinmak.common.security.HeaderAuthenticationFilter;
+import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.product.event.ProductChangedEvent;
-import com.jjinmak.recommend.out.InteractionLogRepository;
-import com.jjinmak.recommend.out.InteractionRepository;
-import com.jjinmak.recommend.out.ProductEmbeddingRepository;
-import com.jjinmak.recommend.out.RecommendAuctionRepository;
-import com.jjinmak.recommend.out.RecommendMemberRepository;
-import com.jjinmak.recommend.out.RecommendProductRepository;
+import com.jjinmak.recommend.domain.RecommendMember;
+import com.jjinmak.recommend.out.repository.InteractionLogRepository;
+import com.jjinmak.recommend.out.repository.InteractionRepository;
+import com.jjinmak.recommend.out.repository.ProductEmbeddingRepository;
+import com.jjinmak.recommend.out.repository.RecommendAuctionRepository;
+import com.jjinmak.recommend.out.repository.RecommendMemberRepository;
+import com.jjinmak.recommend.out.repository.RecommendProductRepository;
 import com.jjinmak.recommend.support.RecommendIntegrationTestSupport;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,12 +20,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -75,7 +81,9 @@ class RecommendApiControllerTest extends RecommendIntegrationTestSupport {
     @BeforeEach
     void setUp() {
         clean();
-        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
+                .addFilters(new HeaderAuthenticationFilter())
+                .build();
         now = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         readyAuction(101L, 1001L, 0, now.plusHours(30));
         readyAuction(102L, 1002L, 10, now.plusHours(40));
@@ -85,12 +93,13 @@ class RecommendApiControllerTest extends RecommendIntegrationTestSupport {
     @AfterEach
     void tearDown() {
         clean();
+        SecurityContextHolder.clearContext();
     }
 
     @Test
-    @DisplayName("GET /api/v1/recommend/{auctionId}는 비슷한 경매 목록을 공통 응답 형식의 data로 돌려준다")
+    @DisplayName("GET /api/v1/recommend/auction/{auctionId}는 비슷한 경매 목록을 공통 응답 형식의 data로 돌려준다")
     void similar_returnsListInRsData() throws Exception {
-        mockMvc.perform(get("/api/v1/recommend/{auctionId}", 1001L))
+        mockMvc.perform(get("/api/v1/recommend/auction/{auctionId}", 1001L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isSuccess").value(true))
                 .andExpect(jsonPath("$.data[*].auctionId").value(contains(1002, 1003)))
@@ -103,7 +112,7 @@ class RecommendApiControllerTest extends RecommendIntegrationTestSupport {
     @Test
     @DisplayName("추천 쪽에 없는 경매로 요청하면 404와 recommend002 에러 응답을 돌려준다")
     void similar_unknownAuction_returnsNotFound() throws Exception {
-        mockMvc.perform(get("/api/v1/recommend/{auctionId}", 9999L))
+        mockMvc.perform(get("/api/v1/recommend/auction/{auctionId}", 9999L))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.isSuccess").value(false))
                 .andExpect(jsonPath("$.errorCode").value("recommend002"));
@@ -116,6 +125,23 @@ class RecommendApiControllerTest extends RecommendIntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isSuccess").value(true))
                 .andExpect(jsonPath("$.data[*].auctionId").value(contains(1001, 1002, 1003)));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/recommend/me는 헤더의 회원 id로 맞춤 추천 목록을 공통 응답 형식의 data로 돌려준다")
+    void personal_returnsListForHeaderMember() throws Exception {
+        recommendMemberRepository.save(new RecommendMember(1L, UUID.randomUUID(), "회원1"));
+        recommendKafkaListener.handle(new AuctionBidSucceedEvent(
+                1L, 1001L, 101L, 1L, START_PRICE + 1000, 1, now.plusHours(30), now.minusHours(1), null));
+
+        mockMvc.perform(get("/api/v1/recommend/me").header(AuthHeaders.MEMBER_ID, 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isSuccess").value(true))
+                .andExpect(jsonPath("$.data[*].auctionId").value(contains(1002, 1003)))
+                .andExpect(jsonPath("$.data[0].productId").value(102))
+                .andExpect(jsonPath("$.data[0].category").value(CATEGORY))
+                .andExpect(jsonPath("$.data[0].currentPrice").value(START_PRICE))
+                .andExpect(jsonPath("$.data[0].endAt").exists());
     }
 
     private void readyAuction(long productId, long auctionId, double degrees, LocalDateTime endAt) {

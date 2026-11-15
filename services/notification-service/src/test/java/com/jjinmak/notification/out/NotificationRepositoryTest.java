@@ -48,18 +48,18 @@ class NotificationRepositoryTest extends NotificationIntegrationTestSupport {
                 AUCTION, AUCTION_ID, "auction-" + AUCTION_ID, NOW.minusSeconds(3));
     }
 
-    // 리스너 한 번의 처리처럼 여러 알림을 한 트랜잭션에서 저장하고, 각 저장 결과(1 또는 0)를 돌려준다
-    private List<Integer> 한_트랜잭션에서_저장한다(Notification... notifications) {
+    // 리스너 한 번의 처리처럼 여러 알림을 한 트랜잭션에서 저장하고, 새로 저장됐는지(id를 받았는지)를 돌려준다
+    private List<Boolean> 한_트랜잭션에서_저장한다(Notification... notifications) {
         return transactionTemplate.execute(status -> Arrays.stream(notifications)
-                .map(n -> notificationRepository.insertIgnoringDuplicate(n, NOW))
+                .map(n -> notificationRepository.insertIgnoringDuplicate(n, NOW).isPresent())
                 .toList());
     }
 
     @Test
     void 처음_저장하면_1건이_저장되고_묶음과_시각이_채워진다() {
-        List<Integer> result = 한_트랜잭션에서_저장한다(낙찰자_알림());
+        List<Boolean> result = 한_트랜잭션에서_저장한다(낙찰자_알림());
 
-        assertThat(result).containsExactly(1);
+        assertThat(result).containsExactly(true);
         Notification saved = notificationRepository.findAll().getFirst();
         assertThat(saved.getReceiverId()).isEqualTo(WINNER_ID);
         assertThat(saved.getCategory()).isEqualTo(NotificationCategory.BUY);
@@ -70,12 +70,20 @@ class NotificationRepositoryTest extends NotificationIntegrationTestSupport {
     }
 
     @Test
+    void 새로_저장하면_저장된_알림의_id를_돌려준다() {
+        Long id = transactionTemplate.execute(status ->
+                notificationRepository.insertIgnoringDuplicate(낙찰자_알림(), NOW).orElseThrow());
+
+        assertThat(notificationRepository.findById(id)).isPresent();
+    }
+
+    @Test
     void 같은_알림을_두_번_저장해도_예외_없이_1건만_남는다() {
         한_트랜잭션에서_저장한다(낙찰자_알림());
 
         assertThatCode(() -> {
-            List<Integer> second = 한_트랜잭션에서_저장한다(낙찰자_알림());
-            assertThat(second).containsExactly(0);
+            List<Boolean> second = 한_트랜잭션에서_저장한다(낙찰자_알림());
+            assertThat(second).containsExactly(false);
         }).doesNotThrowAnyException();
 
         assertThat(notificationRepository.count()).isEqualTo(1);
@@ -87,9 +95,9 @@ class NotificationRepositoryTest extends NotificationIntegrationTestSupport {
         한_트랜잭션에서_저장한다(낙찰자_알림());
 
         // 재수신: 낙찰 이벤트 1건 → 알림 2건을 한 트랜잭션에서 다시 저장
-        List<Integer> result = 한_트랜잭션에서_저장한다(낙찰자_알림(), 판매자_알림());
+        List<Boolean> result = 한_트랜잭션에서_저장한다(낙찰자_알림(), 판매자_알림());
 
-        assertThat(result).containsExactly(0, 1);
+        assertThat(result).containsExactly(false, true);
         assertThat(notificationRepository.findAll())
                 .extracting(Notification::getReceiverId)
                 .containsExactlyInAnyOrder(WINNER_ID, SELLER_ID);
@@ -97,9 +105,9 @@ class NotificationRepositoryTest extends NotificationIntegrationTestSupport {
 
     @Test
     void 같은_사건이라도_받는_사람이_다르면_각각_저장된다() {
-        List<Integer> result = 한_트랜잭션에서_저장한다(낙찰자_알림(), 판매자_알림());
+        List<Boolean> result = 한_트랜잭션에서_저장한다(낙찰자_알림(), 판매자_알림());
 
-        assertThat(result).containsExactly(1, 1);
+        assertThat(result).containsExactly(true, true);
         assertThat(notificationRepository.count()).isEqualTo(2);
     }
 }

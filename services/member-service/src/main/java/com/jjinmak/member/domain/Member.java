@@ -53,6 +53,11 @@ public class Member extends BaseIdAndTime {
     @Column(nullable = false)
     private boolean isSeller;
 
+    // 관리자 여부. 관리자를 만드는 API는 두지 않고, 운영자가 DB에서 직접 지정한다.
+    // UPDATE member SET is_admin = true WHERE email = '...';  (지정 후 다시 로그인해야 권한이 반영된다)
+    @Column(nullable = false)
+    private boolean isAdmin;
+
     private Member(String email, String encodedPassword, String nickname, String username,
                    String phone, LocalDate birthDate){
         this.uuid = UUID.randomUUID();
@@ -65,6 +70,7 @@ public class Member extends BaseIdAndTime {
         this.loginLock = LoginLock.unlocked();
         this.status = AccountStatus.ACTIVE;
         this.isSeller = false;
+        this.isAdmin = false;
     }
 
     public static Member create(String email, String encodedPassword, String nickname, String username, String phone,
@@ -147,6 +153,9 @@ public class Member extends BaseIdAndTime {
         }
         if (isSeller() && !isSuspended()) {
             authorities.add(Authority.PERM_SELL);
+        }
+        if (isAdmin()) {
+            authorities.add(Authority.ROLE_ADMIN);
         }
 
         return authorities;

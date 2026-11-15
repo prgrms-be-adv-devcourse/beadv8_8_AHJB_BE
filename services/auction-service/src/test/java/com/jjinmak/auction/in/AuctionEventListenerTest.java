@@ -4,6 +4,8 @@ import com.jjinmak.auction.app.AuctionFacade;
 import com.jjinmak.auction.domain.AuctionType;
 import com.jjinmak.auction.dto.AuctionCreateDto;
 import com.jjinmak.common.kafka.InvalidEventException;
+import com.jjinmak.contracts.member.dto.MemberDto;
+import com.jjinmak.contracts.member.event.MemberCreatedEvent;
 import com.jjinmak.contracts.product.event.ProductRegisteredEvent;
 import com.jjinmak.contracts.product.event.ProductRegisteredEvent.DutchTerms;
 import com.jjinmak.contracts.product.event.ProductRegisteredEvent.EnglishTerms;
@@ -11,11 +13,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -144,6 +150,46 @@ class AuctionEventListenerTest {
                     .given(auctionFacade).createAuction(any());
 
             DLT로_보낸다(새_형태("DUTCH", SCHEDULED_AT, null, new DutchTerms(300_000L, 2, 60)));
+        }
+    }
+
+    @Nested
+    class 회원_생성 {
+
+        private MemberDto 회원(Long id, String nickname) {
+            return new MemberDto(id, UUID.randomUUID(), nickname);
+        }
+
+        private void DLT로_보낸다(MemberCreatedEvent event) {
+            assertThatThrownBy(() -> listener.handleMemberCreated(event))
+                    .isInstanceOf(InvalidEventException.class);
+            then(auctionFacade).shouldHaveNoInteractions();
+        }
+
+        @Test
+        void 받은_회원을_경매_회원으로_복제한다() {
+            MemberDto member = 회원(7L, "경매왕");
+
+            listener.handleMemberCreated(new MemberCreatedEvent(member));
+
+            then(auctionFacade).should().syncMember(member);
+        }
+
+        @Test
+        void 회원_정보가_없으면_DLT로_보낸다() {
+            DLT로_보낸다(new MemberCreatedEvent(null));
+        }
+
+        @Test
+        void 회원_id가_없으면_DLT로_보낸다() {
+            DLT로_보낸다(new MemberCreatedEvent(회원(null, "경매왕")));
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        @ValueSource(strings = " ")
+        void 닉네임이_없으면_DLT로_보낸다(String nickname) {
+            DLT로_보낸다(new MemberCreatedEvent(회원(7L, nickname)));
         }
     }
 }

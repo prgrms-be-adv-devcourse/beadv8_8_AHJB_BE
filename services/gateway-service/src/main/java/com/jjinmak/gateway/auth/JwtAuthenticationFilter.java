@@ -25,7 +25,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String MEMBER_ID = "X-Member-Id";
     private static final String MEMBER_ROLES = "X-Member-Roles";
+    private static final String ACCESS_TOKEN_PARAM = "access_token";
     private static final PathPattern SKIP_PATH = PathPatternParser.defaultInstance.parse("/api/v1/auth/**");
+    private static final PathPattern WS_PATH = PathPatternParser.defaultInstance.parse("/ws/**");
 
     private final JwtTokenVerifier verifier;
 
@@ -64,12 +66,16 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         };
     }
 
+    // 브라우저 WebSocket은 핸드셰이크에 Authorization 헤더를 못 붙이므로 /ws/** 에 한해 쿼리스트링 토큰도 받는다
     private String resolveToken(ServerHttpRequest request) {
         String header = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-        if (header == null || !header.startsWith(BEARER_PREFIX)) {
-            return null;
+        if (header != null && header.startsWith(BEARER_PREFIX)) {
+            return header.substring(BEARER_PREFIX.length());
         }
-        return header.substring(BEARER_PREFIX.length());
+        if (WS_PATH.matches(request.getPath().pathWithinApplication())) {
+            return request.getQueryParams().getFirst(ACCESS_TOKEN_PARAM);
+        }
+        return null;
     }
 
     private Mono<Void> writeError(ServerWebExchange exchange, AuthError error) {

@@ -37,3 +37,9 @@ management:
     health:
       probes:
         enabled: true
+notification:
+  push:
+    web-base-url: ${WEB_BASE_URL:http://localhost:3000}
+    fcm:
+      enabled: ${FCM_ENABLED:false}
+      credentials-base64: ${FCM_CREDENTIALS_BASE64:}

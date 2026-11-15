@@ -73,4 +73,11 @@ public class RecommendAuction extends BaseManualIdAndTime {
         if (endAt.isAfter(this.endAt))
             this.endAt = endAt;
     }
+
+    public void updateBid(Long bidPrice, int bidCount){
+        if (this.currentPrice == null || bidPrice > this.currentPrice)
+            this.currentPrice = bidPrice;
+        if (bidCount > this.bidCount)
+            this.bidCount = (long) bidCount;
+    }
 }

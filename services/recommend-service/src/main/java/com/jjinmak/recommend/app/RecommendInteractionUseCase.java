@@ -3,8 +3,10 @@ package com.jjinmak.recommend.app;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
+import com.jjinmak.contracts.product.event.ProductWishChangeType;
+import com.jjinmak.contracts.product.event.ProductWishChangedEvent;
 import com.jjinmak.recommend.domain.*;
-import com.jjinmak.recommend.out.*;
+import com.jjinmak.recommend.out.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +26,7 @@ public class RecommendInteractionUseCase {
     private final RecommendMemberRepository recommendMemberRepository;
     private final RecommendProductRepository recommendProductRepository;
     private final RecommendAuctionRepository recommendAuctionRepository;
+    private final PendingInteractionRepository pendingInteractionRepository;
 
     public void winAuction(AuctionWonEvent event){
 
@@ -68,6 +71,7 @@ public class RecommendInteractionUseCase {
                 ));
 
         auction.setEndAt(event.endAt());
+        auction.updateBid(event.bidPrice(), event.bidCount());
 
         interaction.update(event.bidAt());
 
@@ -87,5 +91,20 @@ public class RecommendInteractionUseCase {
         );
 
         interactionLogRepository.save(interactionLog);
+    }
+
+    public void changeWish(ProductWishChangedEvent event){
+        Long memberId = event.memberId();
+        Long productId = event.productId();
+        Long auctionId = event.auctionId();
+        ProductWishChangeType changeType = event.changeType();
+        LocalDateTime occurredAt = event.occurredAt();
+
+        if (auctionId == null){
+            pendingInteractionRepository.save(new PendingInteraction(memberId, productId, changeType, occurredAt));
+            return;
+        }
+
+        recommendSupport.updateWish(memberId, productId, auctionId, changeType, occurredAt);
     }
 }

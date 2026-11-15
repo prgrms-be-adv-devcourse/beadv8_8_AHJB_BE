@@ -14,11 +14,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  # 변경된 파일을 보고 테스트할 서비스를 고름 (판별 규칙은 스크립트 한 곳에서 관리)
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.pick.outputs.services }}
+    steps:
+      - name: 코드 가져오기 (checkout)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # base 커밋과 비교하려면 전체 이력이 필요함
+
+      - name: 테스트 대상 서비스 판별
+        id: pick
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}   # PR에서는 merge 커밋 → base와 비교하면 이 PR의 변경분만 나옴
+        run: bash .github/scripts/changed-services.sh "$BASE_SHA" "$HEAD_SHA" test
+
+  # 서비스별로 테스트를 나눠 실행
+  service-test:
+    needs: changes
+    if: needs.changes.outputs.services != '[]'
+    name: test (${{ matrix.service }})
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
-
+    strategy:
+      fail-fast: false   # 한 서비스가 실패해도 다른 서비스 테스트는 끝까지 실행
+      matrix:
+        service: ${{ fromJSON(needs.changes.outputs.services) }}
     steps:
       - name: 코드 가져오기 (checkout)
         uses: actions/checkout@v4
@@ -35,12 +60,27 @@ jobs:
       - name: 테스트 실행
         run: |
           chmod +x gradlew
-          ./gradlew test
+          ./gradlew :services:${{ matrix.service }}:test
 
       - name: 테스트 실패시에만 report 업로드
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-report
-          path: build/reports/tests/test
+          name: test-report-${{ matrix.service }}
+          path: services/${{ matrix.service }}/build/reports/tests/test
           retention-days: 7
+
+  # 필수 체크(branch protection)로 지정할 job은 이것 하나
+  # matrix job은 이름이 PR마다 달라지고, 대상이 없으면 아예 생기지 않기 때문
+  ci-result:
+    needs: [changes, service-test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: 결과 종합
+        run: |
+          echo "changes: ${{ needs.changes.result }} / service-test: ${{ needs.service-test.result }}"
+          if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "true" ]; then
+            echo "::error::실패하거나 취소된 job이 있습니다"
+            exit 1
+          fi

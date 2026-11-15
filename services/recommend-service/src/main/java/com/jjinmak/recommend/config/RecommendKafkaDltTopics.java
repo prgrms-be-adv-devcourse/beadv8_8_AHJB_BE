@@ -7,6 +7,7 @@ import org.springframework.kafka.core.KafkaAdmin;
 
 import static com.jjinmak.contracts.auction.event.AuctionEventTopics.*;
 import static com.jjinmak.contracts.product.event.ProductEventTopics.PRODUCT_CHANGED;
+import static com.jjinmak.contracts.product.event.ProductEventTopics.PRODUCT_WISH_CHANGED;
 
 @Configuration
 public class RecommendKafkaDltTopics {
@@ -18,7 +19,8 @@ public class RecommendKafkaDltTopics {
                 TopicBuilder.name(dlt(AUCTION_WON)).build(),
                 TopicBuilder.name(dlt(AUCTION_FAILED)).build(),
                 TopicBuilder.name(dlt(PRODUCT_CHANGED)).build(),
-                TopicBuilder.name(dlt(AUCTION_BID_SUCCEED)).build()
+                TopicBuilder.name(dlt(AUCTION_BID_SUCCEED)).build(),
+                TopicBuilder.name(dlt(PRODUCT_WISH_CHANGED)).build()
         );
     }
 

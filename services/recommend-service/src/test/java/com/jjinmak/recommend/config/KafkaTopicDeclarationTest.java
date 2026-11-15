@@ -31,7 +31,7 @@ class KafkaTopicDeclarationTest extends RecommendIntegrationTestSupport {
 
         assertThat(deadLetterTopics).containsExactlyInAnyOrder(
                 "product.changed-dlt", "auction.started-dlt", "auction.won-dlt", "auction.failed-dlt",
-                "auction.bid-succeed-dlt");
+                "auction.bid-succeed-dlt", "product.wish.changed-dlt");
         assertThat(declaredTopics()).containsAll(deadLetterTopics);
     }
 

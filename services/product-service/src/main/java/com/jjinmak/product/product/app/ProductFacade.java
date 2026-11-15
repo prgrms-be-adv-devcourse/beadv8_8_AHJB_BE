@@ -68,6 +68,17 @@ public class ProductFacade {
     }
 
     @Transactional(readOnly = true)
+    public List<Long> findAuctionResendTargetIds(LocalDateTime now){
+        return productRequestAuctionUseCase.findResendTargetIds(now);
+    }
+
+    // 이벤트는 커밋 후 전송되므로 저장할 것이 없어도 트랜잭션 안에서 실행한다.
+    @Transactional
+    public void resendAuction(Long productId){
+        productRequestAuctionUseCase.resendAuction(productId);
+    }
+
+    @Transactional(readOnly = true)
     public ProductSummaryDto getProductSummary(Long productId){
         return productReadSummaryUseCase.getProductSummary(productId);
     }

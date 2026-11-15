@@ -21,3 +21,5 @@ spring:
 recommend:
   embedding-scheduler:
     enabled: false
+  cf-scheduler:
+    enabled: false

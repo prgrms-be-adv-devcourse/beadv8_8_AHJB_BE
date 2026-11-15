@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -13,12 +14,11 @@ import java.util.List;
 public class NotificationCreateUseCase {
     private final NotificationRepository notificationRepository;
 
-    // 중복된 알림은 건너뛰고, 새로 저장된 건수를 돌려준다
-    public int create(List<Notification> notifications, LocalDateTime now) {
-        int saved = 0;
+    public List<Long> create(List<Notification> notifications, LocalDateTime now) {
+        List<Long> savedIds = new ArrayList<>();
         for (Notification notification : notifications) {
-            saved += notificationRepository.insertIgnoringDuplicate(notification, now);
+            notificationRepository.insertIgnoringDuplicate(notification, now).ifPresent(savedIds::add);
         }
-        return saved;
+        return savedIds;
     }
 }

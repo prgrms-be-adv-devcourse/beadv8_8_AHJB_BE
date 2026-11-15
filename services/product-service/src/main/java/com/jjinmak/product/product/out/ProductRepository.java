@@ -1,6 +1,7 @@
 package com.jjinmak.product.product.out;
 
 import com.jjinmak.product.product.domain.Product;
+import com.jjinmak.product.product.domain.ProductAuctionStatus;
 import com.jjinmak.contracts.product.domain.ProductCategory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +27,19 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             order by p.id
             """)
     List<Long> findAuctionRequestTargetIds(LocalDateTime now);
+
+    // 경매를 요청했는데 아직 경매가 시작되지 않은 상품 (요청 이벤트가 유실된 경우, 재전송 대상)
+    // - 요청 시각이 from ~ to 사이인 상품만 본다. (to: 경매가 만들어질 시간을 기다려 준다, from: 계속 거절되는 상품은 포기한다)
+    // - 시작 이벤트보다 결과 이벤트가 먼저 온 상품은 경매가 있으므로 제외한다. (상태가 SCHEDULED 또는 비어 있는 상품만)
+    @Query("""
+            select p.id from Product p
+            where p.deletedAt is null
+              and p.currentAuctionId is null
+              and p.auctionRequestedAt between :from and :to
+              and (p.auctionState.status is null or p.auctionState.status = :scheduled)
+            order by p.id
+            """)
+    List<Long> findAuctionResendTargetIds(LocalDateTime from, LocalDateTime to, ProductAuctionStatus scheduled);
 
     // 곧 시작: 아직 경매로 넘어가지 않은 상품 (시작 임박순). category가 null이면 전체
     @Query(value = """

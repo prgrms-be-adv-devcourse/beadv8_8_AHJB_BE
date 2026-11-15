@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.domain.Limit;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,7 +16,7 @@ import java.time.LocalDateTime;
 
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
-    @Modifying
+
     @Query(nativeQuery = true, value = """
             insert into notification
                 (receiver_id, type, category, title, body, target_type, target_id,
@@ -25,8 +26,9 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
                  :#{#n.targetType.name()}, :#{#n.targetId}, :#{#n.dedupeKey}, :#{#n.eventOccurredAt},
                  :now, :now)
             on conflict (dedupe_key) do nothing
+            returning id
             """)
-    int insertIgnoringDuplicate(@Param("n") Notification notification, @Param("now") LocalDateTime now);
+    Optional<Long> insertIgnoringDuplicate(@Param("n") Notification notification, @Param("now") LocalDateTime now);
 
     @Query("""
         select n from Notification n
@@ -50,4 +52,12 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
         where n.receiverId = :receiverId and n.readAt is null
         """)
     int readAll(@Param("receiverId") Long receiverId, @Param("now") LocalDateTime now);
+
+    @Modifying
+    @Query("""
+        update Notification n set n.pushedAt = :now, n.updatedAt = :now
+        where n.id in :ids and n.pushedAt is null
+        """)
+    int markPushed(@Param("ids") Collection<Long> ids, @Param("now") LocalDateTime now);
+
 }

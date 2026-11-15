@@ -51,8 +51,20 @@ public class Interaction extends BaseIdAndTime {
         this.lastOccurredAt = occurredAt;
     }
 
+    public boolean isNew(LocalDateTime occurredAt){
+        return !occurredAt.isBefore(this.lastOccurredAt);
+    }
+
     public void update(LocalDateTime occurredAt){
         if (this.lastOccurredAt == null || occurredAt.isAfter(this.lastOccurredAt))
             this.lastOccurredAt = occurredAt;
+    }
+
+    public void activate(){
+        this.active = true;
+    }
+
+    public void deactivate(){
+        this.active = false;
     }
 }

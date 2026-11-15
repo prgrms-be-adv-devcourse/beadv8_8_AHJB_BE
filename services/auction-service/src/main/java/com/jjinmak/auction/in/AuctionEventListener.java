@@ -5,6 +5,7 @@ import com.jjinmak.auction.domain.AuctionType;
 import com.jjinmak.auction.dto.AuctionCreateDto;
 import com.jjinmak.common.kafka.InvalidEventException;
 import com.jjinmak.contracts.cart.event.CartPaymentDefaultEvent;
+import com.jjinmak.contracts.member.dto.MemberDto;
 import com.jjinmak.contracts.member.event.MemberCreatedEvent;
 import com.jjinmak.contracts.order.event.OrderConfirmPurchaseEvent;
 import com.jjinmak.contracts.order.event.OrderPaymentSucceedEvent;
@@ -13,13 +14,10 @@ import com.jjinmak.contracts.product.event.ProductRegisteredEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.LocalDateTime;
 
-import static org.springframework.transaction.annotation.Propagation.REQUIRES_NEW;
-import static org.springframework.transaction.event.TransactionPhase.AFTER_COMMIT;
+import static com.jjinmak.contracts.member.event.MemberEventTopics.MEMBER_CREATED;
 
 import static com.jjinmak.contracts.order.event.OrderEventTopics.*;
 import static com.jjinmak.contracts.product.event.ProductEventTopics.*;
@@ -41,12 +39,14 @@ public class AuctionEventListener {
         }
     }
     // 회원 생성 시 경매 회원을 복제한다. (입찰자 확인, 입찰 내역 닉네임)
-    @TransactionalEventListener(phase = AFTER_COMMIT)
-    @Transactional(propagation = REQUIRES_NEW)
+    @KafkaListener(topics = MEMBER_CREATED, groupId = "auction")
     public void handleMemberCreated(MemberCreatedEvent event) {
-        auctionFacade.syncMember(event.member());
+        MemberDto member = event.member();
+        if (member == null || member.id() == null || member.nickname() == null || member.nickname().isBlank()) {
+            throw new InvalidEventException("회원 생성 이벤트에 회원 id나 닉네임이 없습니다. member=" + member);
+        }
+        auctionFacade.syncMember(member);
     }
-
     //낙찰 이후 거래 결과
     @KafkaListener(topics = ORDER_PAYMENT_SUCCEED, groupId = "auction")
     public void handleOrderPaymentSucceed(OrderPaymentSucceedEvent event) {

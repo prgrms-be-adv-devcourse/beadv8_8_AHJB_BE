@@ -12,12 +12,12 @@ import com.jjinmak.recommend.domain.RecommendAuction;
 import com.jjinmak.recommend.domain.RecommendMember;
 import com.jjinmak.recommend.domain.RecommendProduct;
 import com.jjinmak.recommend.in.RecommendKafkaListener;
-import com.jjinmak.recommend.out.InteractionLogRepository;
-import com.jjinmak.recommend.out.InteractionRepository;
-import com.jjinmak.recommend.out.ProductEmbeddingRepository;
-import com.jjinmak.recommend.out.RecommendAuctionRepository;
-import com.jjinmak.recommend.out.RecommendMemberRepository;
-import com.jjinmak.recommend.out.RecommendProductRepository;
+import com.jjinmak.recommend.out.repository.InteractionLogRepository;
+import com.jjinmak.recommend.out.repository.InteractionRepository;
+import com.jjinmak.recommend.out.repository.ProductEmbeddingRepository;
+import com.jjinmak.recommend.out.repository.RecommendAuctionRepository;
+import com.jjinmak.recommend.out.repository.RecommendMemberRepository;
+import com.jjinmak.recommend.out.repository.RecommendProductRepository;
 import com.jjinmak.recommend.support.RecommendIntegrationTestSupport;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -249,6 +249,39 @@ class RecommendInteractionTest extends RecommendIntegrationTestSupport {
         assertThat(auction.getStatus()).isEqualTo(ENDED);
         assertThat(auction.getEndedAt()).isEqualTo(winAt);
         assertThat(auction.getEndAt()).isEqualTo(extendedEndAt);
+    }
+
+    @Test
+    @DisplayName("입찰 이벤트를 받으면 경매 복사본의 현재가와 입찰 수를 이벤트의 입찰가와 입찰 수로 바꾼다")
+    void bid_updatesCurrentPriceAndBidCount() {
+        recommendKafkaListener.handle(bid(1L, BIDDER_ID, BID_AT, END_AT));
+        recommendKafkaListener.handle(bid(2L, OTHER_BIDDER_ID, BID_AT.plusMinutes(5), END_AT));
+
+        RecommendAuction auction = auction();
+        assertThat(auction.getCurrentPrice()).isEqualTo(22000L);
+        assertThat(auction.getBidCount()).isEqualTo(2L);
+    }
+
+    @Test
+    @DisplayName("예전 입찰 이벤트가 늦게 처리되어도 현재가와 입찰 수는 줄지 않는다")
+    void olderBidProcessedLater_keepsHigherPriceAndBidCount() {
+        recommendKafkaListener.handle(bid(2L, OTHER_BIDDER_ID, BID_AT.plusMinutes(5), END_AT));
+
+        recommendKafkaListener.handle(bid(1L, BIDDER_ID, BID_AT, END_AT));
+
+        RecommendAuction auction = auction();
+        assertThat(auction.getCurrentPrice()).isEqualTo(22000L);
+        assertThat(auction.getBidCount()).isEqualTo(2L);
+    }
+
+    @Test
+    @DisplayName("낙찰 뒤에 늦게 처리된 입찰의 입찰가가 낙찰가보다 낮으면 현재가는 낙찰가 그대로다")
+    void bidProcessedAfterWon_keepsWinningPrice() {
+        recommendKafkaListener.handle(won(OTHER_BIDDER_ID, WIN_AT));
+
+        recommendKafkaListener.handle(bid(1L, OTHER_BIDDER_ID, END_AT.minusMinutes(1), END_AT));
+
+        assertThat(auction().getCurrentPrice()).isEqualTo(30000L);
     }
 
     @Test

@@ -4,8 +4,8 @@ import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.recommend.domain.EmbeddingStatus;
 import com.jjinmak.recommend.domain.ProductEmbedding;
 import com.jjinmak.recommend.domain.RecommendProduct;
-import com.jjinmak.recommend.out.ProductEmbeddingRepository;
-import com.jjinmak.recommend.out.RecommendProductRepository;
+import com.jjinmak.recommend.out.repository.ProductEmbeddingRepository;
+import com.jjinmak.recommend.out.repository.RecommendProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingResponse;
@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -40,14 +39,18 @@ public class RecommendEmbeddingUseCase {
         RecommendProduct product = recommendProductRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(PRODUCT_NOT_FOUND));
 
-        float[] embeddingResult = getEmbedding(product.createInputText());
+        String vectorText = embedToVectorText(product.createInputText());
 
         transactionTemplate.executeWithoutResult(status -> {
             ProductEmbedding embedding = embeddingRepository.findById(productId)
                     .orElseThrow(() -> new BusinessException(EMBEDDING_NOT_FOUND));
             embedding.embedded(model);
-            embeddingRepository.updateEmbedding(productId, toVectorText(embeddingResult));
+            embeddingRepository.updateEmbedding(productId, vectorText);
         });
+    }
+
+    public String embedToVectorText(String text){
+        return toVectorText(getEmbedding(text));
     }
 
     private float[] getEmbedding(String text){
