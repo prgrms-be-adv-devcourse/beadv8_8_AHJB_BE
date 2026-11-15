@@ -47,7 +47,8 @@ public enum PaymentErrorCode implements com.jjinmak.common.exception.ErrorCode {
     MISMATCH_TYPE_NOT_ALLOWED("RECON003", "대사 종류에 맞지 않는 불일치 유형입니다.", HttpStatus.BAD_REQUEST),
     MISMATCH_TARGET_KEY_REQUIRED("RECON004", "불일치 대상 식별자는 필수입니다.", HttpStatus.BAD_REQUEST),
     MISMATCH_RESOLVER_REQUIRED("RECON005", "불일치 처리자는 필수입니다.", HttpStatus.BAD_REQUEST),
-    MISMATCH_RESOLUTION_NOTE_REQUIRED("RECON006", "불일치 처리 사유는 필수입니다.", HttpStatus.BAD_REQUEST)
+    MISMATCH_RESOLUTION_NOTE_REQUIRED("RECON006", "불일치 처리 사유는 필수입니다.", HttpStatus.BAD_REQUEST),
+    RECONCILIATION_RUN_NOT_FOUND("RECON007", "존재하지 않는 대사 실행입니다.", HttpStatus.NOT_FOUND)
     ;
 
     private final String code;
