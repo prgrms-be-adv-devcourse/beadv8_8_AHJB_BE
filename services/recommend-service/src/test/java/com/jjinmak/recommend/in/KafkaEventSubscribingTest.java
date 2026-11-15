@@ -4,6 +4,8 @@ import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
+import com.jjinmak.contracts.member.dto.MemberDto;
+import com.jjinmak.contracts.member.event.MemberCreatedEvent;
 import com.jjinmak.contracts.product.event.ProductChangedEvent;
 import com.jjinmak.contracts.product.event.ProductWishChangedEvent;
 import com.jjinmak.recommend.support.RecommendIntegrationTestSupport;
@@ -19,6 +21,7 @@ import org.springframework.messaging.Message;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static com.jjinmak.contracts.product.event.ProductChangeType.DELETED;
@@ -36,6 +39,8 @@ class KafkaEventSubscribingTest extends RecommendIntegrationTestSupport {
 
     static Stream<Named<Object>> events() {
         return Stream.of(
+                named("member.created", new MemberCreatedEvent(
+                        new MemberDto(7L, UUID.fromString("7a1c0e52-3b4d-4f6a-9c8e-1d2f3a4b5c6d"), "구매자"))),
                 named("product.changed", new ProductChangedEvent(10L, DELETED, 3L, 20L, "듀얼센스", "ACCESSORY", "ETC", "직접 입력",
                         10000L, 50000L, AT.plusDays(2), "https://img.test/1.jpg", AT)),
                 named("auction.started", new AuctionStartedEvent(100L, 55L, 10000L, 50000L, AT, AT.plusDays(3))),

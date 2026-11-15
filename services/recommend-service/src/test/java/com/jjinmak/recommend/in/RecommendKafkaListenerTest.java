@@ -4,6 +4,8 @@ import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
+import com.jjinmak.contracts.member.dto.MemberDto;
+import com.jjinmak.contracts.member.event.MemberCreatedEvent;
 import com.jjinmak.contracts.product.event.ProductChangedEvent;
 import com.jjinmak.contracts.product.event.ProductWishChangedEvent;
 import com.jjinmak.recommend.app.RecommendFacade;
@@ -19,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.annotation.KafkaListener;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static com.jjinmak.contracts.product.event.ProductChangeType.CREATED;
@@ -41,6 +44,7 @@ class RecommendKafkaListenerTest {
 
     static Stream<Arguments> subscriptions() {
         return Stream.of(
+                arguments(MemberCreatedEvent.class, "member.created"),
                 arguments(ProductChangedEvent.class, "product.changed"),
                 arguments(AuctionStartedEvent.class, "auction.started"),
                 arguments(AuctionWonEvent.class, "auction.won"),
@@ -58,6 +62,17 @@ class RecommendKafkaListenerTest {
 
         assertThat(listener.topics()).containsExactly(topic);
         assertThat(listener.groupId()).isEqualTo("recommend");
+    }
+
+    @Test
+    @DisplayName("회원 생성 이벤트를 받으면 이벤트에 담긴 회원 정보로 회원 복사본을 동기화한다")
+    void memberCreated_syncsMember() {
+        MemberDto member = new MemberDto(7L, UUID.fromString("7a1c0e52-3b4d-4f6a-9c8e-1d2f3a4b5c6d"), "구매자");
+
+        recommendKafkaListener.handle(new MemberCreatedEvent(member));
+
+        verify(recommendFacade).syncMember(member);
+        verifyNoMoreInteractions(recommendFacade);
     }
 
     @Test
