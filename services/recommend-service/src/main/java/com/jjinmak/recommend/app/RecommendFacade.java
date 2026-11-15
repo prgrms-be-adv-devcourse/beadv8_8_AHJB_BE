@@ -4,6 +4,7 @@ import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
+import com.jjinmak.contracts.member.dto.MemberDto;
 import com.jjinmak.contracts.product.event.ProductChangedEvent;
 import com.jjinmak.contracts.product.event.ProductWishChangedEvent;
 import com.jjinmak.recommend.app.dto.AuctionResponseDto;
@@ -25,6 +26,11 @@ public class RecommendFacade {
     private final RecommendAuctionUseCase recommendAuctionUseCase;
     private final RecommendCfSimilarityUseCase cfSimilarityUseCase;
     private final RecommendSearchUseCase searchUseCase;
+
+    @Transactional
+    public void syncMember(MemberDto memberDto){
+        recommendSyncUseCase.syncMember(memberDto);
+    }
 
     @Transactional
     public void syncProduct(ProductChangedEvent event){

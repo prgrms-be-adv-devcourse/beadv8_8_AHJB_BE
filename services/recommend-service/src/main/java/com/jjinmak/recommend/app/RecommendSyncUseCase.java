@@ -4,16 +4,11 @@ import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
+import com.jjinmak.contracts.member.dto.MemberDto;
 import com.jjinmak.contracts.product.event.ProductChangeType;
 import com.jjinmak.contracts.product.event.ProductChangedEvent;
-import com.jjinmak.recommend.domain.PendingInteraction;
-import com.jjinmak.recommend.domain.ProductEmbedding;
-import com.jjinmak.recommend.domain.RecommendAuction;
-import com.jjinmak.recommend.domain.RecommendProduct;
-import com.jjinmak.recommend.out.repository.PendingInteractionRepository;
-import com.jjinmak.recommend.out.repository.ProductEmbeddingRepository;
-import com.jjinmak.recommend.out.repository.RecommendAuctionRepository;
-import com.jjinmak.recommend.out.repository.RecommendProductRepository;
+import com.jjinmak.recommend.domain.*;
+import com.jjinmak.recommend.out.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +17,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.UUID;
 
 import static com.jjinmak.recommend.domain.AuctionStatus.ENDED;
 import static com.jjinmak.recommend.exception.RecommendErrorCode.*;
@@ -30,11 +26,25 @@ import static com.jjinmak.recommend.exception.RecommendErrorCode.*;
 @RequiredArgsConstructor
 public class RecommendSyncUseCase {
 
+    private final RecommendMemberRepository recommendMemberRepository;
     private final RecommendProductRepository recommendProductRepository;
     private final RecommendAuctionRepository recommendAuctionRepository;
     private final ProductEmbeddingRepository embeddingRepository;
     private final PendingInteractionRepository pendingInteractionRepository;
     private final RecommendSupport recommendSupport;
+
+    public void syncMember(MemberDto memberDto){
+        Long id = memberDto.id();
+        UUID uuid = memberDto.uuid();
+        String nickname = memberDto.nickname();
+
+        RecommendMember member = recommendMemberRepository.findById(id)
+                .orElseGet(() -> new RecommendMember(id, uuid, nickname));
+
+        member.sync(nickname);
+
+        recommendMemberRepository.save(member);
+    }
 
     public void syncProduct(ProductChangedEvent event){
         Long productId = event.productId();
