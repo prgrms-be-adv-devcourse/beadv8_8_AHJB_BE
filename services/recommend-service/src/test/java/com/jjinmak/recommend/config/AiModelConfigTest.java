@@ -29,8 +29,9 @@ class AiModelConfigTest {
     ApplicationContext context;
 
     @Test
-    @DisplayName("운영 설정만으로 띄우면 Spring AI 모델 빈은 OpenAI 임베딩 모델 하나뿐이다")
-    void mainConfig_createsOnlyEmbeddingModel() {
-        assertThat(context.getBeanNamesForType(Model.class)).containsExactly("openAiEmbeddingModel");
+    @DisplayName("운영 설정만으로 띄우면 Spring AI 모델 빈은 OpenAI 채팅 모델과 임베딩 모델 둘뿐이다")
+    void mainConfig_createsOnlyChatAndEmbeddingModels() {
+        assertThat(context.getBeanNamesForType(Model.class))
+                .containsExactlyInAnyOrder("openAiChatModel", "openAiEmbeddingModel");
     }
 }
