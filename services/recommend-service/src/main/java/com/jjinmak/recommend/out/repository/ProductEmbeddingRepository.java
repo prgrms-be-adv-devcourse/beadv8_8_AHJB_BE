@@ -3,6 +3,7 @@ package com.jjinmak.recommend.out.repository;
 import com.jjinmak.recommend.domain.EmbeddingStatus;
 import com.jjinmak.recommend.domain.ProductEmbedding;
 import com.jjinmak.recommend.out.row.AuctionRow;
+import com.jjinmak.recommend.out.row.SearchAuctionRow;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -104,4 +105,25 @@ public interface ProductEmbeddingRepository extends JpaRepository<ProductEmbeddi
         LIMIT 10
         """, nativeQuery = true)
     List<AuctionRow> findPersonalAuctions(Long memberId, String model, String productIds, String weights);
+
+    @Query(value = """
+        SELECT a.id AS auctionId, a.product_id AS productId, p.product_name AS productName,
+               p.category AS category, p.manufacturer AS manufacturer,
+               a.current_price AS currentPrice, a.end_at AS endAt
+        FROM recommend_auction a
+        JOIN recommend_product p ON p.id = a.product_id AND p.deleted = false
+        JOIN product_embedding e ON e.id = a.product_id AND e.status = 'READY' AND e.model = :model
+        WHERE a.status = 'ACTIVE' AND a.end_at > now()
+          AND p.seller_id <> :memberId
+          AND (CAST(:maxPrice AS bigint) IS NULL OR a.current_price <= CAST(:maxPrice AS bigint))
+          AND (CAST(:minPrice AS bigint) IS NULL OR a.current_price >= CAST(:minPrice AS bigint))
+          AND (CAST(:category AS varchar) IS NULL OR p.category = CAST(:category AS varchar))
+          AND (CAST(:manufacturer AS varchar) IS NULL OR p.manufacturer = CAST(:manufacturer AS varchar))
+        ORDER BY e.embedding <#> CAST(:embedding AS vector), a.end_at, a.id
+        LIMIT 20
+        """, nativeQuery = true)
+    List<SearchAuctionRow> findAuctionsBySimilarity(
+            Long memberId, String model, Long maxPrice, Long minPrice,
+            String category, String manufacturer, String embedding
+    );
 }

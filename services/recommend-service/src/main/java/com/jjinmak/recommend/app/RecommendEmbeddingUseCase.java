@@ -39,14 +39,18 @@ public class RecommendEmbeddingUseCase {
         RecommendProduct product = recommendProductRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(PRODUCT_NOT_FOUND));
 
-        float[] embeddingResult = getEmbedding(product.createInputText());
+        String vectorText = embedToVectorText(product.createInputText());
 
         transactionTemplate.executeWithoutResult(status -> {
             ProductEmbedding embedding = embeddingRepository.findById(productId)
                     .orElseThrow(() -> new BusinessException(EMBEDDING_NOT_FOUND));
             embedding.embedded(model);
-            embeddingRepository.updateEmbedding(productId, toVectorText(embeddingResult));
+            embeddingRepository.updateEmbedding(productId, vectorText);
         });
+    }
+
+    public String embedToVectorText(String text){
+        return toVectorText(getEmbedding(text));
     }
 
     private float[] getEmbedding(String text){

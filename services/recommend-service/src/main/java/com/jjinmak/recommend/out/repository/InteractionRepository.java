@@ -3,6 +3,7 @@ package com.jjinmak.recommend.out.repository;
 import com.jjinmak.recommend.domain.*;
 import com.jjinmak.recommend.out.row.AuctionRow;
 import com.jjinmak.recommend.out.row.InteractionRow;
+import com.jjinmak.recommend.out.row.SearchAuctionRow;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -78,4 +79,36 @@ public interface InteractionRepository extends JpaRepository<Interaction, Long> 
         LIMIT 10
         """, nativeQuery = true)
     List<AuctionRow> findPopularAuctionsForMember(Long memberId);
+
+    @Query(value = """
+        WITH candidate AS (
+            SELECT a.id, a.product_id, p.product_name, p.category, p.manufacturer, a.current_price, a.end_at,
+                   count(i.id) AS bidder_count
+            FROM recommend_auction a
+            JOIN recommend_product p ON p.id = a.product_id AND p.deleted = false
+            LEFT JOIN interaction i ON i.auction_id = a.id AND i.type = 'BID'
+            WHERE a.status = 'ACTIVE' AND a.end_at > now()
+              AND p.seller_id <> :memberId
+              AND (CAST(:maxPrice AS bigint) IS NULL OR a.current_price <= CAST(:maxPrice AS bigint))
+              AND (CAST(:minPrice AS bigint) IS NULL OR a.current_price >= CAST(:minPrice AS bigint))
+              AND (CAST(:category AS varchar) IS NULL OR p.category = CAST(:category AS varchar))
+              AND (CAST(:manufacturer AS varchar) IS NULL OR p.manufacturer = CAST(:manufacturer AS varchar))
+            GROUP BY a.id, p.id
+        ),
+        scored AS (
+            SELECT c.*,
+                   COALESCE(ln(1 + c.bidder_count) / NULLIF(max(ln(1 + c.bidder_count)) OVER (), 0), 0) AS popularity,
+                   GREATEST(0, 1 - EXTRACT(EPOCH FROM (c.end_at - now())) / 86400) AS urgency
+            FROM candidate c
+        )
+        SELECT id AS auctionId, product_id AS productId, product_name AS productName,
+               category AS category, manufacturer AS manufacturer,
+               current_price AS currentPrice, end_at AS endAt
+        FROM scored
+        ORDER BY 0.7 * popularity + 0.3 * urgency DESC, end_at, id
+        LIMIT 20
+        """, nativeQuery = true)
+    List<SearchAuctionRow> findPopularAuctionsByConditions(
+            Long memberId, Long maxPrice, Long minPrice, String category, String manufacturer
+    );
 }

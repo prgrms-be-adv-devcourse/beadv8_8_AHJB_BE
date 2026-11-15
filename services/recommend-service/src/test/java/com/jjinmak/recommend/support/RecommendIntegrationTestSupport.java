@@ -6,6 +6,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest
-@Import({TestcontainersConfiguration.class, FakeEmbeddingModelConfiguration.class})
+@Import({TestcontainersConfiguration.class, FakeEmbeddingModelConfiguration.class, FakeChatModelConfiguration.class})
 public abstract class RecommendIntegrationTestSupport {
 }

@@ -1,5 +1,6 @@
 package com.jjinmak.recommend.app;
 
+import com.jjinmak.recommend.support.FakeChatModelConfiguration;
 import com.jjinmak.recommend.support.TestcontainersConfiguration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 @SpringBootTest(properties = "spring.ai.model.embedding=openai")
-@Import(TestcontainersConfiguration.class)
+@Import({TestcontainersConfiguration.class, FakeChatModelConfiguration.class})
 class OpenAiEmbeddingLiveTest {
 
     @Autowired
