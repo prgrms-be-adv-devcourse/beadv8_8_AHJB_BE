@@ -12,6 +12,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import static com.jjinmak.payment.domain.enums.MismatchStatus.*;
 import static com.jjinmak.payment.exception.PaymentErrorCode.*;
@@ -57,6 +58,12 @@ public class ReconciliationMismatch extends BaseIdAndTime {
 
     private static final int MAX_TEXT_LENGTH = 500;
 
+    // 재오픈 이력에 남길 처리 사유의 최대 길이. detail(500자)에 원래 설명과 이력이 함께 들어가도록 사유는 앞부분만 남긴다
+    private static final int MAX_HISTORY_NOTE_LENGTH = 100;
+    private static final String HISTORY_SEPARATOR = " | ";
+    private static final String ELLIPSIS = "…";
+    private static final DateTimeFormatter HISTORY_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
     // 어느 대사 실행에서 발견됐는지. 대상일과 대사 종류는 여기서 따라간다
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(nullable = false)
@@ -88,7 +95,7 @@ public class ReconciliationMismatch extends BaseIdAndTime {
 
     private Long actualAmount;
 
-    // 사람이 읽을 설명. 위 값들로 표현되지 않는 맥락을 적는다
+    // 사람이 읽을 설명. 위 값들로 표현되지 않는 맥락을 적는다. 재오픈되면 이전 처리 기록이 뒤에 덧붙는다
     @Column(length = MAX_TEXT_LENGTH)
     private String detail;
 
@@ -167,13 +174,15 @@ public class ReconciliationMismatch extends BaseIdAndTime {
         close(RESOLVED, now, RESOLVED_BY_SYSTEM, "재실행에서 더 이상 발견되지 않음");
     }
 
-    // 해결했다고 닫은 건(RESOLVED)이 재실행에서 다시 발견됨. 실제로는 해결되지 않았으므로 OPEN 으로 되돌리고 처리 기록을 비운다.
+    // 해결했다고 닫은 건(RESOLVED)이 재실행에서 다시 발견됨. 실제로는 해결되지 않았으므로 OPEN 으로 되돌린다.
+    // 처리 기록(처리자·처리 시각·사유)은 비우기 전에 detail 뒤에 이력으로 덧붙여, 누가 언제 어떤 사유로 닫았었는지 남긴다.
     // 이미 OPEN 이면 아무 것도 하지 않는다 (멱등). IGNORED 는 운영자가 조치 불필요로 판단한 건이라 되돌리지 않는다
     public void reopen() {
         if (status == OPEN) return;
         if (status != RESOLVED) {
             throw new BusinessException(INVALID_MISMATCH_STATUS);
         }
+        this.detail = appendHistory(this.detail, previousResolution());
         this.status = OPEN;
         this.resolvedAt = null;
         this.resolvedBy = null;
@@ -204,6 +213,28 @@ public class ReconciliationMismatch extends BaseIdAndTime {
         this.resolvedAt = now;
         this.resolvedBy = resolvedBy;
         this.resolutionNote = truncate(note);
+    }
+
+    // 비우기 전의 처리 기록 한 줄. 예: 이전 처리: 7, 2026-11-12 10:00, 토스에서 취소 후 확인
+    private String previousResolution() {
+        String at = resolvedAt == null ? "-" : resolvedAt.format(HISTORY_TIME_FORMAT);
+        return "이전 처리: " + resolvedBy + ", " + at + ", " + shorten(resolutionNote, MAX_HISTORY_NOTE_LENGTH);
+    }
+
+    // detail 뒤에 이력을 덧붙인다. 500자를 넘으면 기존 내용의 뒷부분을 줄여서, 방금 덧붙인 이력이 잘리지 않게 한다
+    private static String appendHistory(String detail, String history) {
+        if (detail == null || detail.isBlank()) return truncate(history);
+        String suffix = HISTORY_SEPARATOR + history;
+        int room = MAX_TEXT_LENGTH - suffix.length();
+        if (room <= 0) return truncate(history);
+        return shorten(detail, room) + suffix;
+    }
+
+    // max 자를 넘으면 잘라내고 끝에 … 를 붙인다 (결과는 max 자 이하)
+    private static String shorten(String value, int max) {
+        if (value == null) return "";
+        if (value.length() <= max) return value;
+        return value.substring(0, max - 1) + ELLIPSIS;
     }
 
     private static String truncate(String value) {
