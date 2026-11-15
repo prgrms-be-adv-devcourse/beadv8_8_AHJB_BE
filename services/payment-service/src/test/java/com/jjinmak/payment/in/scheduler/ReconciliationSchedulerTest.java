@@ -4,6 +4,7 @@ import com.jjinmak.payment.app.facade.ReconciliationFacade;
 import com.jjinmak.payment.app.support.PgReconciliationMatcher;
 import com.jjinmak.payment.app.support.PgTransactionCollector;
 import com.jjinmak.payment.app.support.ReconciliationRunRecorder;
+import com.jjinmak.payment.app.usecase.ReconciliationLedgerUseCase;
 import com.jjinmak.payment.app.usecase.ReconciliationPgUseCase;
 import com.jjinmak.payment.domain.Charge;
 import com.jjinmak.payment.domain.ReconciliationMismatch;
@@ -21,6 +22,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static com.jjinmak.payment.domain.enums.ChargeStatus.ABORTED;
 import static com.jjinmak.payment.domain.enums.ChargeStatus.CANCELED;
@@ -50,12 +52,15 @@ class ReconciliationSchedulerTest {
         toss = new FakeTossPaymentsClient();
         charges = new ChargeStore();
         store = new ReconciliationStore();
+        ReconciliationRunRecorder recorder = new ReconciliationRunRecorder(store.runRepository, store.mismatchRepository);
         ReconciliationPgUseCase useCase = new ReconciliationPgUseCase(
                 new PgTransactionCollector(toss),
                 new PgReconciliationMatcher(),
-                new ReconciliationRunRecorder(store.runRepository, store.mismatchRepository),
+                recorder,
                 charges.repository);
-        scheduler = new ReconciliationScheduler(new ReconciliationFacade(useCase));
+        // 이 테스트는 PG 대사만 본다. 원장 대사는 검사 없이 비워 둔다
+        ReconciliationLedgerUseCase ledgerUseCase = new ReconciliationLedgerUseCase(List.of(), recorder);
+        scheduler = new ReconciliationScheduler(new ReconciliationFacade(useCase, ledgerUseCase));
     }
 
     @Test
