@@ -10,9 +10,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -83,5 +85,16 @@ class SecurityConfigTest extends RecommendIntegrationTestSupport {
     void publicUrls_withoutMemberHeader_areOpen(String uri) throws Exception {
         mockMvc.perform(get(uri))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("자연어 추천 검색은 회원 헤더가 없으면 401 COMMON002를 돌려준다")
+    void search_withoutMemberHeader_returnsUnauthorized() throws Exception {
+        mockMvc.perform(post("/api/v1/recommend/search")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"query\":\"레이싱\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.isSuccess").value(false))
+                .andExpect(jsonPath("$.errorCode").value("COMMON002"));
     }
 }
