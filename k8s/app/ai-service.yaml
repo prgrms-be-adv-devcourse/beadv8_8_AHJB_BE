@@ -1,0 +1,104 @@
+# 배포 단위: ai-service
+# 컨텍스트: recommend, search
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-config
+  namespace: app
+data:
+  DB_URL: jdbc:postgresql://postgres.infra.svc.cluster.local:5432/recommend_db
+  KAFKA_BOOTSTRAP_SERVERS: kafka.infra.svc.cluster.local:19092
+  ES_URIS: http://elasticsearch.infra.svc.cluster.local:9200
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-service
+  namespace: app
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: ai-service
+  template:
+    metadata:
+      labels:
+        app: ai-service
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: ai-service
+          image: ghcr.io/prgrms-be-adv-devcourse/beadv8_8_ahjb_be/ai-service:initial
+          ports:
+            - containerPort: 8084
+          envFrom:
+            - configMapRef:
+                name: ai-config
+            - secretRef:
+                name: recommend-db-secret
+            - secretRef:
+                name: recommend-openai-secret
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:MaxRAMPercentage=60 -XX:+ExitOnOutOfMemoryError"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 384Mi
+            limits:
+              memory: 768Mi
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8084
+            periodSeconds: 10
+            failureThreshold: 24
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8084
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8084
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-service
+  namespace: app
+spec:
+  selector:
+    app: ai-service
+  ports:
+    - port: 80
+      targetPort: 8084
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recommend-service
+  namespace: app
+spec:
+  selector:
+    app: ai-service
+  ports:
+    - port: 80
+      targetPort: 8084
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: search-service
+  namespace: app
+spec:
+  selector:
+    app: ai-service
+  ports:
+    - port: 80
+      targetPort: 8084
