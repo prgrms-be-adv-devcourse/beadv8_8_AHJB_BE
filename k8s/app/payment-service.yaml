@@ -1,11 +1,14 @@
+# 배포 단위: payment-service
+# 포함 컨텍스트: settlement, refund, order, payment
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: payment-config
   namespace: app
 data:
-  DB_URL: jdbc:postgresql://postgres.infra.svc.cluster.local:5432/payment_db
+  DB_URL: jdbc:postgresql://postgres.infra.svc.cluster.local:5432/payment_module_db
   KAFKA_BOOTSTRAP_SERVERS: kafka.infra.svc.cluster.local:19092
+  PAYMENT_SERVICE_BASE_URL: http://payment-service
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -14,6 +17,8 @@ metadata:
   namespace: app
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: payment-service
@@ -26,21 +31,82 @@ spec:
         - name: ghcr-secret
       containers:
         - name: payment-service
-          image: ghcr.io/prgrms-be-adv-devcourse/beadv8_8_ahjb_be/payment-service:ee05be9887763a7dedae0c8ec4dfca0c0a46d977
+          image: ghcr.io/prgrms-be-adv-devcourse/beadv8_8_ahjb_be/payment-service:initial
           ports:
             - containerPort: 8085
           envFrom:
             - configMapRef:
                 name: payment-config
             - secretRef:
-                name: payment-db-secret
+                name: payment-module-db-secret
             - secretRef:
                 name: payment-secret
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:MaxRAMPercentage=60 -XX:+ExitOnOutOfMemoryError"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 1024Mi
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8085
+            periodSeconds: 10
+            failureThreshold: 24
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8085
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8085
+            periodSeconds: 20
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: payment-service
+  namespace: app
+spec:
+  selector:
+    app: payment-service
+  ports:
+    - port: 80
+      targetPort: 8085
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: app
+spec:
+  selector:
+    app: payment-service
+  ports:
+    - port: 80
+      targetPort: 8085
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: refund-service
+  namespace: app
+spec:
+  selector:
+    app: payment-service
+  ports:
+    - port: 80
+      targetPort: 8085
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: settlement-service
   namespace: app
 spec:
   selector:
