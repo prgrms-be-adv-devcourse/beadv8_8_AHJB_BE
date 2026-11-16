@@ -34,6 +34,8 @@ spec:
                 name: recommend-config
             - secretRef:
                 name: recommend-db-secret
+            - secretRef:
+                name: recommend-openai-secret
 ---
 apiVersion: v1
 kind: Service
