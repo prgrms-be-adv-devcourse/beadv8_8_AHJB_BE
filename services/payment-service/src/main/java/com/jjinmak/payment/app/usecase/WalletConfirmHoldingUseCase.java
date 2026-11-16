@@ -22,7 +22,9 @@ public class WalletConfirmHoldingUseCase {
         Holding holding = holdingRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new BusinessException(HOLDING_NOT_FOUND));
 
-        if (holding.isConfirmed()) return;
+        // 이미 구매 확정됐거나 그 뒤 정산까지 끝난 홀딩이면 같은 이벤트를 다시 받은 것이므로 넘어간다 (멱등).
+        // 환불된 홀딩이면 아래 confirm() 에서 예외가 난다. 환불된 주문의 구매 확정은 중복이 아니라 잘못된 요청이다
+        if (holding.isConfirmed() || holding.isReleased()) return;
 
         holding.confirm();
     }
