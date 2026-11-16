@@ -21,8 +21,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProductRequestAuctionUseCase {
 
-    private static final String ENGLISH = "ENGLISH";
-
     // 요청 후 이 시간이 지나도 경매가 시작되지 않으면 요청 이벤트가 유실된 것으로 보고 다시 보낸다.
     // (경매는 요청을 받자마자 만들어지고 시작 이벤트를 보내므로 보통 몇 초 안에 끝난다)
     public static final Duration RESEND_AFTER = Duration.ofMinutes(5);
@@ -76,9 +74,26 @@ public class ProductRequestAuctionUseCase {
     // 시작·종료 시각을 상품에서 확정해서 보낸다. (이벤트가 늦게 도착해도 안내한 시각 그대로 경매가 열린다)
     // 옛 필드(instantWinPrice, duration, customEndAt)는 비워 보낸다. 경매가 더 이상 읽지 않는다.
     // 상품명·썸네일은 정산·채팅이 아직 이 이벤트에서 읽으므로 계속 채운다.
+    // 경매 방식에 맞는 조건만 채우고 다른 방식의 조건은 null로 보낸다.
+    // - 영국식: english(즉시낙찰가, 종료 시각)
+    // - 네덜란드식: dutch(최저가, 하락률, 하락 주기). 종료 시각은 경매가 가격 규칙으로 계산한다.
     private void publishAuctionRequest(Product product){
         ProductAuctionTerms auctionTerms = product.getAuctionTerms();
         LocalDateTime scheduledAt = product.getAuctionScheduledAt();
+
+        ProductRegisteredEvent.EnglishTerms english = null;
+        ProductRegisteredEvent.DutchTerms dutch = null;
+
+        if (auctionTerms.isDutch()){
+            dutch = new ProductRegisteredEvent.DutchTerms(
+                    auctionTerms.getFloorPrice(),
+                    auctionTerms.getDropRatePercent(),
+                    auctionTerms.getDropIntervalSec());
+        } else {
+            english = new ProductRegisteredEvent.EnglishTerms(
+                    auctionTerms.getInstantWinPrice(),
+                    auctionTerms.resolveEndAt(scheduledAt));
+        }
 
         eventPublisher.publishEvent(new ProductRegisteredEvent(
                 product.getId(),
@@ -91,12 +106,10 @@ public class ProductRequestAuctionUseCase {
                 product.getName(),
                 product.getCategory().name(),
                 productReadThumbnailUseCase.findThumbnailUrl(product.getId()),
-                ENGLISH,
+                auctionTerms.getAuctionType().name(),
                 scheduledAt,
-                new ProductRegisteredEvent.EnglishTerms(
-                        auctionTerms.getInstantWinPrice(),
-                        auctionTerms.resolveEndAt(scheduledAt)),
-                null
+                english,
+                dutch
         ));
     }
 }
