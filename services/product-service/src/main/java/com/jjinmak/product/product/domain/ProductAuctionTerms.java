@@ -137,6 +137,24 @@ public class ProductAuctionTerms {
         return auctionType == AuctionType.DUTCH;
     }
 
+    // ===== 네덜란드식 안내용 (관리자 등록 응답) =====
+
+    // 한 번에 내려가는 금액
+    public long dutchDropAmount() {
+        return dutchDropAmountOf(startPrice, dropRatePercent);
+    }
+
+    // 최저가 이상으로 내려갈 수 있는 횟수 (경매 서비스의 lastStep)
+    public long dutchDropCount() {
+        return (startPrice - floorPrice) / dutchDropAmount();
+    }
+
+    // 아무도 사지 않았을 때 오픈부터 유찰까지 걸리는 시간
+    // 마지막 가격도 한 주기 유지하므로 (하락 횟수 + 1) × 하락 주기 (경매 서비스의 endAt과 같다)
+    public Duration dutchExpectedDuration() {
+        return Duration.ofSeconds(dropIntervalSec).multipliedBy(dutchDropCount() + 1);
+    }
+
     // 경매 종료 시각. 직접 지정이면 그 시각, 아니면 경매 시작 예정 시각 + 기간(1/3/7일)
     // 상품에서 확정해서 보내야 이벤트가 늦게 도착해도 안내한 종료 시각과 같아진다.
     // 네덜란드식은 누군가 사거나 최저가까지 내려가야 끝나서 미리 정해진 종료 시각이 없다. (null)

@@ -33,7 +33,8 @@ public enum ProductErrorCode implements ErrorCode {
     INVALID_DUTCH_FLOOR_PRICE("PRODUCT023", "최저가는 0원 이상, 시작가보다 작아야 합니다.", HttpStatus.BAD_REQUEST),
     INVALID_DUTCH_DROP_RATE("PRODUCT024", "하락률은 1%, 2%, 3% 중에서 선택해야 합니다.", HttpStatus.BAD_REQUEST),
     INVALID_DUTCH_DROP_INTERVAL("PRODUCT025", "하락 주기는 30초, 60초, 90초, 120초 중에서 선택해야 합니다.", HttpStatus.BAD_REQUEST),
-    DUTCH_DROP_AMOUNT_TOO_SMALL("PRODUCT026", "한 번에 내려가는 금액이 100원 이상이 되도록 시작가나 하락률을 높여 주세요.", HttpStatus.BAD_REQUEST)
+    DUTCH_DROP_AMOUNT_TOO_SMALL("PRODUCT026", "한 번에 내려가는 금액이 100원 이상이 되도록 시작가나 하락률을 높여 주세요.", HttpStatus.BAD_REQUEST),
+    INVALID_DUTCH_OPEN_AT("PRODUCT027", "오픈 시각은 현재 시각 이후로 지정해야 합니다.", HttpStatus.BAD_REQUEST)
     ;
     private final String code;
     private final String message;

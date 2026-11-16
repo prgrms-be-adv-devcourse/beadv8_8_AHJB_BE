@@ -23,8 +23,9 @@ public class ProductImageApiController {
 
     private final ProductImageFacade productImageFacade;
 
-    // 상품 이미지 1장 업로드. 받은 imageId를 상품 등록/수정의 imageIds로 보낸다. (판매자만)
-    @PreAuthorize("hasAuthority('PERM_SELL')")
+    // 상품 이미지 1장 업로드. 받은 imageId를 상품 등록/수정의 imageIds로 보낸다.
+    // 판매자, 그리고 네덜란드식 이벤트 상품을 올리는 관리자만
+    @PreAuthorize("hasAuthority('PERM_SELL') or hasRole('ADMIN')")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RsData<ProductImageUploadResponseDto>> upload(@AuthenticationPrincipal AuthPrincipal principal,
                                                                         @RequestPart("file") MultipartFile file){

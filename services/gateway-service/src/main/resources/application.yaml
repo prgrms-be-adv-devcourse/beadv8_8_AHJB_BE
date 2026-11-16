@@ -54,7 +54,7 @@ spring:
             - id: product-service
               uri: ${service-uri.product}
               predicates:
-                - Path=/api/v1/products/**,/api/v1/wishes/**,/api/v1/qnas/**,/api/v1/reviews/**
+                - Path=/api/v1/products/**,/api/v1/wishes/**,/api/v1/qnas/**,/api/v1/reviews/**,/api/v1/admin/products/**
             - id: search-service
               uri: ${service-uri.search}
               predicates:

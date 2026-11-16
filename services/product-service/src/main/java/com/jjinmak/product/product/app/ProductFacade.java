@@ -4,6 +4,7 @@ import com.jjinmak.product.product.domain.Product;
 import com.jjinmak.product.product.domain.ProductMember;
 import com.jjinmak.product.product.in.dto.ProductCreateRequestDto;
 import com.jjinmak.product.product.in.dto.ProductDetailDto;
+import com.jjinmak.product.product.in.dto.ProductDutchCreateRequestDto;
 import com.jjinmak.product.product.in.dto.ProductMyListResponseDto;
 import com.jjinmak.product.product.in.dto.ProductUpcomingListResponseDto;
 import com.jjinmak.product.product.in.dto.ProductUpdateRequestDto;
@@ -26,6 +27,7 @@ public class ProductFacade {
 
     private final ProductSyncMemberUseCase productSyncMemberUseCase;
     private final ProductCreateUseCase productCreateUseCase;
+    private final ProductDutchCreateUseCase productDutchCreateUseCase;
     private final ProductUpdateUseCase productUpdateUseCase;
     private final ProductDeleteUseCase productDeleteUseCase;
     private final ProductRequestAuctionUseCase productRequestAuctionUseCase;
@@ -44,6 +46,11 @@ public class ProductFacade {
     @Transactional
     public Product createProduct(Long sellerId, ProductCreateRequestDto request){
         return productCreateUseCase.createProduct(sellerId, request);
+    }
+
+    @Transactional
+    public Product createDutchProduct(Long adminId, ProductDutchCreateRequestDto request){
+        return productDutchCreateUseCase.createDutchProduct(adminId, request);
     }
 
     @Transactional
