@@ -62,6 +62,9 @@ public class Order extends BaseIdAndTime {
     @ColumnDefault("false")
     Boolean autoConfirmAlarmed = false;
 
+    @Version
+    private Long version;
+
     public Order(OrderGroup group, OrderMember winner, OrderMember seller, Long auctionId, Long productId, Long winningPrice, Long deliveryFee){
         this.group = group;
         this.winner = winner;

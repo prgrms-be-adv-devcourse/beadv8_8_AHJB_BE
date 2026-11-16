@@ -3,9 +3,18 @@ kind: Ingress
 metadata:
   name: gateway
   namespace: app
+  annotations:
+    # cert manager가 tls 항목을 보고 인증서를 발급해 secretName에 저장한다.
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - api.jjinmak.kro.kr
+      secretName: api-jjinmak-tls
   rules:
-    - http:
+    - host: api.jjinmak.kro.kr
+      http:
         paths:
           - path: /
             pathType: Prefix
