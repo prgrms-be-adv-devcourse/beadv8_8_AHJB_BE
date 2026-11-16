@@ -256,10 +256,20 @@ public class Product extends BaseIdAndTime {
         return shippingFeeType == ShippingFeeType.CUSTOM ? shippingFee : null;
     }
 
+    // 판매자 수정/삭제 API로 바꿀 수 있는지 ('내 상품' 화면의 수정 버튼용)
+    // 네덜란드식은 관리자가 여는 이벤트라 판매자 API로는 바꿀 수 없다.
+    public boolean isSellerEditable(LocalDateTime now) {
+        return !isDutch() && isEditable(now);
+    }
+
     // 본인 상품이고, 경매 요청 전이면서 시작 예정 시각 전일 때만 수정/삭제할 수 있다.
+    // 네덜란드식 이벤트 상품은 판매자 수정/삭제 API로 바꿀 수 없다. (관리자 수정/취소는 별도 기능)
     public void validateEditable(Long sellerId, LocalDateTime now) {
         if (!seller.getId().equals(sellerId)) {
             throw new BusinessException(ProductErrorCode.NOT_PRODUCT_OWNER);
+        }
+        if (isDutch()) {
+            throw new BusinessException(ProductErrorCode.DUTCH_NOT_SELLER_EDITABLE);
         }
         if (!isEditable(now)) {
             throw new BusinessException(ProductErrorCode.NOT_EDITABLE);

@@ -1,6 +1,7 @@
 package com.jjinmak.product.product.in.dto;
 
 import com.jjinmak.contracts.product.domain.Manufacturer;
+import com.jjinmak.product.product.domain.AuctionType;
 import com.jjinmak.product.product.domain.Product;
 import com.jjinmak.product.product.domain.ProductAuctionTerms;
 import com.jjinmak.contracts.product.domain.ProductCategory;
@@ -10,6 +11,7 @@ import java.time.LocalDateTime;
 // 곧 시작 목록 카드 한 장. 경매 목록 카드와 같은 화면에서 쓰이므로 경매 관련 필드도 시작 전 값으로 채운다.
 public record ProductUpcomingItemDto(
         Long productId,
+        AuctionType auctionType, // ENGLISH | DUTCH (DUTCH면 startAt이 이벤트 오픈 시각, 카운트다운용)
         Long auctionId,         // 경매 시작 전이라 항상 null
         String productName,
         String thumbnailUrl,    // 대표 이미지 (없으면 null)
@@ -18,7 +20,7 @@ public record ProductUpcomingItemDto(
         String status,          // 항상 SCHEDULED
         Long startPrice,
         Long currentPrice,      // 시작 전이라 시작가와 같다
-        Long instantWinPrice,
+        Long instantWinPrice,   // 네덜란드식은 null
         int bidCount,           // 시작 전이라 0
         int wishCount,
         Long shippingFee,
@@ -32,6 +34,7 @@ public record ProductUpcomingItemDto(
 
         return new ProductUpcomingItemDto(
                 product.getId(),
+                terms.getAuctionType(),
                 null,
                 product.getName(),
                 thumbnailUrl,
