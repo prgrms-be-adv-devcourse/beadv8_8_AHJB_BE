@@ -9,11 +9,11 @@ import com.jjinmak.contracts.payment.event.PaymentPaidEvent;
 import com.jjinmak.back.order.domain.CartItem;
 import com.jjinmak.back.order.domain.Order;
 import com.jjinmak.back.order.domain.OrderMember;
-import com.jjinmak.back.order.out.payment.PaymentRequest;
 import com.jjinmak.back.order.out.repository.CartItemRepository;
 import com.jjinmak.back.order.out.repository.OrderGroupRepository;
 import com.jjinmak.back.order.out.repository.OrderMemberRepository;
 import com.jjinmak.back.order.out.repository.OrderRepository;
+import com.jjinmak.back.shared.payment.port.PaymentPort;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -74,7 +74,7 @@ class CartPaymentFlowIntegrationTest {
     ApplicationEvents events;
 
     @MockitoBean
-    PaymentRequest paymentRequest;
+    PaymentPort paymentPort;
 
     MockMvc mockMvc;
 
@@ -90,7 +90,7 @@ class CartPaymentFlowIntegrationTest {
         OrderMember seller = orderMemberRepository.save(new OrderMember(2L, UUID.randomUUID(), "판매자"));
         cartItemRepository.save(new CartItem(winner, seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now()));
         cartItemRepository.save(new CartItem(winner, seller, 11L, 21L, 50_000L, 4_000L, LocalDateTime.now()));
-        when(paymentRequest.requestPayment(any())).thenReturn(PaymentResultDto.paid(7L, 87_000L));
+        when(paymentPort.requestPayment(any())).thenReturn(PaymentResultDto.paid(7L, 87_000L));
     }
 
     @AfterEach
@@ -135,7 +135,7 @@ class CartPaymentFlowIntegrationTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.errorCode").value("ORDER007"));
 
-        verify(paymentRequest, times(1)).requestPayment(any());
+        verify(paymentPort, times(1)).requestPayment(any());
         assertThat(orderGroupRepository.count()).isEqualTo(1);
     }
 
@@ -143,7 +143,7 @@ class CartPaymentFlowIntegrationTest {
     @DisplayName("부족분 충전이 필요해 결제창으로 간 뒤 같은 상품을 순서만 바꿔 다시 결제 요청하면, 같은 주문 그룹과 같은 주문으로 결제를 요청하고 주문 그룹과 주문을 더 만들지 않으며, 그 그룹의 결제 완료 이벤트를 받으면 주문이 한 번씩 PAID가 된다")
     void needsCharge_retry_reusesGroupAndOrders() throws Exception {
         doReturn(PaymentResultDto.needsCharge(7L, 87_000L, 37_000L, "CHG-1", "찐막 주문 결제 (부족분 충전)"))
-                .when(paymentRequest).requestPayment(any());
+                .when(paymentPort).requestPayment(any());
 
         mockMvc.perform(payment())
                 .andExpect(status().isOk())
@@ -153,7 +153,7 @@ class CartPaymentFlowIntegrationTest {
                 .andExpect(jsonPath("$.data.isPaid").value(false));
 
         ArgumentCaptor<PaymentRequestDto> captor = ArgumentCaptor.forClass(PaymentRequestDto.class);
-        verify(paymentRequest, times(2)).requestPayment(captor.capture());
+        verify(paymentPort, times(2)).requestPayment(captor.capture());
         PaymentRequestDto first = captor.getAllValues().get(0);
         assertThat(captor.getAllValues().get(1)).isEqualTo(first);
         assertThat(orderGroupRepository.count()).isEqualTo(1);
@@ -183,7 +183,7 @@ class CartPaymentFlowIntegrationTest {
 
     private PaymentRequestDto sentRequest() {
         ArgumentCaptor<PaymentRequestDto> captor = ArgumentCaptor.forClass(PaymentRequestDto.class);
-        verify(paymentRequest).requestPayment(captor.capture());
+        verify(paymentPort).requestPayment(captor.capture());
         return captor.getValue();
     }
 

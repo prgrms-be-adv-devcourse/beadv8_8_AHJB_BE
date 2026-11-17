@@ -10,11 +10,11 @@ import com.jjinmak.back.order.domain.CartItem;
 import com.jjinmak.back.order.domain.Order;
 import com.jjinmak.back.order.domain.OrderGroup;
 import com.jjinmak.back.order.domain.OrderMember;
-import com.jjinmak.back.order.out.payment.PaymentRequest;
 import com.jjinmak.back.order.out.repository.CartItemRepository;
 import com.jjinmak.back.order.out.repository.OrderGroupRepository;
 import com.jjinmak.back.order.out.repository.OrderMemberRepository;
 import com.jjinmak.back.order.out.repository.OrderRepository;
+import com.jjinmak.back.shared.payment.port.PaymentPort;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.jjinmak.back.order.domain.OrderState.WAITING;
-import static com.jjinmak.back.order.exception.OrderErrorCode.PAYMENT_REQUEST_FAILED;
+import static com.jjinmak.back.payment.exception.WalletErrorCode.WALLET_CONCURRENT_MODIFICATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
@@ -74,7 +74,7 @@ class CartApiControllerTest {
     ApplicationEvents events;
 
     @MockitoBean
-    PaymentRequest paymentRequest;
+    PaymentPort paymentPort;
 
     MockMvc mockMvc;
 
@@ -132,7 +132,7 @@ class CartApiControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorCode").value("COMMON001"));
 
-        verifyNoInteractions(paymentRequest);
+        verifyNoInteractions(paymentPort);
     }
 
     @Test
@@ -147,7 +147,7 @@ class CartApiControllerTest {
 
         assertThat(orderGroupRepository.count()).isZero();
         assertThat(orderRepository.count()).isZero();
-        verifyNoInteractions(paymentRequest);
+        verifyNoInteractions(paymentPort);
     }
 
     @Test
@@ -164,13 +164,13 @@ class CartApiControllerTest {
 
         assertThat(orderGroupRepository.count()).isZero();
         assertThat(orderRepository.count()).isZero();
-        verifyNoInteractions(paymentRequest);
+        verifyNoInteractions(paymentPort);
     }
 
     @Test
     @DisplayName("결제 요청: 만든 주문 그룹 id, 낙찰자 id, 총액과 저장된 주문 id, 판매자 id, 금액을 결제 서비스에 넘긴다")
     void payment_sendsPaymentRequest() throws Exception {
-        when(paymentRequest.requestPayment(any())).thenReturn(PaymentResultDto.paid(7L, 33_000L));
+        when(paymentPort.requestPayment(any())).thenReturn(PaymentResultDto.paid(7L, 33_000L));
 
         mockMvc.perform(post("/api/v1/cart/payment")
                         .header(AuthHeaders.MEMBER_ID, 1L)
@@ -183,7 +183,7 @@ class CartApiControllerTest {
         Long orderId = orderRepository.findAll().get(0).getId();
 
         ArgumentCaptor<PaymentRequestDto> captor = ArgumentCaptor.forClass(PaymentRequestDto.class);
-        verify(paymentRequest).requestPayment(captor.capture());
+        verify(paymentPort).requestPayment(captor.capture());
         assertThat(captor.getValue()).isEqualTo(new PaymentRequestDto(group.getId(), 1L, 33_000L,
                 List.of(new PaymentRequestDto.Item(orderId, 2L, 30_000L, 3_000L))));
     }
@@ -191,7 +191,7 @@ class CartApiControllerTest {
     @Test
     @DisplayName("결제 요청: 예치금으로 결제되면(PAID) 200, 주문 그룹 id와 isPaid=true를 응답하고, 주문은 WAITING, 장바구니 항목은 그대로이며 이벤트를 발행하지 않는다 (결제 완료 처리는 결제 완료 이벤트가 맡는다)")
     void payment_paid() throws Exception {
-        when(paymentRequest.requestPayment(any())).thenReturn(PaymentResultDto.paid(7L, 33_000L));
+        when(paymentPort.requestPayment(any())).thenReturn(PaymentResultDto.paid(7L, 33_000L));
 
         MvcResult result = mockMvc.perform(post("/api/v1/cart/payment")
                         .header(AuthHeaders.MEMBER_ID, 1L)
@@ -222,7 +222,7 @@ class CartApiControllerTest {
     @Test
     @DisplayName("결제 요청: 예치금이 부족하면(NEEDS_CHARGE) 200, 주문 그룹 id와 isPaid=false, 충전에 필요한 결제 정보를 응답하고, 주문은 WAITING, 장바구니 항목은 그대로이며 이벤트를 발행하지 않는다")
     void payment_needsCharge() throws Exception {
-        when(paymentRequest.requestPayment(any()))
+        when(paymentPort.requestPayment(any()))
                 .thenReturn(PaymentResultDto.needsCharge(7L, 33_000L, 13_000L, "CHG-1", "찐막 주문 결제 (부족분 충전)"));
 
         MvcResult result = mockMvc.perform(post("/api/v1/cart/payment")
@@ -246,16 +246,16 @@ class CartApiControllerTest {
     }
 
     @Test
-    @DisplayName("결제 요청: 결제 서비스 호출이 실패하면 502 PAYMENT_REQUEST_FAILED(ORDER010), 이미 만든 주문은 WAITING, 장바구니 항목은 그대로이며 이벤트를 발행하지 않는다")
+    @DisplayName("결제 요청: 결제가 결제 쪽 예외로 실패하면 그 에러 코드(409 WALLET501)를 그대로 응답하고, 이미 만든 주문은 WAITING, 장바구니 항목은 그대로이며 이벤트를 발행하지 않는다")
     void payment_paymentFails() throws Exception {
-        when(paymentRequest.requestPayment(any())).thenThrow(new BusinessException(PAYMENT_REQUEST_FAILED));
+        when(paymentPort.requestPayment(any())).thenThrow(new BusinessException(WALLET_CONCURRENT_MODIFICATION));
 
         mockMvc.perform(post("/api/v1/cart/payment")
                         .header(AuthHeaders.MEMBER_ID, 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"productIds\": [20]}"))
-                .andExpect(status().isBadGateway())
-                .andExpect(jsonPath("$.errorCode").value("ORDER010"));
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errorCode").value("WALLET501"));
 
         onlyGroup();
         assertThat(orderRepository.findAll()).extracting(Order::getState).containsExactly(WAITING);
