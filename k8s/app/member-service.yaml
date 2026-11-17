@@ -37,6 +37,15 @@ spec:
                 name: member-db-secret
             - secretRef:
                 name: member-jwt-secret
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:MaxRAMPercentage=60 -XX:+ExitOnOutOfMemoryError"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 768Mi
 ---
 apiVersion: v1
 kind: Service
