@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/market_module_db
+    username: postgres
+    password: p@ssword
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+  kafka:
+    bootstrap-servers: localhost:9092
+
+product-image:
+  storage: local
+  bucket: ""
+  region: ap-northeast-2
+  key-prefix: local/
+  public-base-url: http://localhost:8086/local-images
+
+logging:
+  level:
+    org.hibernate.SQL: debug
