@@ -112,7 +112,7 @@ class DeliveryStatusSyncIntegrationTest {
 
         assertThat(statusOf(deliveryId)).isEqualTo(DeliveryStatusCode.WAITING);
         assertThat(events.stream(WebhookRegisterEvent.class))
-                .containsExactly(new WebhookRegisterEvent(deliveryId, 100L, HANJIN, "4444"));
+                .containsExactly(new WebhookRegisterEvent(deliveryId, 100L, HANJIN, "4444", deliveryRepository.findById(deliveryId).orElseThrow().getCallbackToken()));
 
         tracked(HANJIN, "4444", AT_PICKUP);
         deliveryFacade.getDeliveryStatus(deliveryId);

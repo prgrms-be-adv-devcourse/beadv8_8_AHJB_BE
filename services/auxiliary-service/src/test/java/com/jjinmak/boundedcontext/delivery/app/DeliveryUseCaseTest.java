@@ -2,6 +2,8 @@ package com.jjinmak.boundedcontext.delivery.app;
 
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.contracts.delivery.domain.DeliveryStatusCode;
+import com.jjinmak.contracts.delivery.event.DeliveryCreatedEvent;
+import com.jjinmak.contracts.order.event.OrderSendProductEvent;
 import com.jjinmak.boundedcontext.delivery.app.dto.DeliveryResponseDto;
 import com.jjinmak.boundedcontext.delivery.app.event.WebhookRegisterEvent;
 import com.jjinmak.boundedcontext.delivery.domain.Delivery;
@@ -14,6 +16,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -30,6 +34,7 @@ import static com.jjinmak.boundedcontext.delivery.exception.DeliveryErrorCode.DE
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -49,6 +54,9 @@ class DeliveryUseCaseTest {
     @InjectMocks
     DeliveryUseCase deliveryUseCase;
 
+    @Captor
+    ArgumentCaptor<Delivery> deliveryCaptor;
+
     DeliveryMember winner;
     DeliveryMember seller;
 
@@ -58,11 +66,32 @@ class DeliveryUseCaseTest {
         seller = new DeliveryMember(2L, UUID.randomUUID(), "판매자");
     }
 
+    @Test
+    @DisplayName("발송 요청으로 배송을 만들면 콜백 토큰을 발급하고, 배송 생성 이벤트와 그 토큰을 담은 Webhook 등록 이벤트를 발행한다")
+    void createDelivery_issuesCallbackToken() {
+        when(deliverySupport.getMember(1L)).thenReturn(winner);
+        when(deliverySupport.getMember(2L)).thenReturn(seller);
+        when(deliveryRepository.save(any(Delivery.class))).thenAnswer(invocation -> {
+            Delivery saved = invocation.getArgument(0);
+            ReflectionTestUtils.setField(saved, "id", 50L);
+            return saved;
+        });
+
+        deliveryUseCase.createDelivery(new OrderSendProductEvent(100L, 1L, 2L, CJ, "NEW-111"));
+
+        verify(deliveryRepository).save(deliveryCaptor.capture());
+        UUID token = deliveryCaptor.getValue().getCallbackToken();
+        assertThat(token).isNotNull();
+        verify(eventPublisher).publish(new DeliveryCreatedEvent(100L));
+        verify(eventPublisher).publish(new WebhookRegisterEvent(50L, 100L, CJ, "NEW-111", token));
+    }
+
     @ParameterizedTest(name = "{0} 배송 정보 수정")
     @EnumSource(value = DeliveryStatusCode.class, names = {"DELIVERED", "AVAILABLE_FOR_PICKUP"})
-    @DisplayName("배송이 끝난 뒤 판매자가 배송 정보를 바꾸면 DELIVERY_BAD_REQUEST, 택배사·운송장·상태가 그대로이고 Webhook 등록 이벤트를 발행하지 않는다")
+    @DisplayName("배송이 끝난 뒤 판매자가 배송 정보를 바꾸면 DELIVERY_BAD_REQUEST, 택배사·운송장·상태·콜백 토큰이 그대로이고 Webhook 등록 이벤트를 발행하지 않는다")
     void updateDeliveryData_completed(DeliveryStatusCode status) {
         Delivery delivery = delivery(status);
+        UUID tokenBefore = delivery.getCallbackToken();
         when(deliverySupport.getDeliveryWithParticipant(100L)).thenReturn(delivery);
         when(deliverySupport.getMember(2L)).thenReturn(seller);
 
@@ -74,14 +103,16 @@ class DeliveryUseCaseTest {
         assertThat(delivery.getCarrier()).isEqualTo(CJ);
         assertThat(delivery.getWaybill()).isEqualTo("OLD-111");
         assertThat(delivery.getStatus()).isEqualTo(status);
+        assertThat(delivery.getCallbackToken()).isEqualTo(tokenBefore);
         verifyNoInteractions(eventPublisher);
     }
 
     @ParameterizedTest(name = "{0} 배송 정보 수정")
     @EnumSource(value = DeliveryStatusCode.class, names = {"DELIVERED", "AVAILABLE_FOR_PICKUP"}, mode = EXCLUDE)
-    @DisplayName("배송이 끝나기 전에는 EXCEPTION을 포함해 판매자가 배송 정보를 바꿀 수 있고, 상태가 WAITING이 되며 새 운송장으로 Webhook 등록 이벤트를 발행한다")
+    @DisplayName("배송이 끝나기 전에는 EXCEPTION을 포함해 판매자가 배송 정보를 바꿀 수 있고, 상태가 WAITING이 되며 콜백 토큰을 새로 발급해 새 운송장과 함께 Webhook 등록 이벤트를 발행한다")
     void updateDeliveryData_notCompleted(DeliveryStatusCode status) {
         Delivery delivery = delivery(status);
+        UUID tokenBefore = delivery.getCallbackToken();
         when(deliverySupport.getDeliveryWithParticipant(100L)).thenReturn(delivery);
         when(deliverySupport.getMember(2L)).thenReturn(seller);
 
@@ -91,13 +122,15 @@ class DeliveryUseCaseTest {
         assertThat(delivery.getCarrier()).isEqualTo(HANJIN);
         assertThat(delivery.getWaybill()).isEqualTo("NEW-222");
         assertThat(delivery.getStatus()).isEqualTo(WAITING);
-        verify(eventPublisher).publish(new WebhookRegisterEvent(50L, 100L, HANJIN, "NEW-222"));
+        assertThat(delivery.getCallbackToken()).isNotNull().isNotEqualTo(tokenBefore);
+        verify(eventPublisher).publish(new WebhookRegisterEvent(50L, 100L, HANJIN, "NEW-222", delivery.getCallbackToken()));
     }
 
     @Test
-    @DisplayName("판매자가 아닌 회원은 배송이 끝났어도 DELIVERY_FORBIDDEN을 먼저 받고, 배송 정보가 그대로다")
+    @DisplayName("판매자가 아닌 회원은 배송이 끝났어도 DELIVERY_FORBIDDEN을 먼저 받고, 배송 정보와 콜백 토큰이 그대로다")
     void updateDeliveryData_notSellerOnCompleted() {
         Delivery delivery = delivery(DELIVERED);
+        UUID tokenBefore = delivery.getCallbackToken();
         when(deliverySupport.getDeliveryWithParticipant(100L)).thenReturn(delivery);
         when(deliverySupport.getMember(1L)).thenReturn(winner);
 
@@ -108,6 +141,7 @@ class DeliveryUseCaseTest {
 
         assertThat(delivery.getWaybill()).isEqualTo("OLD-111");
         assertThat(delivery.getStatus()).isEqualTo(DELIVERED);
+        assertThat(delivery.getCallbackToken()).isEqualTo(tokenBefore);
         verifyNoInteractions(eventPublisher);
     }
 

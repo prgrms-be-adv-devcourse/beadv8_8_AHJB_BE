@@ -18,6 +18,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -119,9 +120,10 @@ class DeliveryApiControllerTest {
     }
 
     @Test
-    @DisplayName("배송 정보 수정: 배송 문제(EXCEPTION)가 생긴 배송은 판매자가 운송장을 바꿀 수 있고, 상태가 WAITING이 되며 새 운송장으로 Webhook 등록 이벤트를 한 번 발행한다")
+    @DisplayName("배송 정보 수정: 배송 문제(EXCEPTION)가 생긴 배송은 판매자가 운송장을 바꿀 수 있고, 상태가 WAITING이 되며 새로 발급한 콜백 토큰과 새 운송장으로 Webhook 등록 이벤트를 한 번 발행한다")
     void updateDeliveryData_exception() throws Exception {
         Long deliveryId = saveDelivery(100L, EXCEPTION);
+        UUID tokenBefore = tokenOf(deliveryId);
 
         mockMvc.perform(put("/api/v1/order/{orderId}/delivery", 100L)
                         .header(AuthHeaders.MEMBER_ID, 2L)
@@ -136,8 +138,9 @@ class DeliveryApiControllerTest {
         assertThat(delivery.getCarrier()).isEqualTo(HANJIN);
         assertThat(delivery.getWaybill()).isEqualTo("NEW-222");
         assertThat(delivery.getStatus()).isEqualTo(WAITING);
+        assertThat(delivery.getCallbackToken()).isNotEqualTo(tokenBefore);
         assertThat(events.stream(WebhookRegisterEvent.class))
-                .containsExactly(new WebhookRegisterEvent(deliveryId, 100L, HANJIN, "NEW-222"));
+                .containsExactly(new WebhookRegisterEvent(deliveryId, 100L, HANJIN, "NEW-222", delivery.getCallbackToken()));
     }
 
     @Test
@@ -185,13 +188,16 @@ class DeliveryApiControllerTest {
     }
 
     @Test
-    @DisplayName("Webhook 콜백: Webhook을 등록할 때 넘긴 콜백 주소로 콜백이 오면 202를 돌려주고, 그 배송의 콜백 요청 이벤트를 발행한다")
+    @DisplayName("Webhook 콜백: Webhook을 등록할 때 넘긴 콜백 주소에는 배송의 콜백 토큰이 쿼리로 붙고, 그 주소로 콜백이 오면 202를 돌려주며 그 배송의 콜백 요청 이벤트를 발행한다")
     void webhookCallback_toRegisteredCallbackUrl() throws Exception {
         Long deliveryId = saveDelivery(100L, IN_TRANSIT);
-        String registerRequest = registerWebhook(deliveryId, 100L);
+        UUID token = tokenOf(deliveryId);
+        String registerRequest = registerWebhook(deliveryId, 100L, token);
         String callbackUrl = JsonPath.read(registerRequest, "$.variables.input.callbackUrl");
         String carrierId = JsonPath.read(registerRequest, "$.variables.input.carrierId");
         String trackingNumber = JsonPath.read(registerRequest, "$.variables.input.trackingNumber");
+
+        assertThat(callbackUrl).isEqualTo("https://api.jjinmak.kro.kr/api/v1/order/100/delivery/" + deliveryId + "?token=" + token);
 
         mockMvc.perform(post(URI.create(callbackUrl))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -202,12 +208,43 @@ class DeliveryApiControllerTest {
                 .containsExactly(new CallbackRequestedEvent(deliveryId));
     }
 
+    @ParameterizedTest(name = "쿼리 \"{0}\"")
+    @ValueSource(strings = {"", "?token=", "?token=6f1c1b8e-0d0a-4c5e-9b7a-2f3d4e5f6a7b", "?token=not-a-uuid"})
+    @DisplayName("Webhook 콜백: 콜백 토큰이 없거나 다르면 404 DELIVERY_002, 콜백 요청 이벤트를 발행하지 않는다")
+    void webhookCallback_missingOrWrongToken(String query) throws Exception {
+        Long deliveryId = saveDelivery(100L, IN_TRANSIT);
+
+        mockMvc.perform(post(URI.create("/api/v1/order/100/delivery/" + deliveryId + query))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"carrierId\": \"kr.cjlogistics\", \"trackingNumber\": \"OLD-111\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.isSuccess").value(false))
+                .andExpect(jsonPath("$.errorCode").value("DELIVERY_002"));
+
+        assertThat(events.stream(CallbackRequestedEvent.class)).isEmpty();
+    }
+
     @Test
-    @DisplayName("Webhook 콜백: 모르는 택배사 코드로 콜백이 오면 400 BAD_REQUEST, 콜백 요청 이벤트를 발행하지 않는다")
+    @DisplayName("Webhook 콜백: 토큰이 없으면 모르는 택배사 코드로 와도 400이 아니라 404 DELIVERY_002를 돌려준다")
+    void webhookCallback_withoutTokenAndUnknownCarrier() throws Exception {
+        Long deliveryId = saveDelivery(100L, IN_TRANSIT);
+
+        mockMvc.perform(post("/api/v1/order/{orderId}/delivery/{deliveryId}", 100L, deliveryId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"carrierId\": \"kr.unknown\", \"trackingNumber\": \"OLD-111\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorCode").value("DELIVERY_002"));
+
+        assertThat(events.stream(CallbackRequestedEvent.class)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Webhook 콜백: 토큰이 맞아도 모르는 택배사 코드로 콜백이 오면 400 BAD_REQUEST, 콜백 요청 이벤트를 발행하지 않는다")
     void webhookCallback_unknownCarrier() throws Exception {
         Long deliveryId = saveDelivery(100L, IN_TRANSIT);
 
         mockMvc.perform(post("/api/v1/order/{orderId}/delivery/{deliveryId}", 100L, deliveryId)
+                        .queryParam("token", tokenOf(deliveryId).toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"carrierId\": \"kr.unknown\", \"trackingNumber\": \"OLD-111\"}"))
                 .andExpect(status().isBadRequest())
@@ -216,20 +253,54 @@ class DeliveryApiControllerTest {
         assertThat(events.stream(CallbackRequestedEvent.class)).isEmpty();
     }
 
+    @Test
+    @DisplayName("Webhook 콜백: 판매자가 운송장을 바꾸면 바꾸기 전 토큰의 콜백은 404 DELIVERY_002를 받고, 새 토큰의 콜백만 202와 함께 콜백 요청 이벤트를 발행한다")
+    void webhookCallback_oldTokenAfterWaybillChange() throws Exception {
+        Long deliveryId = saveDelivery(100L, EXCEPTION);
+        UUID oldToken = tokenOf(deliveryId);
+
+        mockMvc.perform(put("/api/v1/order/{orderId}/delivery", 100L)
+                        .header(AuthHeaders.MEMBER_ID, 2L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"carrier\": \"HANJIN\", \"waybill\": \"NEW-222\"}"))
+                .andExpect(status().isOk());
+        UUID newToken = tokenOf(deliveryId);
+
+        mockMvc.perform(post("/api/v1/order/{orderId}/delivery/{deliveryId}", 100L, deliveryId)
+                        .queryParam("token", oldToken.toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"carrierId\": \"kr.hanjin\", \"trackingNumber\": \"NEW-222\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorCode").value("DELIVERY_002"));
+        assertThat(events.stream(CallbackRequestedEvent.class)).isEmpty();
+
+        mockMvc.perform(post("/api/v1/order/{orderId}/delivery/{deliveryId}", 100L, deliveryId)
+                        .queryParam("token", newToken.toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"carrierId\": \"kr.hanjin\", \"trackingNumber\": \"NEW-222\"}"))
+                .andExpect(status().isAccepted());
+        assertThat(events.stream(CallbackRequestedEvent.class))
+                .containsExactly(new CallbackRequestedEvent(deliveryId));
+    }
+
     private Long saveDelivery(Long orderId, DeliveryStatusCode status) {
         Delivery delivery = new Delivery(orderId, winner, seller, CJ, "OLD-111");
         delivery.updateStatus(status);
         return deliveryRepository.save(delivery).getId();
     }
 
-    private String registerWebhook(Long deliveryId, Long orderId) {
+    private UUID tokenOf(Long deliveryId) {
+        return deliveryRepository.findById(deliveryId).orElseThrow().getCallbackToken();
+    }
+
+    private String registerWebhook(Long deliveryId, Long orderId, UUID token) {
         RestClient.Builder builder = RestClient.builder().baseUrl("https://apis.tracker.delivery/graphql");
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         AtomicReference<String> requestBody = new AtomicReference<>();
         server.expect(request -> requestBody.set(((MockClientHttpRequest) request).getBodyAsString()))
                 .andRespond(withSuccess("{\"data\": {\"registerTrackWebhook\": true}}", MediaType.APPLICATION_JSON));
 
-        new DeliveryTracker(builder.build()).registerWebhook(deliveryId, orderId, CJ, "OLD-111", 2);
+        new DeliveryTracker(builder.build()).registerWebhook(deliveryId, orderId, CJ, "OLD-111", token, 2);
 
         server.verify();
         return requestBody.get();

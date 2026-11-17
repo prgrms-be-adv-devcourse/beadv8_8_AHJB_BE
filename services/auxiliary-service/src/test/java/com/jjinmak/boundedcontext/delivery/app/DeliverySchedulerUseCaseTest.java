@@ -46,7 +46,9 @@ class DeliverySchedulerUseCaseTest {
     @Captor
     ArgumentCaptor<Collection<DeliveryStatusCode>> statusCaptor;
 
-    WebhookTargetDto target = new WebhookTargetDto(50L, 100L, CJ, "1234567890");
+    UUID token = UUID.randomUUID();
+
+    WebhookTargetDto target = new WebhookTargetDto(50L, 100L, CJ, "1234567890", token);
 
     @ParameterizedTest(name = "최신 배송 상태 {0}")
     @EnumSource(value = DeliveryStatusCode.class, names = {"DELIVERED", "AVAILABLE_FOR_PICKUP"})
@@ -59,23 +61,23 @@ class DeliverySchedulerUseCaseTest {
 
     @ParameterizedTest(name = "최신 배송 상태 {0}")
     @EnumSource(value = DeliveryStatusCode.class, names = {"DELIVERED", "AVAILABLE_FOR_PICKUP"}, mode = EXCLUDE)
-    @DisplayName("최신 배송 상태가 EXCEPTION을 포함해 배송이 끝나지 않은 상태면 같은 배송으로 Webhook을 2일 기한으로 다시 등록한다")
+    @DisplayName("최신 배송 상태가 EXCEPTION을 포함해 배송이 끝나지 않은 상태면 같은 배송과 콜백 토큰으로 Webhook을 2일 기한으로 다시 등록한다")
     void updateWebhook_notCompleted(DeliveryStatusCode latestStatus) {
         deliverySchedulerUseCase.updateWebhook(target, latestStatus);
 
-        verify(deliveryTracker).registerWebhook(50L, 100L, CJ, "1234567890", 2);
+        verify(deliveryTracker).registerWebhook(50L, 100L, CJ, "1234567890", token, 2);
     }
 
     @Test
-    @DisplayName("최신 배송 상태를 알지 못하면(null) Webhook을 다시 등록한다")
+    @DisplayName("최신 배송 상태를 알지 못하면(null) Webhook을 콜백 토큰과 함께 다시 등록한다")
     void updateWebhook_latestStatusUnknown() {
         deliverySchedulerUseCase.updateWebhook(target, null);
 
-        verify(deliveryTracker).registerWebhook(50L, 100L, CJ, "1234567890", 2);
+        verify(deliveryTracker).registerWebhook(50L, 100L, CJ, "1234567890", token, 2);
     }
 
     @Test
-    @DisplayName("재등록 대상은 배송이 끝나지 않은 모든 상태의 배송이고, 배송 id·주문 id·택배사·운송장을 담아 돌려준다")
+    @DisplayName("재등록 대상은 배송이 끝나지 않은 모든 상태의 배송이고, 배송 id·주문 id·택배사·운송장·콜백 토큰을 담아 돌려준다")
     void getUnshippedDelivery_notCompletedStatuses() {
         Delivery delivery = new Delivery(100L, new DeliveryMember(1L, UUID.randomUUID(), "낙찰자"), new DeliveryMember(2L, UUID.randomUUID(), "판매자"), CJ, "1234567890");
         ReflectionTestUtils.setField(delivery, "id", 50L);
@@ -87,6 +89,6 @@ class DeliverySchedulerUseCaseTest {
         assertThat(statusCaptor.getValue()).containsExactlyInAnyOrderElementsOf(
                 Arrays.stream(DeliveryStatusCode.values()).filter(code -> !code.isCompleted()).toList()
         );
-        assertThat(targets).containsExactly(target);
+        assertThat(targets).containsExactly(new WebhookTargetDto(50L, 100L, CJ, "1234567890", delivery.getCallbackToken()));
     }
 }
