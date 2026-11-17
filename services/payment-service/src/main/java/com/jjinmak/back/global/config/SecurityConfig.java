@@ -26,6 +26,7 @@ public class SecurityConfig {
             "/swagger-ui.html",
             "/v3/api-docs/**",
             "/actuator/health/**",
+            "/actuator/prometheus",
             "/webhooks/toss"                     // 토스 웹훅 (토스 서버가 호출, 회원 헤더 없음)
     };
 

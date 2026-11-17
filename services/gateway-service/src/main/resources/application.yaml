@@ -79,10 +79,18 @@ service-uri:
   chat: http://chat-service
 
 management:
+  server:
+    port: 8081
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
   endpoint:
     health:
       probes:
         enabled: true
+        # 관리 포트를 분리해도 probe는 메인 포트(/livez, /readyz)로 받기 위함
+        add-additional-paths: true
 
 jwt:
   public-key: ${JWT_PUBLIC_KEY}

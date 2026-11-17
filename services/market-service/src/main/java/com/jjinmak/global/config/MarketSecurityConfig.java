@@ -28,7 +28,8 @@ public class MarketSecurityConfig {
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/v3/api-docs/**",
-            "/actuator/health/**"
+            "/actuator/health/**",
+            "/actuator/prometheus"
     };
 
     private static final String[] PUBLIC_GET_URLS = {
