@@ -17,6 +17,8 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: validate
+  flyway:
+    out-of-order: true
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     producer:
@@ -37,6 +39,9 @@ toss:
   payments:
     base-url: https://api.tosspayments.com
     secret-key: ${TOSS_PAYMENTS_SECRET_KEY}
+
+payment-service:
+  base-url: ${PAYMENT_SERVICE_BASE_URL}
 
 wallet:
   fee-rate-percent: 10
