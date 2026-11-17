@@ -1,9 +1,9 @@
-package com.jjinmak.back.payment.config;
+package com.jjinmak.back.global.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Configuration
 @EnableScheduling
-public class PaymentSchedulingConfig {
+public class SchedulingConfig {
 }
