@@ -8,12 +8,12 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 // 배포 단위 auxiliary-service: chat · notification · delivery 세 컨텍스트를 한 프로세스로 띄운다
 @SpringBootApplication(scanBasePackages = {
-        "com.jjinmak.boundedContext",   // chat, notification, delivery
+        "com.jjinmak.boundedcontext",   // chat, notification, delivery
         "com.jjinmak.global",           // 배포 단위 공용 설정 (SecurityConfig)
         "com.jjinmak.common"            // GlobalExceptionHandler, Kafka 공통 설정, 인증 핸들러
 })
-@EntityScan("com.jjinmak.boundedContext")
-@EnableJpaRepositories("com.jjinmak.boundedContext")
+@EntityScan("com.jjinmak.boundedcontext")
+@EnableJpaRepositories("com.jjinmak.boundedcontext")
 @EnableJpaAuditing
 public class AuxiliaryApplication {
 
