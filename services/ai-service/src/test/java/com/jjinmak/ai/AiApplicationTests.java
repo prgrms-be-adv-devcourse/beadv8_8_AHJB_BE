@@ -1,10 +1,9 @@
 package com.jjinmak.ai;
 
+import com.jjinmak.ai.recommend.support.RecommendIntegrationTestSupport;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class AiApplicationTests {
+class AiApplicationTests extends RecommendIntegrationTestSupport {
 
     @Test
     void contextLoads() {
