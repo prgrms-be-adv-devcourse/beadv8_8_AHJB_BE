@@ -10,6 +10,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 import static com.jjinmak.boundedcontext.delivery.exception.DeliveryErrorCode.*;
 import static com.jjinmak.boundedcontext.delivery.out.dto.DeliveryTrackerExtension.PASS;
@@ -69,8 +70,8 @@ public class DeliveryTracker {
         return response;
     }
 
-    public void registerWebhook(Long deliveryId, Long orderId, CarrierType carrier, String waybill, int expirationDays) {
-        String webhookCallback = webhookCallbackUrl + "/order/" + orderId + "/delivery/" + deliveryId;
+    public void registerWebhook(Long deliveryId, Long orderId, CarrierType carrier, String waybill, UUID token, int expirationDays) {
+        String webhookCallback = webhookCallbackUrl + "/order/" + orderId + "/delivery/" + deliveryId + "?token=" + token;
         WebhookRegisterRequestDto requestDto = new WebhookRegisterRequestDto(
                 WEBHOOK_QUERY,
                 new WebhookRegisterRequestDto.Variables(new WebhookRegisterRequestDto.Input(carrier.getCarrierCode(), waybill, webhookCallback, OffsetDateTime.now().plusDays(expirationDays)))

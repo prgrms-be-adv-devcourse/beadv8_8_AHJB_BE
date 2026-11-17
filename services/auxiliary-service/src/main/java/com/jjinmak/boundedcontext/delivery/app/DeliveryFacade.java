@@ -59,7 +59,7 @@ public class DeliveryFacade {
         deliveryTrackerUseCase.registerWebhook(event);
     }
 
-    public void webhookCallback(Long deliveryId, Long orderId, CarrierType carrier, String waybill){
-        deliveryTrackerUseCase.webhookCallback(deliveryId, orderId, carrier, waybill);
+    public void webhookCallback(Long deliveryId, Long orderId, String callbackToken, CarrierType carrier, String waybill){
+        deliveryTrackerUseCase.webhookCallback(deliveryId, orderId, callbackToken, carrier, waybill);
     }
 }

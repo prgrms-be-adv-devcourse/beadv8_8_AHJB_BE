@@ -62,10 +62,10 @@ public class DeliveryApiController {
             description = "등록된 Webhook으로 콜백 요청을 수신합니다."
     )
     @PostMapping("/{deliveryId}")
-    public ResponseEntity<RsData<Void>> webhookCallback(@PathVariable Long deliveryId, @PathVariable Long orderId, @Valid @RequestBody WebhookCallbackDto dto){
+    public ResponseEntity<RsData<Void>> webhookCallback(@PathVariable Long deliveryId, @PathVariable Long orderId, @RequestParam(required = false) String token, @Valid @RequestBody WebhookCallbackDto dto){
         CarrierType carrier = CarrierType.fromCode(dto.carrierId());
 
-        deliveryFacade.webhookCallback(deliveryId, orderId, carrier, dto.trackingNumber());
+        deliveryFacade.webhookCallback(deliveryId, orderId, token, carrier, dto.trackingNumber());
 
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(new RsData<>(null));
     }

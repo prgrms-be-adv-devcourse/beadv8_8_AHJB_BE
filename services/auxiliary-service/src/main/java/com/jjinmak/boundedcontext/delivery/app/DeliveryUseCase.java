@@ -41,7 +41,7 @@ public class DeliveryUseCase {
 
         eventPublisher.publish(deliveryCreatedEvent);
 
-        WebhookRegisterEvent webhookRegisterEvent = new WebhookRegisterEvent(delivery.getId(), delivery.getOrderId(), carrier, waybill);
+        WebhookRegisterEvent webhookRegisterEvent = new WebhookRegisterEvent(delivery.getId(), delivery.getOrderId(), carrier, waybill, delivery.getCallbackToken());
 
         eventPublisher.publish(webhookRegisterEvent);
     }
@@ -58,7 +58,7 @@ public class DeliveryUseCase {
 
         delivery.update(carrier, waybill);
 
-        WebhookRegisterEvent webhookRegisterEvent = new WebhookRegisterEvent(delivery.getId(), delivery.getOrderId(), carrier, waybill);
+        WebhookRegisterEvent webhookRegisterEvent = new WebhookRegisterEvent(delivery.getId(), delivery.getOrderId(), carrier, waybill, delivery.getCallbackToken());
 
         eventPublisher.publish(webhookRegisterEvent);
 

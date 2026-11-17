@@ -11,6 +11,10 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.UUID;
+
 import static com.jjinmak.boundedcontext.delivery.exception.DeliveryErrorCode.DELIVERY_FORBIDDEN;
 
 @Entity
@@ -43,6 +47,9 @@ public class Delivery extends BaseIdAndTime {
     @JdbcTypeCode(SqlTypes.VARCHAR)
     DeliveryStatusCode status;
 
+    @NotNull
+    UUID callbackToken;
+
     public Delivery(Long orderId, DeliveryMember winner, DeliveryMember seller, CarrierType carrier, String waybill){
         this.orderId = orderId;
         this.winner = winner;
@@ -50,12 +57,21 @@ public class Delivery extends BaseIdAndTime {
         this.carrier = carrier;
         this.waybill = waybill;
         this.status = DeliveryStatusCode.WAITING;
+        this.callbackToken = UUID.randomUUID();
     }
 
     public void update(CarrierType carrier, String waybill){
         this.carrier = carrier;
         this.waybill = waybill;
         this.status = DeliveryStatusCode.WAITING;
+        this.callbackToken = UUID.randomUUID();
+    }
+
+    public boolean matchesCallbackToken(String token){
+        return token != null && MessageDigest.isEqual(
+                callbackToken.toString().getBytes(StandardCharsets.UTF_8),
+                token.getBytes(StandardCharsets.UTF_8)
+        );
     }
 
     public void validateParticipant(DeliveryMember member){

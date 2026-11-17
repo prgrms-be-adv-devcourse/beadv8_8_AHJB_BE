@@ -21,6 +21,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
+import static com.jjinmak.boundedcontext.delivery.exception.DeliveryErrorCode.DELIVERY_NOT_FOUND;
 import static com.jjinmak.common.exception.CommonErrorCode.BAD_REQUEST;
 import static com.jjinmak.contracts.delivery.domain.DeliveryStatusCode.UNKNOWN;
 import static com.jjinmak.contracts.delivery.domain.DeliveryStatusCode.WRONG;
@@ -79,14 +80,17 @@ public class DeliveryTrackerUseCase {
         CarrierType carrier = event.carrier();
         String waybill = event.waybill();
 
-        deliveryTracker.registerWebhook(deliveryId, orderId, carrier, waybill, 2);
+        deliveryTracker.registerWebhook(deliveryId, orderId, carrier, waybill, event.callbackToken(), 2);
     }
 
-    public void webhookCallback(Long deliveryId, Long orderId, CarrierType carrier, String waybill){
+    public void webhookCallback(Long deliveryId, Long orderId, String callbackToken, CarrierType carrier, String waybill){
+        Delivery delivery = deliverySupport.getDeliveryById(deliveryId);
+
+        if (!delivery.matchesCallbackToken(callbackToken))
+            throw new BusinessException(DELIVERY_NOT_FOUND);
+
         if (carrier == null)
             throw new BusinessException(BAD_REQUEST);
-
-        Delivery delivery = deliverySupport.getDeliveryById(deliveryId);
 
         if (!delivery.getOrderId().equals(orderId) || !delivery.getCarrier().equals(carrier) || !delivery.getWaybill().equals(waybill)){
             return;

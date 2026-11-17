@@ -28,7 +28,7 @@ public class DeliverySchedulerUseCase {
         List<Delivery> deliveries =  deliveryRepository.findAllByDeliveryStatusIn(unshipped);
 
         return deliveries.stream()
-                .map((d) -> new WebhookTargetDto(d.getId(), d.getOrderId(), d.getCarrier(), d.getWaybill()))
+                .map((d) -> new WebhookTargetDto(d.getId(), d.getOrderId(), d.getCarrier(), d.getWaybill(), d.getCallbackToken()))
                 .toList();
     }
 
@@ -36,6 +36,6 @@ public class DeliverySchedulerUseCase {
         if (latestStatus != null && latestStatus.isCompleted()){
             return;
         }
-        deliveryTracker.registerWebhook(delivery.deliveryId(), delivery.orderId(), delivery.carrier(), delivery.waybill(), 2);
+        deliveryTracker.registerWebhook(delivery.deliveryId(), delivery.orderId(), delivery.carrier(), delivery.waybill(), delivery.callbackToken(), 2);
     }
 }
