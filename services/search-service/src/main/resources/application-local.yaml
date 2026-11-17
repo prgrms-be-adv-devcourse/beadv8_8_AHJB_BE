@@ -1,6 +1,0 @@
-spring:
-  # docker-compose.local.yaml의 elasticsearch (로컬은 보안 꺼짐)
-  elasticsearch:
-    uris: http://localhost:9200
-  kafka:
-    bootstrap-servers: localhost:9092
