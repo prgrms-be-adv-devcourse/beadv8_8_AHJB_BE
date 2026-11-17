@@ -1,12 +1,15 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/product_db
+    url: jdbc:postgresql://localhost:5432/market_module_db
     username: postgres
     password: p@ssword
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
   kafka:
     bootstrap-servers: localhost:9092
 
-# 로컬은 이미지를 파일로 저장한다. 조회 URL은 이 서비스 포트에 맞춘다.
 product-image:
   storage: local
   bucket: ""

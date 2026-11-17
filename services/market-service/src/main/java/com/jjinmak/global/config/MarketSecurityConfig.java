@@ -1,5 +1,6 @@
-package com.jjinmak.boundedcontext.auction.config;
+package com.jjinmak.global.config;
 
+import com.jjinmak.boundedcontext.product.product.out.imageStorage.ProductImageProperties;
 import com.jjinmak.common.security.CustomAccessDeniedHandler;
 import com.jjinmak.common.security.CustomAuthenticationEntryPoint;
 import com.jjinmak.common.security.HeaderAuthenticationFilter;
@@ -14,10 +15,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+// 토큰 검증은 게이트웨이가 맡고, 이 서비스는 게이트웨이가 넣어 준 회원 헤더로 인증한다.
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
-public class AuctionSecurityConfig {
+public class MarketSecurityConfig {
 
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
     private final CustomAccessDeniedHandler accessDeniedHandler;
@@ -29,8 +31,15 @@ public class AuctionSecurityConfig {
             "/actuator/health/**"
     };
 
+    private static final String[] PUBLIC_GET_URLS = {
+            "/api/v1/products/upcoming",
+            ProductImageProperties.LOCAL_URL_PATH,
+            "/api/v1/auctions",
+            "/api/v1/auctions/dutch"
+    };
+
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain marketFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -39,14 +48,13 @@ public class AuctionSecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_URLS).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/auctions").permitAll()  //비로그인 허용하는 Api
-                        .requestMatchers(HttpMethod.GET, "/api/v1/auctions/dutch").permitAll()
+                        .requestMatchers(HttpMethod.GET, PUBLIC_GET_URLS).permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler))
-                // 게이트웨이가 검증 후 넣어 준 X-Member-Id / X-Member-Roles 헤더로 인증
-                .addFilterBefore(new HeaderAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new HeaderAuthenticationFilter(),
+                        UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }

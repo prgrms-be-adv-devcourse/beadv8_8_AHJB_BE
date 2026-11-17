@@ -5,7 +5,7 @@ server:
 
 spring:
   application:
-    name: product-service
+    name: market-service
   lifecycle:
     timeout-per-shutdown-phase: 20s
   servlet:
@@ -37,7 +37,12 @@ spring:
       enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
-
+  flyway:
+    out-of-order: true
+  task:
+    scheduling:
+      pool:
+        size: 4
 management:
   endpoint:
     health:
