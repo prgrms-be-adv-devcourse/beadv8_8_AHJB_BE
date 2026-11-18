@@ -19,6 +19,11 @@ import com.jjinmak.back.payment.domain.enums.PayMethod;
  * - pgMethod            : 결제창을 열어야 하는 결제수단 (TRANSFER / CARD). 결제창이 필요 없으면 null
  * - chargeLimitExceeded : 결제창 금액이 계좌이체 1회 한도를 넘는지. true 면 이 조건으로는 결제 요청이 거절된다
  *                         (예치금 결제면 예치금을 먼저 충전하고, 계좌이체 직접 결제면 다른 수단을 골라야 한다)
+ * - expectedEarnPoint   : 이 조건으로 결제하고 구매 확정하면 적립될 것으로 예상되는 포인트
+ *                         예치금으로 내는 금액과 계좌이체로 직접 결제하는 금액에서 배송비 몫을 뺀 뒤 적립률을 곱한다 (카드·간편결제, 포인트 사용액은 제외)
+ *                         실제 적립은 구매 확정 때 주문별로 계산해 절사하므로 주문이 여러 건이면 몇 포인트 차이 날 수 있고,
+ *                         계좌이체를 골랐더라도 결제창에서 다른 수단으로 결제하면 적립되지 않는다
+ * - earnRatePercent     : 포인트 적립률(%)
  */
 public record PaymentQuoteDto(
         long balance,
@@ -33,9 +38,12 @@ public record PaymentQuoteDto(
         long balanceAfterPayment,
         long pgAmount,
         String pgMethod,
-        boolean chargeLimitExceeded
+        boolean chargeLimitExceeded,
+        long expectedEarnPoint,
+        int earnRatePercent
 ) {
-    public static PaymentQuoteDto of(long balance, long pointBalance, PaymentPlan plan, String pgMethod) {
+    public static PaymentQuoteDto of(long balance, long pointBalance, PaymentPlan plan, String pgMethod,
+                                     long expectedEarnPoint, int earnRatePercent) {
         boolean direct = plan.isDirect();
         long chargeAmount = direct ? 0L : plan.chargeAmount();
         return new PaymentQuoteDto(
@@ -51,7 +59,9 @@ public record PaymentQuoteDto(
                 balance + chargeAmount - plan.depositAmount(),
                 plan.chargeAmount(),
                 plan.needsPgWindow() ? pgMethod : null,
-                plan.limitExceeded()
+                plan.limitExceeded(),
+                expectedEarnPoint,
+                earnRatePercent
         );
     }
 }

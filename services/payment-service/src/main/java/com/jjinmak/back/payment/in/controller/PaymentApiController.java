@@ -157,6 +157,8 @@ public class PaymentApiController {
                     + "pointUseAmount(포인트 사용액, 생략하면 0)로 결제하면 무엇으로 얼마씩 나가고 결제창에서 얼마를 결제해야 하는지(pgAmount, pgMethod) 미리 계산합니다. "
                     + "예치금 결제에서 부족분(shortage)이 최소 충전 금액보다 작으면 chargeAmount 는 최소 충전 금액으로 올라가고, 차액은 결제 후 예치금에 남습니다(balanceAfterPayment). "
                     + "chargeLimitExceeded 가 true 면 계좌이체 1회 한도를 넘어 결제 요청이 거절됩니다(예치금 결제면 예치금을 먼저 충전, 계좌이체 직접 결제면 다른 수단 선택). "
+                    + "expectedEarnPoint 는 이 조건으로 결제하고 구매 확정했을 때 적립될 것으로 예상되는 포인트입니다. 예치금과 계좌이체 직접 결제 금액에만 적립되고 "
+                    + "카드·간편결제, 포인트 사용액, 배송비에는 적립되지 않습니다. 배송비를 빼고 계산하려면 deliveryFee(amount 에 포함된 배송비 합, 생략하면 0)를 함께 보내세요. "
                     + "포인트 사용액이 결제 금액을 넘으면 PAYMENT010, 포인트 잔액보다 많으면 WALLET204. 저장하지 않으며 실제 결제 시점에 다시 계산됩니다."
     )
     @GetMapping("/quote")
@@ -164,9 +166,11 @@ public class PaymentApiController {
             @AuthenticationPrincipal AuthPrincipal principal,
             @RequestParam long amount,
             @RequestParam(required = false) String payMethod,
-            @RequestParam(defaultValue = "0") long pointUseAmount
+            @RequestParam(defaultValue = "0") long pointUseAmount,
+            @RequestParam(defaultValue = "0") long deliveryFee
     ) {
-        com.jjinmak.back.payment.app.dto.PaymentQuoteDto response = paymentFacade.quote(principal.memberId(), amount, payMethod, pointUseAmount);
+        com.jjinmak.back.payment.app.dto.PaymentQuoteDto response = paymentFacade.quote(
+                principal.memberId(), amount, payMethod, pointUseAmount, deliveryFee);
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }
 }

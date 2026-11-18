@@ -5,6 +5,7 @@ import com.jjinmak.back.payment.app.dto.PaymentQuoteDto;
 import com.jjinmak.back.payment.app.support.WalletSupport;
 import com.jjinmak.back.payment.domain.ChargePolicy;
 import com.jjinmak.back.payment.domain.PaymentPlanner;
+import com.jjinmak.back.payment.domain.PointPolicy;
 import com.jjinmak.back.payment.domain.Wallet;
 import com.jjinmak.back.payment.domain.enums.PayMethod;
 import com.jjinmak.back.payment.domain.enums.WalletType;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static com.jjinmak.back.payment.exception.PaymentErrorCode.INVALID_PAYMENT_AMOUNT;
 import static com.jjinmak.back.payment.exception.PaymentErrorCode.POINT_USE_OUT_OF_RANGE;
 import static com.jjinmak.back.payment.exception.WalletErrorCode.INSUFFICIENT_POINT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,7 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * 결제 전 견적: 결제수단 · 포인트 사용액에 따른 안내 금액. 최소 충전 금액 10,000 / 1회 한도 2,000,000 기준.
+ * 결제 전 견적: 결제수단 · 포인트 사용액에 따른 안내 금액과 예상 적립 포인트. 최소 충전 금액 10,000 / 1회 한도 2,000,000 / 적립률 1% 기준.
  */
 class PaymentQuoteUseCaseTest {
 
@@ -34,7 +36,8 @@ class PaymentQuoteUseCaseTest {
         wallet = new Wallet(null, WalletType.USER);
         WalletSupport walletSupport = mock(WalletSupport.class);
         when(walletSupport.getWalletByHolderId(HOLDER_ID)).thenReturn(wallet);
-        useCase = new PaymentQuoteUseCase(walletSupport, new PaymentPlanner(new ChargePolicy(10_000, 2_000_000)));
+        useCase = new PaymentQuoteUseCase(walletSupport, new PaymentPlanner(new ChargePolicy(10_000, 2_000_000)),
+                new PointPolicy(1));
     }
 
     @Test
@@ -99,6 +102,57 @@ class PaymentQuoteUseCaseTest {
 
         PaymentQuoteDto card = useCase.quote(HOLDER_ID, 2_500_000, "CARD", 0);
         assertThat(card.chargeLimitExceeded()).isFalse();
+    }
+
+    // ===== 예상 적립 포인트 =====
+
+    @Test
+    @DisplayName("예치금 결제: 예치금으로 내는 금액(충전해서 내는 금액 포함)의 1% 가 예상 적립 포인트다")
+    void expectedEarnForDeposit() {
+        wallet.deposit(7_000);
+
+        PaymentQuoteDto quote = useCase.quote(HOLDER_ID, 30_000);
+
+        assertThat(quote.expectedEarnPoint()).isEqualTo(300);
+        assertThat(quote.earnRatePercent()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("포인트로 내는 금액에는 적립되지 않는다")
+    void pointUseIsNotEarned() {
+        wallet.deposit(30_000);
+        wallet.depositPoint(8_000);
+
+        assertThat(useCase.quote(HOLDER_ID, 30_000, "DEPOSIT", 8_000).expectedEarnPoint()).isEqualTo(220);   // 22,000 의 1%
+        assertThat(useCase.quote(HOLDER_ID, 30_000, "TRANSFER", 8_000).expectedEarnPoint()).isEqualTo(220);
+    }
+
+    @Test
+    @DisplayName("계좌이체 직접 결제는 적립되고, 카드·간편결제 직접 결제는 적립되지 않는다")
+    void transferEarnsButCardDoesNot() {
+        assertThat(useCase.quote(HOLDER_ID, 30_000, "TRANSFER", 0).expectedEarnPoint()).isEqualTo(300);
+        assertThat(useCase.quote(HOLDER_ID, 30_000, "CARD", 0).expectedEarnPoint()).isZero();
+    }
+
+    @Test
+    @DisplayName("배송비를 보내면 배송비 몫을 빼고 계산한다")
+    void deliveryFeeIsExcluded() {
+        wallet.deposit(50_000);
+        wallet.depositPoint(11_000);
+
+        // 총액 33,000 중 배송비 3,000. 예치금 33,000 → 낙찰가 몫 30,000 → 300
+        assertThat(useCase.quote(HOLDER_ID, 33_000, "DEPOSIT", 0, 3_000).expectedEarnPoint()).isEqualTo(300);
+        // 포인트 11,000 사용 → 예치금 22,000 → 낙찰가 몫 20,000 → 200
+        assertThat(useCase.quote(HOLDER_ID, 33_000, "DEPOSIT", 11_000, 3_000).expectedEarnPoint()).isEqualTo(200);
+    }
+
+    @Test
+    @DisplayName("배송비가 음수이거나 결제 금액 이상이면 INVALID_PAYMENT_AMOUNT")
+    void invalidDeliveryFee() {
+        assertThatThrownBy(() -> useCase.quote(HOLDER_ID, 30_000, "DEPOSIT", 0, -1))
+                .isInstanceOf(BusinessException.class).extracting("errorCode").isEqualTo(INVALID_PAYMENT_AMOUNT);
+        assertThatThrownBy(() -> useCase.quote(HOLDER_ID, 30_000, "DEPOSIT", 0, 30_000))
+                .isInstanceOf(BusinessException.class).extracting("errorCode").isEqualTo(INVALID_PAYMENT_AMOUNT);
     }
 
     @Test

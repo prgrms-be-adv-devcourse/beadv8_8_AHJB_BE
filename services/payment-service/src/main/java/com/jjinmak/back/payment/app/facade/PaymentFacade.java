@@ -78,8 +78,9 @@ public class PaymentFacade {
     }
 
     @Transactional(readOnly = true)
-    public com.jjinmak.back.payment.app.dto.PaymentQuoteDto quote(Long holderId, long amount, String payMethod, long pointUseAmount) {
-        return paymentQuoteUseCase.quote(holderId, amount, payMethod, pointUseAmount);
+    public com.jjinmak.back.payment.app.dto.PaymentQuoteDto quote(Long holderId, long amount, String payMethod,
+                                                                  long pointUseAmount, long deliveryFee) {
+        return paymentQuoteUseCase.quote(holderId, amount, payMethod, pointUseAmount, deliveryFee);
     }
 
     // 복구 (PaymentScheduler)
