@@ -4,6 +4,7 @@ import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.jpa.entity.BaseIdAndTime;
 import com.jjinmak.back.payment.domain.enums.PayMethod;
 import com.jjinmak.back.payment.domain.enums.PaymentStatus;
+import com.jjinmak.back.payment.domain.enums.PgMethod;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -175,6 +176,11 @@ public class Payment extends BaseIdAndTime {
     // 결제창에서 낸 돈이 예치금을 거치지 않고 주문 대금이 되는 결제인지
     public boolean isDirectPayment() {
         return pgAmount > 0;
+    }
+
+    // 직접 결제가 실제로 계좌이체로 승인됐는지. 고른 수단이 아니라 토스가 알려준 실제 수단으로 판단한다 (포인트 적립 대상 판별)
+    public boolean isPaidByTransfer() {
+        return PgMethod.TRANSFER.matches(pgMethod);
     }
 
     // 지갑 차감 + 주문별 Holding 생성이 끝난 뒤 호출. 이미 PAID 면 아무 것도 하지 않는다 (멱등)

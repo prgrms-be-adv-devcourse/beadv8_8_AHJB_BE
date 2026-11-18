@@ -38,6 +38,19 @@ public final class HoldingFixture {
         return holding;
     }
 
+    // 구매 확정하면서 포인트를 적립한 홀딩
+    public static Holding confirmed(long orderId, long winningPrice, long deliveryFee, long feeAmount, long earnedPoint) {
+        Holding holding = held(orderId, winningPrice, deliveryFee, feeAmount);
+        holding.confirm(earnedPoint);
+        return holding;
+    }
+
+    public static Holding released(long orderId, long winningPrice, long deliveryFee, long feeAmount, long earnedPoint) {
+        Holding holding = confirmed(orderId, winningPrice, deliveryFee, feeAmount, earnedPoint);
+        holding.release();
+        return holding;
+    }
+
     public static Holding confirmed(long orderId, long winningPrice, long deliveryFee, long feeAmount) {
         Holding holding = held(orderId, winningPrice, deliveryFee, feeAmount);
         holding.confirm();

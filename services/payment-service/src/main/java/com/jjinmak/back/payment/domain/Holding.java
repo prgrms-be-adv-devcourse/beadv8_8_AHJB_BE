@@ -64,6 +64,10 @@ public class Holding extends BaseIdAndTime {
     @Column(nullable = false)
     private long pgAmount;
 
+    // 구매 확정으로 구매자에게 적립된 포인트. 구매 확정 전이거나 적립 대상 금액이 없으면 0
+    @Column(nullable = false)
+    private long earnedPoint;
+
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(nullable = false, length = 20)
@@ -119,15 +123,28 @@ public class Holding extends BaseIdAndTime {
         return new PaymentShare(pointAmount, depositAmount, pgAmount);
     }
 
-    /** 판매자에게 실제로 정산되는 금액 */
     public long getSettlementAmount() {
         return amount - feeAmount;
     }
 
+    // 적립 없이 구매 확정
     public void confirm() {
+        confirm(0L);
+    }
+
+    // 구매 확정. earnedPoint 는 이 확정으로 구매자에게 적립하는 포인트 (계산은 PointEarnCalculator, 지급 기록은 호출하는 쪽)
+    public void confirm(long earnedPoint) {
         requireHeld();
+        if (earnedPoint < 0) {
+            throw new BusinessException(INVALID_AMOUNT);
+        }
         this.status = HoldingStatus.CONFIRMED;
         this.confirmedAt = LocalDateTime.now();
+        this.earnedPoint = earnedPoint;
+    }
+
+    public boolean hasEarnedPoint() {
+        return this.earnedPoint > 0;
     }
 
     public void release() {
