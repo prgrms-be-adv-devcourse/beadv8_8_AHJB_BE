@@ -1,5 +1,6 @@
 package com.jjinmak.back.order.in;
 
+import com.jjinmak.back.order.domain.OrderOutbox;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.back.order.app.OrderFacade;
 import lombok.RequiredArgsConstructor;
@@ -102,6 +103,19 @@ public class OrderScheduler {
             orderFacade.deleteOverWaitingOrders();
         } catch (Exception e){
             log.error("1시간 초과 대기 주문서 삭제에 실패했습니다.", e);
+        }
+    }
+
+    @Scheduled(fixedDelay = 1_000)
+    public void sendOutbox(){
+        for (OrderOutbox outbox : orderFacade.findUnpublishedOutboxes()){
+            try {
+                orderFacade.sendOutbox(outbox);
+            } catch (Exception e){
+                log.error("주문 이벤트 발행 실패. 다음 주기에 다시 보냅니다.\noutboxId: {}\ntopic: {}", outbox.getId(), outbox.getTopic(), e);
+                return;
+            }
+            orderFacade.markOutboxPublished(outbox.getId());
         }
     }
 }

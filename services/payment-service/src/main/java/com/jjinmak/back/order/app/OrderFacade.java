@@ -3,6 +3,7 @@ package com.jjinmak.back.order.app;
 import com.jjinmak.back.order.app.dto.OrderDto;
 import com.jjinmak.back.order.app.dto.PaymentResponseDto;
 import com.jjinmak.back.order.domain.OrderMember;
+import com.jjinmak.back.order.domain.OrderOutbox;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
 import com.jjinmak.contracts.cart.dto.CartItemDto;
 import com.jjinmak.contracts.delivery.domain.CarrierType;
@@ -32,6 +33,7 @@ public class OrderFacade {
     private final CartItemUseCase cartItemUseCase;
     private final CartRequestPaymentUseCase cartRequestPaymentUseCase;
     private final CartDefaultPaymentUseCase cartDefaultPaymentUseCase;
+    private final OrderOutboxUseCase orderOutboxUseCase;
 
     @Transactional
     public OrderMember syncMember(MemberDto memberDto){
@@ -106,7 +108,7 @@ public class OrderFacade {
         orderRefundUseCase.rejectRefund(refund);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public void requestDelivery(Long sellerId, Long orderId, CarrierType carrier, String waybill){
         orderDeliveryUseCase.requestDelivery(sellerId, orderId, carrier, waybill);
     }
@@ -169,5 +171,19 @@ public class OrderFacade {
     @Transactional
     public void sendAutoConfirmReminder(Long orderId){
         orderSchedulerUseCase.sendAutoConfirmReminder(orderId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderOutbox> findUnpublishedOutboxes(){
+        return orderOutboxUseCase.findUnpublished();
+    }
+
+    public void sendOutbox(OrderOutbox outbox){
+        orderOutboxUseCase.send(outbox);
+    }
+
+    @Transactional
+    public void markOutboxPublished(Long outboxId){
+        orderOutboxUseCase.markPublished(outboxId);
     }
 }

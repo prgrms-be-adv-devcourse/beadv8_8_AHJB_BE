@@ -1,0 +1,37 @@
+package com.jjinmak.back.order.domain;
+
+import com.jjinmak.common.jpa.entity.BaseIdAndTime;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class OrderOutbox extends BaseIdAndTime {
+
+    @Column(nullable = false, length = 100)
+    private String topic;
+
+    @Column(nullable = false, length = 100)
+    private String messageKey;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String payload;
+
+    private LocalDateTime publishedAt;
+
+    public OrderOutbox(String topic, String messageKey, String payload){
+        this.topic = topic;
+        this.messageKey = messageKey;
+        this.payload = payload;
+    }
+
+    public void published(LocalDateTime publishedAt){
+        this.publishedAt = publishedAt;
+    }
+}
