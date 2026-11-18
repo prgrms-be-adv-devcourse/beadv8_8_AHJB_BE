@@ -27,6 +27,7 @@ import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.HOLD_P
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.HOLD_RECEIVE;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.PG_HOLD_RECEIVE;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.PG_REFUND_PAY;
+import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_EARN;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_HOLD_PAY;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_HOLD_RECEIVE;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_REFUND_PAY;
@@ -213,6 +214,73 @@ class HoldingLedgerCheckerTest {
         DetectedMismatchDto mismatch = only(checker.check(TARGET_DATE));
 
         assertThat(mismatch.type()).isEqualTo(HOLDING_LEDGER_MISMATCH);
+    }
+
+    // ===== 포인트 적립 =====
+
+    @Test
+    @DisplayName("CONFIRMED 이고 적립 포인트가 있으면 결제 기록 + POINT_EARN 이 있어야 일치")
+    void confirmedWithEarnedPointMatches() {
+        changedToday(HoldingFixture.confirmed(1L, WINNING_PRICE, DELIVERY_FEE, FEE, 300));
+        recordHold(1L, ON_TARGET_DATE);
+        ledger.add(ORDER, 1L, POINT_EARN, 300, ON_TARGET_DATE);
+
+        assertThat(checker.check(TARGET_DATE).mismatches()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("RELEASED 이고 적립 포인트가 있으면 결제 + 정산 + 수수료 + POINT_EARN 이 있어야 일치")
+    void releasedWithEarnedPointMatches() {
+        changedToday(HoldingFixture.released(1L, WINNING_PRICE, DELIVERY_FEE, FEE, 300));
+        recordHold(1L, ON_TARGET_DATE);
+        ledger.add(ORDER, 1L, POINT_EARN, 300, ON_TARGET_DATE);
+        recordSettlement(1L, SETTLEMENT, ON_TARGET_DATE);
+        recordFee(1L, ON_TARGET_DATE);
+
+        assertThat(checker.check(TARGET_DATE).mismatches()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("홀딩에는 적립 포인트가 있는데 POINT_EARN 기록이 없으면 불일치: 적립했다는데 포인트를 준 기록이 없다")
+    void earnedPointWithoutRecord() {
+        changedToday(HoldingFixture.confirmed(1L, WINNING_PRICE, DELIVERY_FEE, FEE, 300));
+        recordHold(1L, ON_TARGET_DATE);
+
+        DetectedMismatchDto mismatch = only(checker.check(TARGET_DATE));
+
+        assertThat(mismatch.type()).isEqualTo(HOLDING_LEDGER_MISMATCH);
+        assertThat(mismatch.detail()).contains("적립 포인트 300");
+    }
+
+    @Test
+    @DisplayName("적립 포인트와 POINT_EARN 금액이 다르면 불일치")
+    void earnedPointDiffersFromRecord() {
+        changedToday(HoldingFixture.confirmed(1L, WINNING_PRICE, DELIVERY_FEE, FEE, 300));
+        recordHold(1L, ON_TARGET_DATE);
+        ledger.add(ORDER, 1L, POINT_EARN, 3_000, ON_TARGET_DATE);
+
+        assertThat(only(checker.check(TARGET_DATE)).type()).isEqualTo(HOLDING_LEDGER_MISMATCH);
+    }
+
+    @Test
+    @DisplayName("구매 확정 전(HELD)인데 POINT_EARN 기록이 있으면 불일치: 확정하지 않은 주문에 포인트가 지급됐다")
+    void heldWithEarnRecord() {
+        changedToday(HoldingFixture.held(1L, WINNING_PRICE, DELIVERY_FEE, FEE));
+        recordHold(1L, ON_TARGET_DATE);
+        ledger.add(ORDER, 1L, POINT_EARN, 300, ON_TARGET_DATE);
+
+        assertThat(only(checker.check(TARGET_DATE)).type()).isEqualTo(HOLDING_LEDGER_MISMATCH);
+    }
+
+    @Test
+    @DisplayName("주문(홀딩) 없이 POINT_EARN 기록만 있으면 불일치: 어느 구매 확정으로 준 포인트인지 알 수 없다")
+    void earnRecordWithoutHolding() {
+        ledger.add(ORDER, 9L, POINT_EARN, 300, ON_TARGET_DATE);
+
+        DetectedMismatchDto mismatch = only(checker.check(TARGET_DATE));
+
+        assertThat(mismatch.type()).isEqualTo(HOLDING_LEDGER_MISMATCH);
+        assertThat(mismatch.targetKey()).isEqualTo("9");
     }
 
     @Test
