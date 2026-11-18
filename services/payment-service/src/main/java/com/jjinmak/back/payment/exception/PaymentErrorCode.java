@@ -27,6 +27,8 @@ public enum PaymentErrorCode implements com.jjinmak.common.exception.ErrorCode {
     POINT_USE_OUT_OF_RANGE("PAYMENT010", "포인트 사용액은 0 이상, 결제 금액 이하여야 합니다.", HttpStatus.BAD_REQUEST),
     PAYMENT_TRANSFER_LIMIT_EXCEEDED("PAYMENT011", "계좌이체로 결제할 수 있는 1회 한도를 넘습니다. 다른 결제수단을 선택해 주세요.", HttpStatus.BAD_REQUEST),
     PAYMENT_PLAN_MISMATCH("PAYMENT012", "결제 금액 구성이 결제 총액과 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
+    PAYMENT_CLOSED("PAYMENT013", "이미 닫힌 결제입니다. 새 주문으로 다시 결제해 주세요.", HttpStatus.CONFLICT, true),
+    PAYMENT_IN_PROGRESS("PAYMENT014", "이 결제를 처리하는 중입니다. 잠시 후 다시 시도해 주세요.", HttpStatus.CONFLICT, true),
 
     // ===== 충전 (Charge) =====
     CHARGE_NOT_FOUND("CHARGE001", "존재하지 않는 충전 건입니다.", HttpStatus.NOT_FOUND),
