@@ -128,7 +128,7 @@ public class ChatRoom extends BaseIdAndTime {
         return true;
     }
 
-    public ChatRoomItemDto itemDto(Long memberId, String counterpartNickname) {
+    public ChatRoomItemDto itemDto(Long memberId, String counterpartNickname, long unreadCount) {
         return new ChatRoomItemDto(
                 getId(),
                 productName,
@@ -136,7 +136,9 @@ public class ChatRoom extends BaseIdAndTime {
                 counterpartNickname,
                 roleOf(memberId),
                 status,
-                lastMessageAt
+                lastMessageContent,
+                lastMessageAt,
+                unreadCount
         );
     }
 
@@ -151,6 +153,7 @@ public class ChatRoom extends BaseIdAndTime {
                 roleOf(memberId),
                 status,
                 lastMessageAt,
+                counterpartLastReadId(memberId),
                 getCreatedAt()
         );
     }

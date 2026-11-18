@@ -69,6 +69,7 @@ public class ChatMessage extends BaseIdAndTime {
     public ChatMessageDto dto(Long memberId) {
         return new ChatMessageDto(
                 getId(),
+                type,
                 isSentBy(memberId),
                 content,
                 getCreatedAt()
