@@ -6,7 +6,9 @@ import com.jjinmak.contracts.delivery.domain.DeliveryStatusCode;
 import com.jjinmak.contracts.delivery.event.DeliveryCreatedEvent;
 import com.jjinmak.contracts.delivery.event.DeliveryStatusUpdatedEvent;
 import com.jjinmak.contracts.order.event.OrderPaymentSucceedEvent;
+import com.jjinmak.contracts.payment.dto.PaymentRequestDto;
 import com.jjinmak.contracts.payment.event.PaymentPaidEvent;
+import com.jjinmak.back.order.app.OrderFacade;
 import com.jjinmak.back.order.domain.CartItem;
 import com.jjinmak.back.order.domain.Order;
 import com.jjinmak.back.order.domain.OrderGroup;
@@ -16,17 +18,18 @@ import com.jjinmak.back.order.out.repository.CartItemRepository;
 import com.jjinmak.back.order.out.repository.OrderGroupRepository;
 import com.jjinmak.back.order.out.repository.OrderMemberRepository;
 import com.jjinmak.back.order.out.repository.OrderRepository;
+import com.jjinmak.back.order.out.repository.OrderWonAuctionRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.UUID;
 
 import static com.jjinmak.common.exception.CommonErrorCode.USER_NOT_FOUND;
@@ -39,8 +42,10 @@ import static com.jjinmak.back.order.domain.OrderState.DELIVERY_ERROR;
 import static com.jjinmak.back.order.domain.OrderState.PAID;
 import static com.jjinmak.back.order.domain.OrderState.SHIPPED;
 import static com.jjinmak.back.order.domain.OrderState.SHIPPING;
+import static com.jjinmak.back.order.exception.OrderErrorCode.CART_ITEM_FORBIDDEN;
 import static com.jjinmak.back.order.exception.OrderErrorCode.ORDER_STATE_BAD_REQUEST;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -64,6 +69,12 @@ class OrderKafkaListenerIntegrationTest {
     CartItemRepository cartItemRepository;
 
     @Autowired
+    OrderWonAuctionRepository orderWonAuctionRepository;
+
+    @Autowired
+    OrderFacade orderFacade;
+
+    @Autowired
     ApplicationEvents events;
 
     UUID winnerUuid = UUID.randomUUID();
@@ -79,6 +90,7 @@ class OrderKafkaListenerIntegrationTest {
         orderRepository.deleteAllInBatch();
         orderGroupRepository.deleteAllInBatch();
         cartItemRepository.deleteAllInBatch();
+        orderWonAuctionRepository.deleteAllInBatch();
         orderMemberRepository.deleteAllInBatch();
     }
 
@@ -95,26 +107,66 @@ class OrderKafkaListenerIntegrationTest {
     }
 
     @Test
-    @DisplayName("같은 낙찰 이벤트를 다시 받으면 두 번째 처리는 DataIntegrityViolationException으로 끝나고, 장바구니 항목은 1개다")
-    void auctionWon_twice_secondFails() {
+    @DisplayName("같은 낙찰 이벤트를 다시 받아도 예외 없이 끝나고, 장바구니 항목과 받은 경매 기록은 1개씩이다")
+    void auctionWon_twice_keepsOneItem() {
         syncMembers();
         orderKafkaListener.handle(wonEvent(10L));
 
-        assertThatThrownBy(() -> orderKafkaListener.handle(wonEvent(10L)))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatCode(() -> orderKafkaListener.handle(wonEvent(10L)))
+                .doesNotThrowAnyException();
 
         assertThat(cartItemRepository.count()).isEqualTo(1);
+        assertThat(orderWonAuctionRepository.findAll())
+                .extracting(wonAuction -> wonAuction.getId())
+                .containsExactly(10L);
     }
 
     @Test
-    @DisplayName("회원 동기화보다 낙찰 이벤트를 먼저 받으면 USER_NOT_FOUND로 끝나고 장바구니 항목이 생기지 않는다")
-    void auctionWon_beforeMemberSync_fails() {
+    @DisplayName("결제로 장바구니 항목이 지워진 뒤 같은 낙찰 이벤트를 다시 받아도 장바구니 항목이 다시 생기지 않아, 같은 경매를 다시 주문할 수 없다")
+    void auctionWon_redeliveredAfterPayment_doesNotRecreateItem() {
+        syncMembers();
+        orderKafkaListener.handle(wonEvent(10L));
+        PaymentRequestDto request = orderFacade.createOrder(1L, List.of(20L));
+        orderKafkaListener.handle(PaymentPaidEvent.of(request.orderGroupId(), 7L, 1L, 33_000L, paidAt));
+
+        orderKafkaListener.handle(wonEvent(10L));
+
+        assertThat(cartItemRepository.count()).isZero();
+        assertThat(orderFacade.readWinnerItem(1L)).isEmpty();
+        assertThatThrownBy(() -> orderFacade.createOrder(1L, List.of(20L)))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(CART_ITEM_FORBIDDEN);
+        assertThat(orderRepository.findAll())
+                .extracting(Order::getAuctionId, Order::getState)
+                .containsExactly(tuple(10L, PAID));
+    }
+
+    @Test
+    @DisplayName("장바구니 항목이 지워진 뒤(결제 기한 만료 등) 같은 낙찰 이벤트를 다시 받아도 장바구니 항목이 다시 생기지 않는다")
+    void auctionWon_redeliveredAfterItemDeleted_doesNotRecreateItem() {
+        syncMembers();
+        orderKafkaListener.handle(wonEvent(10L));
+        cartItemRepository.deleteAllInBatch();
+
+        orderKafkaListener.handle(wonEvent(10L));
+
+        assertThat(cartItemRepository.count()).isZero();
+    }
+
+    @Test
+    @DisplayName("회원 동기화보다 낙찰 이벤트를 먼저 받아 실패하면 받은 경매 기록도 남지 않고, 회원 동기화 뒤 같은 낙찰 이벤트를 다시 받으면 장바구니 항목이 생긴다")
+    void auctionWon_beforeMemberSync_retriedAfterSync() {
         assertThatThrownBy(() -> orderKafkaListener.handle(wonEvent(10L)))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(USER_NOT_FOUND);
+        assertThat(orderWonAuctionRepository.count()).isZero();
 
-        assertThat(cartItemRepository.findByAuctionId(10L)).isEmpty();
+        syncMembers();
+        orderKafkaListener.handle(wonEvent(10L));
+
+        assertThat(cartItemRepository.findByAuctionId(10L)).isPresent();
     }
 
     @Test
@@ -123,6 +175,18 @@ class OrderKafkaListenerIntegrationTest {
         Long orderId = saveOrder(PAID);
 
         orderKafkaListener.handle(new DeliveryCreatedEvent(orderId));
+
+        assertThat(stateOf(orderId)).isEqualTo(SHIPPING);
+    }
+
+    @Test
+    @DisplayName("같은 배송 생성 이벤트를 다시 받아도 예외 없이 끝나고 주문은 SHIPPING 그대로다")
+    void deliveryCreated_twice_staysShipping() {
+        Long orderId = saveOrder(PAID);
+        orderKafkaListener.handle(new DeliveryCreatedEvent(orderId));
+
+        assertThatCode(() -> orderKafkaListener.handle(new DeliveryCreatedEvent(orderId)))
+                .doesNotThrowAnyException();
 
         assertThat(stateOf(orderId)).isEqualTo(SHIPPING);
     }
@@ -233,15 +297,13 @@ class OrderKafkaListenerIntegrationTest {
     }
 
     @Test
-    @DisplayName("같은 그룹의 결제 완료 이벤트를 다시 받으면 ORDER_STATE_BAD_REQUEST로 끝나고, 처음 결제 시각이 그대로이며 결제 성공 이벤트는 주문마다 한 번만 발행된다")
+    @DisplayName("같은 그룹의 결제 완료 이벤트를 다시 받아도 예외 없이 끝나고, 처음 결제 시각이 그대로이며 결제 성공 이벤트는 주문마다 한 번만 발행된다")
     void paymentPaid_twice_firstPaymentKept() {
         Long groupId = saveWaitingGroupWithCartItems();
         orderKafkaListener.handle(paidEvent(groupId, paidAt));
 
-        assertThatThrownBy(() -> orderKafkaListener.handle(paidEvent(groupId, paidAt.plusMinutes(5))))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ORDER_STATE_BAD_REQUEST);
+        assertThatCode(() -> orderKafkaListener.handle(paidEvent(groupId, paidAt.plusMinutes(5))))
+                .doesNotThrowAnyException();
 
         assertThat(orderRepository.findAll())
                 .extracting(Order::getState, Order::getPaidAt)

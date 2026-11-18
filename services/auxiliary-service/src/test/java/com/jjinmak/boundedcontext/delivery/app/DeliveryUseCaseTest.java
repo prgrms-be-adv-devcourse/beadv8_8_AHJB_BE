@@ -35,8 +35,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -84,6 +86,19 @@ class DeliveryUseCaseTest {
         assertThat(token).isNotNull();
         verify(eventPublisher).publish(new DeliveryCreatedEvent(100L));
         verify(eventPublisher).publish(new WebhookRegisterEvent(50L, 100L, CJ, "NEW-111", token));
+    }
+
+    @Test
+    @DisplayName("같은 주문의 배송이 이미 있으면 회원을 조회하지 않고 새로 저장하지 않으며, 배송 생성 이벤트만 다시 발행하고 Webhook 등록 이벤트는 발행하지 않는다")
+    void createDelivery_alreadyCreated_republishesCreatedEventOnly() {
+        when(deliveryRepository.existsByOrderId(100L)).thenReturn(true);
+
+        deliveryUseCase.createDelivery(new OrderSendProductEvent(100L, 1L, 2L, CJ, "NEW-111"));
+
+        verify(eventPublisher).publish(new DeliveryCreatedEvent(100L));
+        verifyNoMoreInteractions(eventPublisher);
+        verify(deliveryRepository, never()).save(any());
+        verifyNoInteractions(deliverySupport);
     }
 
     @ParameterizedTest(name = "{0} 배송 정보 수정")

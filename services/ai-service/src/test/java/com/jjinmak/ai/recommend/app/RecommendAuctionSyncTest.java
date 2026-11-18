@@ -1,6 +1,7 @@
 package com.jjinmak.ai.recommend.app;
 
 import com.jjinmak.common.exception.BusinessException;
+import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
 import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
@@ -29,6 +30,7 @@ import static com.jjinmak.ai.recommend.domain.AuctionStatus.ACTIVE;
 import static com.jjinmak.ai.recommend.domain.AuctionStatus.ENDED;
 import static com.jjinmak.ai.recommend.exception.RecommendErrorCode.AUCTION_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class RecommendAuctionSyncTest extends RecommendIntegrationTestSupport {
@@ -158,6 +160,40 @@ class RecommendAuctionSyncTest extends RecommendIntegrationTestSupport {
         assertThat(auction.getStatus()).isEqualTo(ENDED);
         assertThat(auction.getEndedAt()).isEqualTo(WIN_AT);
         assertThat(auction.getCurrentPrice()).isEqualTo(30000L);
+    }
+
+    @Test
+    @DisplayName("같은 시작 이벤트를 다시 받아도 예외 없이 끝나고, 복사본은 하나이며 처음 값 그대로다")
+    void redeliveredStarted_keepsOneCopy() {
+        recommendKafkaListener.handle(started());
+
+        assertThatCode(() -> recommendKafkaListener.handle(started()))
+                .doesNotThrowAnyException();
+
+        assertThat(recommendAuctionRepository.count()).isEqualTo(1);
+        RecommendAuction auction = auction();
+        assertThat(auction.getStatus()).isEqualTo(ACTIVE);
+        assertThat(auction.getCurrentPrice()).isEqualTo(10000L);
+        assertThat(auction.getBidCount()).isZero();
+        assertThat(auction.getEndAt()).isEqualTo(END_AT);
+    }
+
+    @Test
+    @DisplayName("입찰과 낙찰이 반영된 뒤 같은 시작 이벤트를 다시 받아도 상태·현재가·입찰 수·종료 예정 시각·종료 시각이 시작 값으로 돌아가지 않는다")
+    void redeliveredStartedAfterBidAndWin_keepsProgress() {
+        recommendKafkaListener.handle(started());
+        recommendKafkaListener.handle(new AuctionBidSucceedEvent(1L, AUCTION_ID, 55L, 7L, 21000L, 1, END_AT.plusMinutes(10), START_AT.plusHours(1), null));
+        recommendKafkaListener.handle(won());
+
+        assertThatCode(() -> recommendKafkaListener.handle(started()))
+                .doesNotThrowAnyException();
+
+        RecommendAuction auction = auction();
+        assertThat(auction.getStatus()).isEqualTo(ENDED);
+        assertThat(auction.getCurrentPrice()).isEqualTo(30000L);
+        assertThat(auction.getBidCount()).isEqualTo(1L);
+        assertThat(auction.getEndAt()).isEqualTo(END_AT.plusMinutes(10));
+        assertThat(auction.getEndedAt()).isEqualTo(WIN_AT);
     }
 
     @Test

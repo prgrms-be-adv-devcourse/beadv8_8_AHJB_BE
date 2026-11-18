@@ -10,6 +10,7 @@ import com.jjinmak.back.order.domain.CartItem;
 import com.jjinmak.back.order.domain.Order;
 import com.jjinmak.back.order.domain.OrderGroup;
 import com.jjinmak.back.order.domain.OrderMember;
+import com.jjinmak.back.order.domain.OrderState;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.back.order.out.payment.PaymentRequest;
 import com.jjinmak.back.order.out.repository.CartItemRepository;
@@ -19,6 +20,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -33,6 +36,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static com.jjinmak.common.exception.CommonErrorCode.USER_NOT_FOUND;
+import static com.jjinmak.back.order.domain.OrderState.FAILED;
 import static com.jjinmak.back.order.domain.OrderState.PAID;
 import static com.jjinmak.back.order.domain.OrderState.WAITING;
 import static com.jjinmak.back.order.exception.OrderErrorCode.CART_ITEM_FORBIDDEN;
@@ -42,6 +46,7 @@ import static com.jjinmak.back.order.exception.OrderErrorCode.ORDER_GROUP_FORBID
 import static com.jjinmak.back.order.exception.OrderErrorCode.ORDER_GROUP_NOT_FOUND;
 import static com.jjinmak.back.order.exception.OrderErrorCode.ORDER_STATE_BAD_REQUEST;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -441,17 +446,88 @@ class CartRequestPaymentUseCaseTest {
     }
 
     @Test
-    @DisplayName("결제 완료 이벤트를 받았는데 이미 결제된 주문이 있으면 ORDER_STATE_BAD_REQUEST, 장바구니를 지우지 않고 이벤트를 발행하지 않는다")
+    @DisplayName("결제 완료 이벤트를 받았는데 결제된 적 없이 WAITING이 아닌 주문이 있으면 ORDER_STATE_BAD_REQUEST, 장바구니를 지우지 않고 이벤트를 발행하지 않는다")
     void paymentPaid_orderNotWaiting() {
         OrderGroup group = new OrderGroup(winner, 33_000L);
         Order order = order(group, 100L, seller, 10L, 20L, 30_000L, 3_000L);
-        order.updateState(PAID);
+        order.updateState(FAILED);
         when(orderGroupRepository.findByIdWithOrders(50L)).thenReturn(Optional.of(group));
 
         assertThatThrownBy(() -> cartRequestPaymentUseCase.paymentPaid(paidEvent(50L, 1L)))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ORDER_STATE_BAD_REQUEST);
+
+        assertThat(order.getState()).isEqualTo(FAILED);
+        assertThat(order.getPaidAt()).isNull();
+        verifyNoInteractions(cartItemRepository, eventPublisher);
+    }
+
+    @Test
+    @DisplayName("같은 그룹의 결제 완료 이벤트를 다시 받으면 예외 없이 끝나고, 처음 결제 시각이 그대로이며 장바구니를 찾지 않고 이벤트를 발행하지 않는다")
+    void paymentPaid_alreadyPaid_skips() {
+        OrderGroup group = new OrderGroup(winner, 87_000L);
+        Order first = order(group, 100L, seller, 10L, 20L, 30_000L, 3_000L);
+        Order second = order(group, 101L, otherSeller, 11L, 21L, 50_000L, 4_000L);
+        first.paid(paidAt);
+        second.paid(paidAt);
+        when(orderGroupRepository.findByIdWithOrders(50L)).thenReturn(Optional.of(group));
+
+        assertThatCode(() -> cartRequestPaymentUseCase.paymentPaid(PaymentPaidEvent.of(50L, 7L, 1L, 87_000L, paidAt.plusMinutes(5))))
+                .doesNotThrowAnyException();
+
+        assertThat(first.getPaidAt()).isEqualTo(paidAt);
+        assertThat(second.getPaidAt()).isEqualTo(paidAt);
+        verifyNoInteractions(cartItemRepository, eventPublisher);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(value = OrderState.class, names = {"SHIPPING", "DELIVERY_ERROR", "SHIPPED", "CONFIRMED", "REFUND_REQUESTED", "REFUNDED"})
+    @DisplayName("결제된 주문이 다음 상태로 넘어간 뒤 같은 결제 완료 이벤트가 와도 예외 없이 끝나고, 상태와 결제 시각이 그대로이며 이벤트를 발행하지 않는다")
+    void paymentPaid_alreadyPaidAndMovedOn_skips(OrderState state) {
+        OrderGroup group = new OrderGroup(winner, 33_000L);
+        Order order = order(group, 100L, seller, 10L, 20L, 30_000L, 3_000L);
+        order.paid(paidAt);
+        order.updateState(state);
+        when(orderGroupRepository.findByIdWithOrders(50L)).thenReturn(Optional.of(group));
+
+        assertThatCode(() -> cartRequestPaymentUseCase.paymentPaid(paidEvent(50L, 1L)))
+                .doesNotThrowAnyException();
+
+        assertThat(order.getState()).isEqualTo(state);
+        assertThat(order.getPaidAt()).isEqualTo(paidAt);
+        verifyNoInteractions(cartItemRepository, eventPublisher);
+    }
+
+    @Test
+    @DisplayName("그룹의 일부 주문만 결제 시각이 있으면 다시 받은 것으로 보지 않고 ORDER_STATE_BAD_REQUEST, 이벤트를 발행하지 않는다")
+    void paymentPaid_partlyPaid_fails() {
+        OrderGroup group = new OrderGroup(winner, 87_000L);
+        Order first = order(group, 100L, seller, 10L, 20L, 30_000L, 3_000L);
+        order(group, 101L, otherSeller, 11L, 21L, 50_000L, 4_000L);
+        first.paid(paidAt);
+        when(orderGroupRepository.findByIdWithOrders(50L)).thenReturn(Optional.of(group));
+
+        assertThatThrownBy(() -> cartRequestPaymentUseCase.paymentPaid(paidEvent(50L, 1L)))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ORDER_STATE_BAD_REQUEST);
+
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    @DisplayName("이미 결제된 그룹이어도 결제 완료 이벤트의 구매자가 낙찰자가 아니면 ORDER_GROUP_FORBIDDEN")
+    void paymentPaid_alreadyPaid_buyerIsNotWinner() {
+        OrderGroup group = new OrderGroup(winner, 33_000L);
+        Order order = order(group, 100L, seller, 10L, 20L, 30_000L, 3_000L);
+        order.paid(paidAt);
+        when(orderGroupRepository.findByIdWithOrders(50L)).thenReturn(Optional.of(group));
+
+        assertThatThrownBy(() -> cartRequestPaymentUseCase.paymentPaid(paidEvent(50L, 2L)))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ORDER_GROUP_FORBIDDEN);
 
         verifyNoInteractions(cartItemRepository, eventPublisher);
     }

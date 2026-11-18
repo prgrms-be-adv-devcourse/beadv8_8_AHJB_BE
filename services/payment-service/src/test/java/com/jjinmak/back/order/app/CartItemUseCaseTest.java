@@ -5,7 +5,9 @@ import com.jjinmak.contracts.auction.event.AuctionWonEvent;
 import com.jjinmak.contracts.cart.dto.CartItemDto;
 import com.jjinmak.back.order.domain.CartItem;
 import com.jjinmak.back.order.domain.OrderMember;
+import com.jjinmak.back.order.domain.OrderWonAuction;
 import com.jjinmak.back.order.out.repository.CartItemRepository;
+import com.jjinmak.back.order.out.repository.OrderWonAuctionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,6 +24,8 @@ import java.util.UUID;
 import static com.jjinmak.common.exception.CommonErrorCode.USER_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -34,6 +38,9 @@ class CartItemUseCaseTest {
 
     @Mock
     CartItemRepository cartItemRepository;
+
+    @Mock
+    OrderWonAuctionRepository orderWonAuctionRepository;
 
     @InjectMocks
     CartItemUseCase cartItemUseCase;
@@ -71,6 +78,30 @@ class CartItemUseCaseTest {
         assertThat(saved.getDeliveryFee()).isEqualTo(3_000L);
         assertThat(saved.getWinAt()).isEqualTo(winAt);
         assertThat(saved.getPaymentDueAt()).isEqualTo(winAt.plusDays(1));
+    }
+
+    @Test
+    @DisplayName("처음 받은 경매의 낙찰 이벤트면 그 경매 id를 받은 경매로 기록한다")
+    void createCartItem_recordsWonAuction() {
+        when(orderSupport.getMember(1L)).thenReturn(winner);
+        when(orderSupport.getMember(2L)).thenReturn(seller);
+
+        cartItemUseCase.createCartItem(event);
+
+        ArgumentCaptor<OrderWonAuction> captor = ArgumentCaptor.forClass(OrderWonAuction.class);
+        verify(orderWonAuctionRepository).save(captor.capture());
+        assertThat(captor.getValue().getId()).isEqualTo(10L);
+    }
+
+    @Test
+    @DisplayName("이미 받은 경매의 낙찰 이벤트면 회원을 조회하지 않고, 장바구니 항목과 받은 경매 기록을 저장하지 않는다")
+    void createCartItem_alreadyReceived() {
+        when(orderWonAuctionRepository.existsById(10L)).thenReturn(true);
+
+        cartItemUseCase.createCartItem(event);
+
+        verify(orderWonAuctionRepository, never()).save(any());
+        verifyNoInteractions(orderSupport, cartItemRepository);
     }
 
     @Test
