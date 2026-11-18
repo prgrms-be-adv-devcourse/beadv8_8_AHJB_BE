@@ -1,5 +1,6 @@
 package com.jjinmak.boundedcontext.delivery.in;
 
+import com.jjinmak.boundedcontext.delivery.domain.DeliveryOutbox;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.contracts.delivery.domain.DeliveryStatusCode;
 import com.jjinmak.boundedcontext.delivery.app.DeliveryFacade;
@@ -47,6 +48,19 @@ public class DeliveryScheduler {
             } catch (Exception e){
                 log. error("알수 없는 오류로 재등록에 실패했습니다.\ndeliveryId: %d".formatted(delivery.deliveryId()), e);
             }
+        }
+    }
+
+    @Scheduled(fixedDelay = 1_000)
+    public void sendOutbox(){
+        for (DeliveryOutbox outbox : deliveryFacade.findUnpublishedOutboxes()){
+            try {
+                deliveryFacade.sendOutbox(outbox);
+            } catch (Exception e){
+                log.error("Delivery 이벤트 발행 실패, 다음 주기에 다시 보냅니다.\noutboxId: {}\ntopic: {}", outbox.getId(), outbox.getTopic(), e);
+                return;
+            }
+            deliveryFacade.markOutboxPublished(outbox.getId());
         }
     }
 }
