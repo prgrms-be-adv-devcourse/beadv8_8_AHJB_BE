@@ -10,6 +10,7 @@ import com.jjinmak.boundedcontext.delivery.in.DeliveryScheduler;
 import com.jjinmak.boundedcontext.delivery.out.deliveryTracker.DeliveryTracker;
 import com.jjinmak.boundedcontext.delivery.out.dto.DeliveryStatusResponseDto;
 import com.jjinmak.boundedcontext.delivery.out.repository.DeliveryMemberRepository;
+import com.jjinmak.boundedcontext.delivery.out.repository.DeliveryOutboxRepository;
 import com.jjinmak.boundedcontext.delivery.out.repository.DeliveryRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +51,9 @@ class DeliveryStatusSyncIntegrationTest {
     DeliveryMemberRepository deliveryMemberRepository;
 
     @Autowired
+    DeliveryOutboxRepository deliveryOutboxRepository;
+
+    @Autowired
     ApplicationEvents events;
 
     @MockitoBean
@@ -73,6 +77,7 @@ class DeliveryStatusSyncIntegrationTest {
 
     @AfterEach
     void tearDown() {
+        deliveryOutboxRepository.deleteAllInBatch();
         deliveryRepository.deleteAllInBatch();
         deliveryMemberRepository.deleteAllInBatch();
     }

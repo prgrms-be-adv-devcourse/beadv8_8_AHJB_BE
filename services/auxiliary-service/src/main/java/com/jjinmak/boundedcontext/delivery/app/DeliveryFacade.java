@@ -1,5 +1,6 @@
 package com.jjinmak.boundedcontext.delivery.app;
 
+import com.jjinmak.boundedcontext.delivery.domain.DeliveryOutbox;
 import com.jjinmak.contracts.delivery.domain.CarrierType;
 import com.jjinmak.contracts.delivery.domain.DeliveryStatusCode;
 import com.jjinmak.contracts.member.dto.MemberDto;
@@ -22,6 +23,7 @@ public class DeliveryFacade {
     private final DeliverySyncMemberUseCase deliverySyncMemberUseCase;
     private final DeliveryTrackerUseCase deliveryTrackerUseCase;
     private final DeliverySchedulerUseCase deliverySchedulerUseCase;
+    private final DeliveryOutboxUseCase deliveryOutboxUseCase;
 
     @Transactional
     public void syncMember(MemberDto dto){
@@ -61,5 +63,19 @@ public class DeliveryFacade {
 
     public void webhookCallback(Long deliveryId, Long orderId, String callbackToken, CarrierType carrier, String waybill){
         deliveryTrackerUseCase.webhookCallback(deliveryId, orderId, callbackToken, carrier, waybill);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DeliveryOutbox> findUnpublishedOutboxes(){
+        return deliveryOutboxUseCase.findUnpublished();
+    }
+
+    public void sendOutbox(DeliveryOutbox outbox){
+        deliveryOutboxUseCase.send(outbox);
+    }
+
+    @Transactional
+    public void markOutboxPublished(Long outboxId){
+        deliveryOutboxUseCase.markPublished(outboxId);
     }
 }
