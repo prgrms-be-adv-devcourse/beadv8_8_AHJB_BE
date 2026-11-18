@@ -7,6 +7,7 @@ import com.jjinmak.back.payment.app.support.LedgerRecorder;
 import com.jjinmak.back.payment.domain.Charge;
 import com.jjinmak.back.payment.domain.ReconciliationMismatch;
 import com.jjinmak.back.payment.domain.ReconciliationRun;
+import com.jjinmak.back.payment.domain.PaymentShare;
 import com.jjinmak.back.payment.domain.Wallet;
 import com.jjinmak.back.payment.domain.WalletMember;
 import com.jjinmak.back.payment.domain.enums.MismatchStatus;
@@ -51,10 +52,6 @@ import static com.jjinmak.back.payment.domain.enums.ReferenceType.PAYMENT;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.CHARGE;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.CHARGE_CANCEL;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_EARN;
-import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_HOLD_PAY;
-import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_HOLD_RECEIVE;
-import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_REFUND_PAY;
-import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_REFUND_RECEIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -202,16 +199,12 @@ class ReconciliationLedgerIntegrationTest extends PaymentIntegrationTestSupport 
         });
     }
 
-    // 포인트로 결제했다가 그대로 환불받는다 (구매자 포인트 → ESCROW → 구매자 포인트). 끝나면 ESCROW 잔액은 원래대로다
+    // 주문 1건을 전액 포인트로 결제했다가 그대로 환불받는다 (구매자 포인트 → ESCROW → 구매자 포인트). 끝나면 ESCROW 잔액은 원래대로다
     private void payWithPointThenRefund(long memberId, long orderId, long amount) {
-        transactionTemplate.executeWithoutResult(status -> {
-            Wallet wallet = walletRepository.findByHolderId(memberId).orElseThrow();
-            Wallet escrow = walletRepository.findById(escrowWalletId).orElseThrow();
-            ledgerRecorder.transferPointToDeposit(wallet, POINT_HOLD_PAY, escrow, POINT_HOLD_RECEIVE,
-                    amount, UUID.randomUUID().toString(), ORDER, orderId);
-            ledgerRecorder.transferDepositToPoint(escrow, POINT_REFUND_PAY, wallet, POINT_REFUND_RECEIVE,
-                    amount, UUID.randomUUID().toString(), ORDER, orderId);
-        });
+        HoldDto dto = new HoldDto(9_000L + orderId, memberId, amount,
+                List.of(new HoldDto.Item(orderId, SELLER_ID, amount, 0)), new PaymentShare(amount, 0, 0));
+        transactionTemplate.executeWithoutResult(status -> holdingCreator.hold(dto));
+        walletFacade.refund(7_000L + orderId, orderId, amount);
     }
 
     private Wallet walletOf(long memberId) {
@@ -341,7 +334,7 @@ class ReconciliationLedgerIntegrationTest extends PaymentIntegrationTestSupport 
     }
 
     @Test
-    @DisplayName("포인트 결제의 한쪽 기록이 없으면 그룹 합이 0 이 아니고, ESCROW 원장 합계도 어긋난다")
+    @DisplayName("포인트 결제의 한쪽 기록이 없으면 그룹 합이 0 이 아니고, ESCROW 원장 합계와 그 주문의 홀딩 기록도 어긋난다")
     void oneSideOfPointTransferMissing() {
         scenario();
         earnPoint(BUYER_ID, 102L, 1_000);
@@ -353,7 +346,10 @@ class ReconciliationLedgerIntegrationTest extends PaymentIntegrationTestSupport 
 
         assertStatus(run, MISMATCHED);
         assertThat(mismatchesOf(run)).extracting(ReconciliationMismatch::getType)
-                .containsExactlyInAnyOrder(LEDGER_GROUP_UNBALANCED, BALANCE_LEDGER_MISMATCH);
+                .containsExactlyInAnyOrder(LEDGER_GROUP_UNBALANCED, BALANCE_LEDGER_MISMATCH, HOLDING_LEDGER_MISMATCH);
+
+        ReconciliationMismatch holding = onlyMismatchOf(run, HOLDING_LEDGER_MISMATCH);
+        assertThat(holding.getTargetKey()).isEqualTo("201");              // 포인트로 결제한 주문
 
         ReconciliationMismatch group = onlyMismatchOf(run, LEDGER_GROUP_UNBALANCED);
         assertThat(group.getExpectedAmount()).isEqualTo(0L);

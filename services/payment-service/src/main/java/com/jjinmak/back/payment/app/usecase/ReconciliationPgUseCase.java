@@ -125,7 +125,7 @@ public class ReconciliationPgUseCase {
     /**
      * 확정된 불일치를 기록용 값으로 만든다. 기준(expected)은 토스, 우리 값(actual)은 충전 건이다.
      *  - expectedAmount : 토스에 남아 있는 금액
-     *  - actualAmount   : 우리가 예치금으로 인정하고 있는 금액 (CHARGED · USED 면 충전 금액, 그 외는 0)
+     *  - actualAmount   : 우리가 받은 것으로 알고 있는 금액 (CHARGED · USED 면 결제 금액 − 취소 누계, 그 외는 0)
      * 충전 건이 없으면(PG_ONLY) 대상을 토스 주문번호로 가리키고 우리 쪽 값은 비운다.
      */
     private DetectedMismatchDto toMismatch(MismatchType type, PgPaymentState toss, Charge charge) {
@@ -133,7 +133,7 @@ public class ReconciliationPgUseCase {
             return new DetectedMismatchDto(type, MismatchTargetType.PG_TRANSACTION, toss.pgOrderId(), toss.pgOrderId(),
                     toss.kind().name(), toss.balanceAmount(), null, null, detailOf(type, toss, null));
         }
-        long creditedAmount = charge.isCharged() ? charge.getAmount() : 0L;
+        long creditedAmount = charge.getPgBalanceAmount();
         return new DetectedMismatchDto(type, MismatchTargetType.CHARGE, String.valueOf(charge.getId()), charge.getPgOrderId(),
                 toss.kind().name(), toss.balanceAmount(), charge.getStatus().name(), creditedAmount,
                 detailOf(type, toss, charge));
@@ -146,6 +146,9 @@ public class ReconciliationPgUseCase {
                 .append(", 토스에 남은 금액 ").append(toss.balanceAmount()).append("원");
         if (charge != null) {
             detail.append(", 충전 금액 ").append(charge.getAmount()).append("원");
+            if (charge.getCanceledAmount() > 0) {
+                detail.append(", 취소 누계 ").append(charge.getCanceledAmount()).append("원");
+            }
         }
         return detail.toString();
     }

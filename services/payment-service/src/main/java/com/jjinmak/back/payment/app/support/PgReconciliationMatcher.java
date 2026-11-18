@@ -16,14 +16,17 @@ import static com.jjinmak.back.payment.domain.enums.MismatchType.*;
  *   NONE             | 일치    | 일치                      | INTERNAL_ONLY               | INTERNAL_ONLY               | 일치
  *   APPROVED         | PG_ONLY | PG_APPROVED_NOT_REFLECTED | 일치 (금액 다르면 AMOUNT_MISMATCH) | INTERNAL_CANCELED_NOT_IN_PG | PG_APPROVED_NOT_REFLECTED
  *   CANCELED         | PG_ONLY | 일치                      | PG_CANCELED_NOT_REFLECTED   | 일치                        | 일치
- *   PARTIAL_CANCELED | PG_ONLY | AMOUNT_MISMATCH           | AMOUNT_MISMATCH             | AMOUNT_MISMATCH             | AMOUNT_MISMATCH
+ *   PARTIAL_CANCELED | PG_ONLY | AMOUNT_MISMATCH           | 일치 (금액 다르면 AMOUNT_MISMATCH) | AMOUNT_MISMATCH             | AMOUNT_MISMATCH
  *   UNKNOWN          | 판정 보류 (모든 칸). 토스 단건 조회로 상태를 확정한 뒤 다시 대조한다
  *
  *  - CANCELED × ABORTED = 일치 : 승인 후 DB 반영 실패로 보상 취소한 건, 복구 스케줄러가 토스 취소 후 닫은 건. 정상 경로다
  *  - CANCELED × REQUESTED = 일치 : 보상 취소는 됐고 복구 스케줄러가 아직 ABORTED 로 닫기 전. 돈은 맞다
  *  - APPROVED × ABORTED : 우리는 실패로 닫았는데 토스는 돈을 받았다. 가장 위험한 칸
+ *  - CHARGED · USED 칸의 "금액" : 토스에 남은 금액과 우리가 토스에 남아 있다고 아는 금액(승인 금액 − 취소 누계)을 비교한다.
+ *    직접 결제 건은 주문 단위 환불로 일부만 취소될 수 있어 PARTIAL_CANCELED 도 금액만 맞으면 정상이다.
+ *    예치금 충전은 부분 취소가 없으므로(취소 누계 0) PARTIAL_CANCELED 면 항상 금액이 달라 불일치로 나온다
  *
- * 수동 충전(MANUAL)과 주문 부족분 충전(FOR_PAYMENT)은 구분하지 않는다. 토스 입장에서는 같은 결제다.
+ * 수동 충전(MANUAL) · 주문 부족분 충전(FOR_PAYMENT) · 직접 결제(DIRECT_PAYMENT)는 구분하지 않는다. 토스 입장에서는 같은 결제다.
  */
 @Component
 public class PgReconciliationMatcher {
@@ -33,11 +36,12 @@ public class PgReconciliationMatcher {
         if (charge == null) {
             return match(toss, null, 0L);
         }
-        return match(toss, charge.getStatus(), charge.getAmount());
+        return match(toss, charge.getStatus(), charge.getAmount() - charge.getCanceledAmount());
     }
 
     /**
      * 판정에 필요한 값(우리 쪽 상태, 금액)만 받아 대조한다. 충전 건이 없으면 chargeStatus 에 null.
+     * chargeAmount 는 우리가 토스에 남아 있다고 아는 금액이다 (승인 금액 − 취소 누계. 부분 취소가 없으면 승인 금액).
      * Charge 엔티티 대신 값으로 받는 이유: 판정 표를 엔티티 없이 테스트할 수 있고,
      * 나중에 결제 수단이 늘어 Charge 가 아닌 결제 건이 생겨도 같은 표를 쓸 수 있다.
      */
@@ -75,7 +79,7 @@ public class PgReconciliationMatcher {
         };
     }
 
-    // CHARGED / USED: 우리는 돈을 받아 예치금으로 반영했다. 토스에 남은 금액이 충전 금액과 같아야 함
+    // CHARGED / USED: 우리는 돈을 받아 반영했다. 토스에 남은 금액이 우리가 아는 남은 금액과 같아야 함
     private PgMatchResult matchCharged(PgPaymentState toss, long chargeAmount) {
         return switch (toss.kind()) {
             case NONE -> PgMatchResult.mismatched(INTERNAL_ONLY);
@@ -83,7 +87,9 @@ public class PgReconciliationMatcher {
                     ? PgMatchResult.matched()
                     : PgMatchResult.mismatched(AMOUNT_MISMATCH);
             case CANCELED -> PgMatchResult.mismatched(PG_CANCELED_NOT_REFLECTED);
-            case PARTIAL_CANCELED -> PgMatchResult.mismatched(AMOUNT_MISMATCH);
+            case PARTIAL_CANCELED -> toss.balanceAmount() == chargeAmount
+                    ? PgMatchResult.matched()
+                    : PgMatchResult.mismatched(AMOUNT_MISMATCH);
             case UNKNOWN -> PgMatchResult.undetermined();
         };
     }

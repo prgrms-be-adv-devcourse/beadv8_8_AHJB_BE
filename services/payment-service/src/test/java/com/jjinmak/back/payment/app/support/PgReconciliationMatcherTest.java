@@ -130,6 +130,17 @@ class PgReconciliationMatcherTest {
     }
 
     @Test
+    @DisplayName("부분 취소: 토스에 남은 금액이 우리가 아는 남은 금액(승인 − 취소 누계)과 같으면 일치, 다르면 AMOUNT_MISMATCH")
+    void partialCancelMatchesWhenBalanceIsSame() {
+        // 토스: 20,000 승인 중 15,000 취소 → 5,000 남음
+        PgPaymentState partial = toss(Kind.PARTIAL_CANCELED);
+
+        assertThat(matcher.match(partial, USED, 5_000L).isMatched()).isTrue();          // 우리도 15,000 을 취소한 것으로 안다
+        assertThat(matcher.match(partial, USED, 8_000L).mismatchType()).isEqualTo(AMOUNT_MISMATCH);
+        assertThat(matcher.match(partial, USED, AMOUNT).mismatchType()).isEqualTo(AMOUNT_MISMATCH);   // 우리는 취소한 적이 없다
+    }
+
+    @Test
     @DisplayName("충전 건 엔티티를 넘기면 그 상태와 금액으로 판정한다")
     void matchWithChargeEntity() {
         Charge charged = ChargeFixture.charge(1L, "CHG-test", CHARGED, AMOUNT);
