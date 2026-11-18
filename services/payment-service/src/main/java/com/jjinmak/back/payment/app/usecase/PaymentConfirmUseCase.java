@@ -42,6 +42,9 @@ import static com.jjinmak.back.payment.exception.WalletErrorCode.INSUFFICIENT_PO
  * 결제창에 있는 동안 포인트나 예치금이 줄어 결제할 수 없게 됐으면 토스 승인 전에 거절한다 (돈이 움직이지 않는다).
  * 승인 직전에 줄어든 경우는 홀딩에서 실패해 위의 보상(토스 취소)으로 처리된다.
  * 멱등: 이미 PAID 면 아무 것도 하지 않고 결과만 돌려준다 (이벤트도 다시 발행하지 않는다).
+ *
+ * Payment 를 FOR UPDATE 로 읽어 닫기(PaymentCloseUseCase)와 겹치지 않게 한다. 닫기가 먼저면 여기서 PAYMENT_CLOSED 로 거절하고,
+ * 승인이 먼저면 닫기는 승인이 끝난 뒤 PAID 를 본다. "토스는 승인했는데 우리는 닫힌" 상태가 생기지 않는다.
  */
 @Service
 @RequiredArgsConstructor
@@ -66,11 +69,15 @@ public class PaymentConfirmUseCase {
             throw new BusinessException(CHARGE_PAYMENT_MISMATCH);      // 수동 충전 건을 주문 승인 API 로 보냄
         }
 
-        Payment payment = paymentRepository.findWithItemsById(charge.getPayment().getId())
+        // 여기서부터 트랜잭션이 끝날 때까지 이 결제의 닫기 · 결제 요청 · 다른 승인은 기다린다 (토스 호출 포함)
+        Payment payment = paymentRepository.findByIdForUpdate(charge.getPayment().getId())
                 .orElseThrow(() -> new BusinessException(PAYMENT_NOT_FOUND));
 
         if (payment.isPaid()) {
             return PaymentSummaryDto.from(payment);                     // 멱등 (새로고침 등 중복 호출)
+        }
+        if (payment.isFailed()) {
+            throw new BusinessException(PAYMENT_CLOSED);                // 주문이 버린 그룹의 결제창. 토스를 부르지 않는다
         }
         if (!payment.isCharging()) {
             throw new BusinessException(INVALID_PAYMENT_STATUS);

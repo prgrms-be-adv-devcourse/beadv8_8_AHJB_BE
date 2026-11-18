@@ -4,6 +4,7 @@ import com.jjinmak.back.payment.app.dto.*;
 import com.jjinmak.common.rsData.RsData;
 import com.jjinmak.common.security.AuthPrincipal;
 import com.jjinmak.back.payment.app.facade.PaymentFacade;
+import com.jjinmak.back.payment.app.support.PaymentLockWaitSupport;
 import com.jjinmak.back.payment.app.support.WalletRetrySupport;
 import com.jjinmak.back.payment.app.dto.*;
 import com.jjinmak.back.payment.in.dto.ChargeConfirmRequestDto;
@@ -26,6 +27,7 @@ public class PaymentApiController {
 
     private final PaymentFacade paymentFacade;
     private final WalletRetrySupport retry;   // 지갑 낙관적 락 충돌 재시도. 트랜잭션(파사드) 바깥에서 감싸야 한다
+    private final PaymentLockWaitSupport lockWait;   // 결제 락 대기 시간 초과를 PAYMENT014 로 바꾼다. 마찬가지로 트랜잭션 바깥에서 감싼다
 
 
     @Operation(
@@ -51,6 +53,8 @@ public class PaymentApiController {
                     + "직접 결제면 결제한 돈이 예치금을 거치지 않고 바로 주문 대금이 되며, 실제로 승인된 결제수단이 pgMethod 로 기록됩니다. "
                     + "결제창을 띄운 뒤 결제수단이나 포인트 사용액을 바꿔 다시 결제 요청을 했다면 예전 결제창의 승인은 거절됩니다(CHARGE012). "
                     + "결제창에 있는 동안 포인트나 예치금이 줄어 결제할 수 없게 됐으면 토스 승인 전에 거절됩니다(WALLET204 / WALLET201). "
+                    + "주문이 이미 버린 주문 그룹의 결제창이면 토스 승인 전에 거절됩니다(PAYMENT013). 장바구니에서 다시 결제해야 합니다. "
+                    + "같은 결제를 처리하는 중이면 잠시 기다렸다가 PAYMENT014 를 돌려줍니다. 잠시 후 같은 요청을 다시 보내면 됩니다. "
                     + "응답의 orderGroupId 로 주문 완료 화면으로 이동하면 됩니다. 주문 상태는 결제 완료 이벤트로 바뀝니다. "
                     + "같은 요청을 다시 보내면 이미 끝난 결제를 그대로 돌려줍니다(멱등). "
                     + "실패 응답의 retryable 이 true 면 '다시 결제하기'(주문 결제 요청부터)로 해결할 수 있습니다."
@@ -60,8 +64,8 @@ public class PaymentApiController {
             @Valid @RequestBody PaymentConfirmRequestDto request,
             @AuthenticationPrincipal AuthPrincipal principal
     ) {
-        com.jjinmak.back.payment.app.dto.PaymentSummaryDto response = retry.withRetry(() -> paymentFacade.confirmPayment(
-                principal.memberId(), request.pgOrderId(), request.paymentKey(), request.amount()));
+        com.jjinmak.back.payment.app.dto.PaymentSummaryDto response = lockWait.orInProgress(() -> retry.withRetry(() -> paymentFacade.confirmPayment(
+                principal.memberId(), request.pgOrderId(), request.paymentKey(), request.amount())));
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }
 

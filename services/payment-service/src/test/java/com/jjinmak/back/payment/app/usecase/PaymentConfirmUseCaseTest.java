@@ -26,10 +26,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static com.jjinmak.back.payment.exception.PaymentErrorCode.CHARGE_PAYMENT_MISMATCH;
 import static com.jjinmak.back.payment.exception.PaymentErrorCode.CHARGE_SUPERSEDED;
+import static com.jjinmak.back.payment.exception.PaymentErrorCode.PAYMENT_CLOSED;
 import static com.jjinmak.back.payment.exception.WalletErrorCode.INSUFFICIENT_BALANCE;
 import static com.jjinmak.back.payment.exception.WalletErrorCode.INSUFFICIENT_POINT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,7 +74,7 @@ class PaymentConfirmUseCaseTest {
         WalletSupport walletSupport = mock(WalletSupport.class);
         when(walletSupport.getWalletByHolderId(HOLDER_ID)).thenReturn(wallet);
         PaymentRepository paymentRepository = mock(PaymentRepository.class);
-        when(paymentRepository.findWithItemsById(7L)).thenReturn(Optional.of(payment));
+        when(paymentRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(payment));
 
         chargeRepository = mock(ChargeRepository.class);
         holdingCreator = mock(HoldingCreator.class);
@@ -204,6 +206,22 @@ class PaymentConfirmUseCaseTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(CHARGE_SUPERSEDED);
+
+        verify(pgApproval, never()).approve(any(), anyString());
+    }
+
+    @Test
+    @DisplayName("주문이 닫은 결제의 결제창으로 승인하면 토스 승인 전에 PAYMENT_CLOSED")
+    void closedPaymentIsRejected() {
+        Charge charge = directCharge(0);
+        LocalDateTime closedAt = LocalDateTime.now();
+        payment.markFailed(closedAt, "주문이 결제를 중단해 결제가 종료됨");
+        charge.markAborted(closedAt, "CLOSED_BY_ORDER", "주문이 결제를 중단해 결제가 종료됨");
+
+        assertThatThrownBy(() -> useCase.confirm(HOLDER_ID, charge.getPgOrderId(), PAYMENT_KEY, 30_000))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(PAYMENT_CLOSED);
 
         verify(pgApproval, never()).approve(any(), anyString());
     }

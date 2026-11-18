@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.jjinmak.back.payment.domain.enums.ChargeStatus.REQUESTED;
+import static com.jjinmak.back.payment.exception.PaymentErrorCode.PAYMENT_CLOSED;
 import static com.jjinmak.back.payment.exception.PaymentErrorCode.PAYMENT_FORBIDDEN;
 import static com.jjinmak.back.payment.exception.PaymentErrorCode.PAYMENT_ITEMS_EMPTY;
 
@@ -48,6 +49,7 @@ import static com.jjinmak.back.payment.exception.PaymentErrorCode.PAYMENT_ITEMS_
  * 다시 주문하기: 아직 결제 전이면 금액 구성을 다시 정한다 (잔액이나 고른 수단이 바뀌었을 수 있다).
  *   지금 계획과 같은 승인 전 결제 건(Charge)이 있으면 그 건을 돌려주고, 없으면 새로 만든다.
  *   예전 계획으로 만든 건은 승인 단계에서 거절된다 (PaymentConfirmUseCase, CHARGE_SUPERSEDED).
+ * 닫힌 결제: 주문이 버린 그룹(PaymentCloseUseCase)의 orderGroupId 로 다시 오면 PAYMENT_CLOSED 로 거절한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -64,7 +66,8 @@ public class PaymentRequestUseCase {
         Wallet buyerWallet = walletSupport.getWalletByHolderId(dto.buyerId());
         PayMethod payMethod = PayMethod.from(dto.payMethod());
 
-        Payment payment = paymentRepository.findByOrderGroupId(dto.orderGroupId())
+        // 닫기 · 승인과 겹치지 않게 잠그고 읽는다 (잠그지 않으면 닫힌 결제를 CHARGING 으로 되돌려 쓸 수 있다)
+        Payment payment = paymentRepository.findByOrderGroupIdForUpdate(dto.orderGroupId())
                 .orElseGet(() -> create(dto, buyerWallet));
 
         if (!payment.getHolderId().equals(dto.buyerId())) {
@@ -72,6 +75,9 @@ public class PaymentRequestUseCase {
         }
         if (payment.isPaid()) {
             return PaymentResultDto.paid(payment.getId(), payment.getTotalPrice(), breakdownOf(payment));
+        }
+        if (payment.isFailed()) {
+            throw new BusinessException(PAYMENT_CLOSED);                // 주문이 버린 그룹. 새 주문 그룹으로 다시 요청해야 한다
         }
 
         PaymentPlan plan = paymentPlanner.plan(payment.getTotalPrice(), payMethod, dto.pointUseAmount(),

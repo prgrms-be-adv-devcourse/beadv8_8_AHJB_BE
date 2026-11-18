@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.jjinmak.back.payment.exception.PaymentErrorCode.CHARGE_LIMIT_EXCEEDED;
+import static com.jjinmak.back.payment.exception.PaymentErrorCode.PAYMENT_CLOSED;
 import static com.jjinmak.back.payment.exception.PaymentErrorCode.PAYMENT_METHOD_NOT_SUPPORTED;
 import static com.jjinmak.back.payment.exception.PaymentErrorCode.PAYMENT_TRANSFER_LIMIT_EXCEEDED;
 import static com.jjinmak.back.payment.exception.PaymentErrorCode.POINT_USE_OUT_OF_RANGE;
@@ -66,7 +67,7 @@ class PaymentRequestUseCaseTest {
         when(walletSupport.getWalletByHolderId(BUYER_ID)).thenReturn(buyerWallet);
 
         PaymentRepository paymentRepository = mock(PaymentRepository.class);
-        when(paymentRepository.findByOrderGroupId(ORDER_GROUP_ID))
+        when(paymentRepository.findByOrderGroupIdForUpdate(ORDER_GROUP_ID))
                 .thenAnswer(invocation -> savedPayments.stream().findFirst());
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> {
             Payment payment = invocation.getArgument(0);
@@ -384,5 +385,19 @@ class PaymentRequestUseCaseTest {
         assertThat(second.chargeAmount()).isEqualTo(10_000);
         assertThat(second.pgOrderId()).isNotEqualTo(first.pgOrderId());
         assertThat(savedCharges).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("주문이 닫은 결제의 orderGroupId 로 다시 요청하면 PAYMENT_CLOSED 로 거절하고 새 결제창을 만들지 않는다")
+    void closedPaymentIsRejected() {
+        buyerWallet.deposit(7_000);
+        useCase.request(orderOf(30_000));                                // 결제창을 띄웠다
+        savedPayments.getFirst().markFailed(java.time.LocalDateTime.now(), "주문이 결제를 중단해 결제가 종료됨");
+
+        assertErrorCode(orderOf(30_000), PAYMENT_CLOSED);
+        assertErrorCode(orderOf(30_000, "CARD", 0), PAYMENT_CLOSED);     // 수단을 바꿔도 마찬가지
+
+        assertThat(savedCharges).hasSize(1);
+        verify(holdingCreator, never()).hold(any());
     }
 }
