@@ -2,6 +2,7 @@ package com.jjinmak.boundedcontext.chat.domain;
 
 import com.jjinmak.boundedcontext.chat.in.dto.ChatMessageDto;
 import com.jjinmak.boundedcontext.chat.in.dto.ChatMessagePushDto;
+import com.jjinmak.boundedcontext.chat.in.dto.ChatPushType;
 import com.jjinmak.common.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -76,6 +77,7 @@ public class ChatMessage extends BaseIdAndTime {
 
     public ChatMessagePushDto pushDto(ChatRole senderRole) {
         return new ChatMessagePushDto(
+                ChatPushType.MESSAGE,
                 roomId,
                 getId(),
                 senderRole,
