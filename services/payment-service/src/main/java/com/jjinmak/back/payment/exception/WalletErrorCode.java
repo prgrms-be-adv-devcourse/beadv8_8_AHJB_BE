@@ -27,6 +27,7 @@ public enum WalletErrorCode implements ErrorCode {
     INSUFFICIENT_BALANCE("WALLET201", "잔액이 부족합니다.", HttpStatus.BAD_REQUEST),
     INVALID_AMOUNT("WALLET202", "홀딩 금액은 0보다 커야 합니다.", HttpStatus.BAD_REQUEST),
     INVALID_FEE_AMOUNT("WALLET203", "수수료는 0 이상, 홀딩 금액 이하여야 합니다.", HttpStatus.BAD_REQUEST),
+    INSUFFICIENT_POINT("WALLET204", "포인트가 부족합니다.", HttpStatus.BAD_REQUEST),
 
     // ===== 홀딩 (Holding) =====
     HOLDING_NOT_FOUND("WALLET301", "존재하지 않는 홀딩입니다.", HttpStatus.NOT_FOUND),

@@ -1,10 +1,5 @@
 package com.jjinmak.back.payment.domain.enums;
 
-/**
- * 원장(WalletTransaction)에 기록되는 거래 유형.
- * 외부 입출금(CHARGE, WITHDRAWAL)을 제외한 유형은
- * 같은 transactionGroupId 안에서 금액 합이 항상 0이 되어야 한다.
- */
 
 public enum WalletTransactionType {
 
@@ -30,6 +25,13 @@ public enum WalletTransactionType {
     // ===== 환불 =====
     REFUND_PAY,              // 환불: ESCROW (-)
     REFUND_RECEIVE,          // 환불: 구매자 USER (+)
+
+    // ===== 포인트 =====
+    POINT_EARN,              // 포인트 적립: 플랫폼 → USER 포인트 (+). 상대가 원장 밖이라 한 줄
+    POINT_HOLD_PAY,          // 포인트 결제: 구매자 USER 포인트 (-)
+    POINT_HOLD_RECEIVE,      // 포인트 결제: ESCROW (+)
+    POINT_REFUND_PAY,        // 포인트 환불: ESCROW (-)
+    POINT_REFUND_RECEIVE,    // 포인트 환불: 구매자 USER 포인트 (+)
 
     // ===== 수정 =====
     REVERSAL                 // 수정: 잘못된 기록 수정 (+), (-)

@@ -13,14 +13,6 @@ import org.hibernate.type.SqlTypes;
 
 import static com.jjinmak.back.payment.exception.WalletErrorCode.*;
 
-/**
- * 지갑. 잔액은 두 주머니로 나뉜다.
- *
- * - balance           : 예치금. 충전·환불로 들어오고 결제·충전 취소로 나간다
- * - settlementBalance : 정산금. 구매 확정으로 받은 판매 대금. 예치금과 섞이지 않는다
- *
- * deposit / withdrawal / hasEnough 는 예치금(balance)만 다룬다.
- */
 @Entity
 @NoArgsConstructor
 @Getter
@@ -31,6 +23,9 @@ public class Wallet extends BaseIdAndTime {
 
     @Column(nullable = false)
     private long settlementBalance;
+
+    @Column(nullable = false)
+    private long pointBalance;
 
     @Version
     @Column(nullable = false)
@@ -51,13 +46,15 @@ public class Wallet extends BaseIdAndTime {
         this.type = type;
         this.balance = 0L;
         this.settlementBalance = 0L;
+        this.pointBalance = 0L;
     }
 
     public WalletBalanceDto toDto() {
         return new WalletBalanceDto(
                 getId(),
                 balance,
-                settlementBalance
+                settlementBalance,
+                pointBalance
         );
     }
 
@@ -91,8 +88,26 @@ public class Wallet extends BaseIdAndTime {
         this.settlementBalance += amount;
     }
 
+    public void depositPoint(long amount) {
+        validatePositive(amount);
+        this.pointBalance += amount;
+    }
+
+    public void usePoint(long amount) {
+        validatePositive(amount);
+
+        if (this.pointBalance < amount) {
+            throw new BusinessException(INSUFFICIENT_POINT);
+        }
+        this.pointBalance -= amount;
+    }
+
     public long getBalanceOf(WalletAccount account) {
-        return account == WalletAccount.SETTLEMENT ? settlementBalance : balance;
+        return switch (account) {
+            case DEPOSIT -> balance;
+            case SETTLEMENT -> settlementBalance;
+            case POINT -> pointBalance;
+        };
     }
 
     private void validatePositive(long amount) {
@@ -103,5 +118,9 @@ public class Wallet extends BaseIdAndTime {
 
     public boolean hasEnough(long amount) {
         return this.balance >= amount;
+    }
+
+    public boolean hasEnoughPoint(long amount) {
+        return this.pointBalance >= amount;
     }
 }
