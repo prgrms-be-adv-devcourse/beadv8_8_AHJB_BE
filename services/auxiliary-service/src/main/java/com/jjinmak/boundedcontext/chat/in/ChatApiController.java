@@ -1,14 +1,13 @@
 package com.jjinmak.boundedcontext.chat.in;
 
 import com.jjinmak.boundedcontext.chat.app.ChatFacade;
-import com.jjinmak.boundedcontext.chat.in.dto.ChatMessageListDto;
-import com.jjinmak.boundedcontext.chat.in.dto.ChatRoomDetailDto;
-import com.jjinmak.boundedcontext.chat.in.dto.ChatRoomListDto;
+import com.jjinmak.boundedcontext.chat.in.dto.*;
 import com.jjinmak.common.rsData.RsData;
 import com.jjinmak.common.security.AuthPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 public class ChatApiController {
 
     private final ChatFacade chatFacade;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @GetMapping
     public ResponseEntity<RsData<ChatRoomListDto>> getRooms(
@@ -48,6 +48,31 @@ public class ChatApiController {
             @RequestParam(defaultValue = "30") int size
     ) {
         ChatMessageListDto response = chatFacade.getMessages(principal.memberId(), roomId, page, size);
+
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
+
+    @PatchMapping("/{roomId}/read")
+    public ResponseEntity<RsData<ChatReadResponseDto>> markRead(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @PathVariable Long roomId,
+            @RequestBody ChatReadRequestDto request
+    ) {
+        ChatReadResultDto result = chatFacade.markRead(principal.memberId(), roomId, request.lastReadMessageId());
+
+        if (result.changed()) {
+            messagingTemplate.convertAndSend("/topic/chat-rooms/" + roomId, ChatReadPushDto.from(result));
+        }
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new RsData<>(new ChatReadResponseDto(result.roomId(), result.lastReadMessageId())));
+    }
+
+    @GetMapping("/unread-count")
+    public ResponseEntity<RsData<ChatUnreadCountDto>> getUnreadCount(
+            @AuthenticationPrincipal AuthPrincipal principal
+    ) {
+        ChatUnreadCountDto response = chatFacade.getUnreadCount(principal.memberId());
 
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }

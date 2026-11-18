@@ -5,6 +5,7 @@ import com.jjinmak.boundedcontext.chat.domain.ChatRole;
 import java.time.LocalDateTime;
 
 public record ChatMessagePushDto(
+        ChatPushType type,
         Long roomId,
         Long messageId,
         ChatRole senderRole,
