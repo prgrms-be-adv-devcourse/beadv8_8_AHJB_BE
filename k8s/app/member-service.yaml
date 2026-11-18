@@ -29,7 +29,8 @@ spec:
         - name: member-service
           image: ghcr.io/prgrms-be-adv-devcourse/beadv8_8_ahjb_be/member-service:bb2970ed59aa04f7570469ec13c81572a3bf656b
           ports:
-            - containerPort: 8083
+            - name: http
+              containerPort: 8083
           envFrom:
             - configMapRef:
                 name: member-config

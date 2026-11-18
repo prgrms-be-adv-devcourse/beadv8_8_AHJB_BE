@@ -34,7 +34,8 @@ spec:
         - name: auxiliary-service
           image: ghcr.io/prgrms-be-adv-devcourse/beadv8_8_ahjb_be/auxiliary-service:initial
           ports:
-            - containerPort: 8087
+            - name: http
+              containerPort: 8087
           envFrom:
             - configMapRef:
                 name: auxiliary-config
