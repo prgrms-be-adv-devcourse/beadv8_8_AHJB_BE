@@ -114,8 +114,7 @@ public class RecommendSyncUseCase {
     public void winAuction(AuctionWonEvent event){
         Long auctionId = event.auctionId();
 
-        RecommendAuction auction = recommendAuctionRepository.findById(auctionId)
-                .orElseThrow(() -> new BusinessException(AUCTION_NOT_FOUND));
+        RecommendAuction auction = recommendSupport.findAuctionByIdForUpdate(auctionId);
 
         auction.won(event.winningPrice(), event.winAt());
     }
@@ -123,8 +122,7 @@ public class RecommendSyncUseCase {
     public void failAuction(AuctionFailedEvent event){
         Long auctionId = event.auctionId();
 
-        RecommendAuction auction = recommendAuctionRepository.findById(auctionId)
-                .orElseThrow(() -> new BusinessException(AUCTION_NOT_FOUND));
+        RecommendAuction auction = recommendSupport.findAuctionByIdForUpdate(auctionId);
 
         if (auction.getStatus() == ENDED)
             return;

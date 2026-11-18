@@ -28,7 +28,11 @@ spec:
         - name: gateway-service
           image: ghcr.io/prgrms-be-adv-devcourse/beadv8_8_ahjb_be/gateway-service:b68eb0cce3a2467e2047a02edfcbb86f73464a50
           ports:
-            - containerPort: 8091
+            - name: http
+              containerPort: 8091
+            # actuator 전용 관리 포트 (Service/ingress로 노출하지 않음, Prometheus가 파드로 직접 수집)
+            - name: management
+              containerPort: 8081
           envFrom:
             - configMapRef:
                 name: gateway-config
@@ -46,13 +50,13 @@ spec:
           # 앱이 요청을 받을 준비가 된 이후에 트래픽을 보내도록 설정
           readinessProbe:
             httpGet:
-              path: /actuator/health/readiness
+              path: /readyz
               port: 8091
             initialDelaySeconds: 20
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /actuator/health/liveness
+              path: /livez
               port: 8091
             initialDelaySeconds: 60
             periodSeconds: 20

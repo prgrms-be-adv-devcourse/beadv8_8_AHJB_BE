@@ -55,6 +55,10 @@ spring:
     uris: ${ES_URIS}
 
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
   endpoint:
     health:
       probes:
