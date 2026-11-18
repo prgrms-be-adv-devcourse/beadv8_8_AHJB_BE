@@ -40,6 +40,11 @@ public class RecommendSupport {
                 .orElseThrow(() -> new BusinessException(AUCTION_NOT_FOUND));
     }
 
+    public RecommendAuction findAuctionByIdForUpdate(Long id){
+        return recommendAuctionRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new BusinessException(AUCTION_NOT_FOUND));
+    }
+
     public RecommendProduct findProductById(Long id){
         return recommendProductRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(PRODUCT_NOT_FOUND));

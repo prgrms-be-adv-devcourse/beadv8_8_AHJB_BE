@@ -69,7 +69,7 @@ public class RecommendInteractionUseCase {
         Long productId = event.productId();
 
         RecommendMember bidder = recommendSupport.findMemberById(bidderId);
-        RecommendAuction auction = recommendSupport.findAuctionById(auctionId);
+        RecommendAuction auction = recommendSupport.findAuctionByIdForUpdate(auctionId);
         RecommendProduct product = recommendSupport.findProductById(productId);
 
         Interaction interaction = interactionRepository.findByMemberAndAuctionAndType(bidder, auction, InteractionType.BID)
