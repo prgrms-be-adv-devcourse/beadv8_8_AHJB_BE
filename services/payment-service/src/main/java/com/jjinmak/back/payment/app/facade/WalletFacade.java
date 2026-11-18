@@ -15,12 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 이벤트로 들어오는 지갑 내부 작업의 진입점 (PaymentEventListener 가 호출).
- * 회원 동기화·지갑 생성·환불·구매 확정·정산·주문 그룹 삭제에 따른 결제 종료. 토스 호출이 없으므로 메서드 단위 @Transactional 로 충분하다.
- *
- * 충전·주문 결제처럼 토스 호출이 끼는 흐름은 PaymentFacade 가 담당한다.
- */
 @Service
 @RequiredArgsConstructor
 public class WalletFacade {
