@@ -10,6 +10,7 @@ import com.jjinmak.back.order.domain.OrderGroup;
 import com.jjinmak.back.order.domain.OrderMember;
 import com.jjinmak.back.order.out.repository.OrderGroupRepository;
 import com.jjinmak.back.order.out.repository.OrderMemberRepository;
+import com.jjinmak.back.order.out.repository.OrderOutboxRepository;
 import com.jjinmak.back.order.out.repository.OrderRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,13 +39,7 @@ import static com.jjinmak.back.order.domain.OrderState.REFUND_REQUESTED;
 import static com.jjinmak.back.order.domain.OrderState.SHIPPING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -77,6 +72,9 @@ class OrderOptimisticLockIntegrationTest {
     OrderRepository orderRepository;
 
     @Autowired
+    OrderOutboxRepository orderOutboxRepository;
+
+    @Autowired
     TransactionTemplate transactionTemplate;
 
     @Autowired
@@ -99,13 +97,14 @@ class OrderOptimisticLockIntegrationTest {
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
+        orderOutboxRepository.deleteAllInBatch();
         orderRepository.deleteAllInBatch();
         orderGroupRepository.deleteAllInBatch();
         orderMemberRepository.deleteAllInBatch();
     }
 
     @Test
-    @DisplayName("구매확정 두 건이 겹치면 나중에 커밋하는 쪽이 버전 충돌로 롤백되고, 구매확정 이벤트는 한 번만 나간다")
+    @DisplayName("구매확정 두 건이 겹치면 나중에 커밋하는 쪽이 버전 충돌로 롤백되고, 구매확정 이벤트는 아웃박스에 한 건만 남는다")
     void confirmPurchaseTwice_laterCommitRollsBack() {
         Long orderId = saveShippedOrder();
 
@@ -117,11 +116,11 @@ class OrderOptimisticLockIntegrationTest {
         Order order = orderRepository.findById(orderId).orElseThrow();
         assertThat(order.getState()).isEqualTo(CONFIRMED);
         assertThat(order.getVersion()).isEqualTo(1L);
-        verify(kafkaTemplate, times(1)).send(eq("order.confirm-purchase"), eq(String.valueOf(orderId)), any());
+        assertThat(outboxCount("order.confirm-purchase", orderId)).isEqualTo(1);
     }
 
     @Test
-    @DisplayName("환불 요청을 처리하는 사이 자동 구매확정이 먼저 커밋되면 환불 요청은 롤백되고, 환불 요청 이벤트는 나가지 않는다")
+    @DisplayName("환불 요청을 처리하는 사이 자동 구매확정이 먼저 커밋되면 환불 요청은 롤백되고, 환불 요청 이벤트는 아웃박스에 남지 않는다")
     void requestRefund_autoConfirmCommittedFirst_rollsBack() {
         Long orderId = saveShippedOrder();
 
@@ -131,8 +130,8 @@ class OrderOptimisticLockIntegrationTest {
                 .isInstanceOf(OptimisticLockingFailureException.class);
 
         assertThat(orderRepository.findById(orderId).orElseThrow().getState()).isEqualTo(CONFIRMED);
-        verify(kafkaTemplate, times(1)).send(eq("order.confirm-purchase"), eq(String.valueOf(orderId)), any());
-        verify(kafkaTemplate, never()).send(eq("order.refund-requested"), anyString(), any());
+        assertThat(outboxCount("order.confirm-purchase", orderId)).isEqualTo(1);
+        assertThat(outboxCount("order.refund-requested", orderId)).isZero();
     }
 
     @Test
@@ -148,7 +147,7 @@ class OrderOptimisticLockIntegrationTest {
         Order order = orderRepository.findById(orderId).orElseThrow();
         assertThat(order.getState()).isEqualTo(CONFIRMED);
         assertThat(order.getAutoConfirmAlarmed()).isFalse();
-        verify(kafkaTemplate, never()).send(eq("order.remind-auto-confirm"), anyString(), any());
+        assertThat(outboxCount("order.remind-auto-confirm", orderId)).isZero();
     }
 
     @Test
@@ -162,11 +161,11 @@ class OrderOptimisticLockIntegrationTest {
                 .isInstanceOf(OptimisticLockingFailureException.class);
 
         assertThat(orderRepository.findById(orderId).orElseThrow().getState()).isEqualTo(REFUND_REQUESTED);
-        verify(kafkaTemplate, times(1)).send(eq("order.refund-requested"), eq(String.valueOf(orderId)), any());
+        assertThat(outboxCount("order.refund-requested", orderId)).isEqualTo(1);
     }
 
     @Test
-    @DisplayName("구매확정 API를 처리하는 사이 자동 구매확정이 먼저 커밋되면 409 COMMON005로 응답하고, 구매확정 이벤트는 자동 구매확정의 한 번만 나간다")
+    @DisplayName("구매확정 API를 처리하는 사이 자동 구매확정이 먼저 커밋되면 409 COMMON005로 응답하고, 구매확정 이벤트는 자동 구매확정의 한 건만 아웃박스에 남는다")
     void confirmPurchaseApi_autoConfirmCommittedFirst_returnsConflict() throws Exception {
         Long orderId = saveShippedOrder();
         doAnswer(invocation -> {
@@ -181,7 +180,14 @@ class OrderOptimisticLockIntegrationTest {
                 .andExpect(jsonPath("$.errorCode").value("COMMON005"));
 
         assertThat(orderRepository.findById(orderId).orElseThrow().getState()).isEqualTo(CONFIRMED);
-        verify(kafkaTemplate, times(1)).send(eq("order.confirm-purchase"), eq(String.valueOf(orderId)), any());
+        assertThat(outboxCount("order.confirm-purchase", orderId)).isEqualTo(1);
+    }
+
+    private long outboxCount(String topic, Long orderId) {
+        return orderOutboxRepository.findAll().stream()
+                .filter(outbox -> outbox.getTopic().equals(topic))
+                .filter(outbox -> outbox.getMessageKey().equals(String.valueOf(orderId)))
+                .count();
     }
 
     private void commitBetweenReadAndWrite(Long orderId, Runnable committedFirst, Runnable writtenLater) {

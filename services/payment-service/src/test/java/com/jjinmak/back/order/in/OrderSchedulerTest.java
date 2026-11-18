@@ -2,19 +2,24 @@ package com.jjinmak.back.order.in;
 
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.back.order.app.OrderFacade;
+import com.jjinmak.back.order.domain.OrderOutbox;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 
 import static com.jjinmak.back.order.exception.OrderErrorCode.CART_ITEM_NOT_FOUND;
 import static com.jjinmak.back.order.exception.OrderErrorCode.ORDER_STATE_BAD_REQUEST;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -225,5 +230,54 @@ class OrderSchedulerTest {
         orderScheduler.deleteOverWaitingOrder();
 
         verify(orderFacade).deleteOverWaitingOrders();
+    }
+
+    @Test
+    @DisplayName("발행하지 않은 아웃박스를 순서대로 보내고, 한 건씩 보낸 뒤에 발행으로 표시한다")
+    void sendOutbox_sendsInOrderAndMarksAfterEachSend() {
+        OrderOutbox first = outbox(1L);
+        OrderOutbox second = outbox(2L);
+        when(orderFacade.findUnpublishedOutboxes()).thenReturn(List.of(first, second));
+
+        orderScheduler.sendOutbox();
+
+        InOrder inOrder = inOrder(orderFacade);
+        inOrder.verify(orderFacade).sendOutbox(first);
+        inOrder.verify(orderFacade).markOutboxPublished(1L);
+        inOrder.verify(orderFacade).sendOutbox(second);
+        inOrder.verify(orderFacade).markOutboxPublished(2L);
+    }
+
+    @Test
+    @DisplayName("아웃박스 전송이 실패하면 그 건은 발행으로 표시하지 않고, 그 회차의 나머지도 보내지 않는다")
+    void sendOutbox_stopsAtFirstFailure() {
+        OrderOutbox first = outbox(1L);
+        OrderOutbox second = outbox(2L);
+        OrderOutbox third = outbox(3L);
+        when(orderFacade.findUnpublishedOutboxes()).thenReturn(List.of(first, second, third));
+        lenient().doThrow(new IllegalStateException("broker down")).when(orderFacade).sendOutbox(second);
+
+        orderScheduler.sendOutbox();
+
+        verify(orderFacade).markOutboxPublished(1L);
+        verify(orderFacade, never()).markOutboxPublished(2L);
+        verify(orderFacade, never()).sendOutbox(third);
+    }
+
+    @Test
+    @DisplayName("발행하지 않은 아웃박스가 없으면 아무것도 보내지 않는다")
+    void sendOutbox_noTargets() {
+        when(orderFacade.findUnpublishedOutboxes()).thenReturn(List.of());
+
+        orderScheduler.sendOutbox();
+
+        verify(orderFacade, never()).sendOutbox(any());
+        verify(orderFacade, never()).markOutboxPublished(anyLong());
+    }
+
+    private OrderOutbox outbox(Long id) {
+        OrderOutbox outbox = new OrderOutbox("order.send-product", String.valueOf(id), "{}");
+        ReflectionTestUtils.setField(outbox, "id", id);
+        return outbox;
     }
 }

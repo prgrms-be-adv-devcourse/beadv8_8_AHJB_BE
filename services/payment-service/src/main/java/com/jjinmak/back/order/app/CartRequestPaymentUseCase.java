@@ -6,7 +6,6 @@ import com.jjinmak.contracts.order.event.OrderPaymentSucceedEvent;
 import com.jjinmak.contracts.payment.dto.PaymentRequestDto;
 import com.jjinmak.contracts.payment.dto.PaymentResultDto;
 import com.jjinmak.contracts.payment.event.PaymentPaidEvent;
-import com.jjinmak.back.order.app.OrderSupport;
 import com.jjinmak.back.order.app.dto.PaymentResponseDto;
 import com.jjinmak.back.order.domain.*;
 import com.jjinmak.back.order.out.payment.PaymentRequest;
@@ -133,6 +132,9 @@ public class CartRequestPaymentUseCase {
 
         if (!orders.getFirst().getWinner().getId().equals(winnerId))
             throw new BusinessException(ORDER_GROUP_FORBIDDEN);
+
+        if (orders.stream().allMatch(order -> order.getPaidAt() != null))
+            return;
 
         for (Order order : orders){
             order.paid(paidAt);

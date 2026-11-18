@@ -111,6 +111,41 @@ public class AuthController {
         return tokenResponse(result);
     }
 
+    @Operation(
+            summary = "카카오 로그인",
+            description = """
+                    프론트가 카카오에서 받은 인가 코드로 로그인합니다.
+                    - 이미 가입된 카카오 계정: status=LOGIN, 액세스 토큰 반환, 리프레시 토큰은 HttpOnly 쿠키로 전달
+                    - 처음 로그인한 카카오 계정: status=SIGNUP_REQUIRED, 가입 대기 토큰(10분) 반환 → 추가 정보 입력 후 가입 API 호출
+                    """
+    )
+    @PostMapping("/oauth/kakao")
+    public ResponseEntity<RsData<SocialLoginResponseDto>> kakaoLogin(@Valid @RequestBody KakaoLoginRequestDto request) {
+        SocialLoginResult result = authFacade.loginWithKakao(request.code());
+
+        if (result.isSignupRequired()) {
+            return ResponseEntity.ok(new RsData<>(SocialLoginResponseDto.signupRequired(result.signupToken())));
+        }
+
+        AuthResult auth = result.authResult();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookieManager.create(auth.refreshToken()).toString())
+                .body(new RsData<>(SocialLoginResponseDto.loggedIn(auth.accessToken(), auth.suspended())));
+    }
+
+    @Operation(
+            summary = "카카오 회원가입",
+            description = "가입 대기 토큰과 추가 정보로 가입을 완료하고 바로 로그인합니다. 이미 사용 중인 이메일이면 가입이 거부됩니다(계정 자동 연동 없음)."
+    )
+    @PostMapping("/oauth/kakao/signup")
+    public ResponseEntity<RsData<TokenResponseDto>> kakaoSignUp(@Valid @RequestBody KakaoSignUpRequestDto request) {
+        AuthResult result = authFacade.signUpWithKakao(request);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookieManager.create(result.refreshToken()).toString())
+                .body(new RsData<>(new TokenResponseDto(result.accessToken(), result.suspended())));
+    }
+
     private ResponseEntity<RsData<TokenResponseDto>> tokenResponse(AuthResult result) {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshTokenCookieManager.create(result.refreshToken()).toString())

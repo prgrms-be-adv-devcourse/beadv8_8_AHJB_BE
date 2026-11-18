@@ -26,12 +26,16 @@ public class DeliveryUseCase {
     public void createDelivery(OrderSendProductEvent event){
         Long orderId = event.orderId();
 
+        if (deliveryRepository.existsByOrderId(orderId)){
+            eventPublisher.publish(new DeliveryCreatedEvent(orderId));
+            return;
+        }
+
         DeliveryMember winner = deliverySupport.getMember(event.winnerId());
         DeliveryMember seller = deliverySupport.getMember(event.sellerId());
 
         CarrierType carrier = event.carrier();
         String waybill = event.waybill();
-
 
         Delivery delivery = new Delivery(orderId, winner, seller, carrier, waybill);
 

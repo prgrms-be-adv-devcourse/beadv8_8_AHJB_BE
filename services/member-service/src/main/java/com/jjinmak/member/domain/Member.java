@@ -29,7 +29,8 @@ public class Member extends BaseIdAndTime {
     @Column(nullable = false, unique = true, length = 255)
     private String email;
 
-    @Column(nullable = false, length = 100)
+    // 소셜 로그인 회원은 비밀번호가 없다(null)
+    @Column(length = 100)
     private String password;
 
     @Column(nullable = false, unique = true, length = 50)
@@ -78,6 +79,12 @@ public class Member extends BaseIdAndTime {
         return new Member(email, encodedPassword, nickname, username, phone, birthDate);
     }
 
+    // 소셜 로그인으로 가입한 회원. 비밀번호 없이 생성하며, 외부 계정 연결은 SocialAccount 가 가진다.
+    public static Member createSocial(String email, String nickname, String username, String phone,
+                                      LocalDate birthDate){
+        return new Member(email, null, nickname, username, phone, birthDate);
+    }
+
     public void prepareLogin(LocalDateTime now) {
         loginLock.unlockIfExpired(now);
         validateNotBanned();
@@ -85,6 +92,11 @@ public class Member extends BaseIdAndTime {
         if (loginLock.isLocked()) {
             throw new BusinessException(AuthErrorCode.ACCOUNT_LOCKED);
         }
+    }
+
+    // 소셜 로그인은 비밀번호를 쓰지 않으므로 비밀번호 실패 잠금(loginLock)은 적용하지 않고 차단 여부만 확인한다
+    public void prepareSocialLogin() {
+        validateNotBanned();
     }
 
     public void validateNotBanned() {
@@ -101,7 +113,14 @@ public class Member extends BaseIdAndTime {
         loginLock.reset();
     }
 
+    public boolean hasPassword(){
+        return password != null;
+    }
+
     public boolean matchesPassword(PasswordEncoder passwordEncoder, String password){
+        if (!hasPassword()) {
+            return false;
+        }
         return passwordEncoder.matches(password, this.password);
     }
 

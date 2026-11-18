@@ -8,9 +8,8 @@ import com.jjinmak.back.payment.domain.enums.PaymentStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * 결제 상세. 주문별 내역과 이 결제에 연결된 충전 건(부족분 결제)을 함께 돌려준다.
- */
+
+// 결제 상세. 주문별 내역과 이 결제에 연결된 충전 건(부족분 결제)을 함께 돌려준다.
 public record PaymentDetailDto(
         Long paymentId,
         Long orderGroupId,
@@ -44,7 +43,7 @@ public record PaymentDetailDto(
                 payment.getId(),
                 payment.getOrderGroupId(),
                 payment.getTotalPrice(),
-                payment.getTotalPrice() - payment.getChargeAmount(),
+                payment.getWalletUsedAmount(),
                 payment.getChargeAmount(),
                 payment.getStatus(),
                 payment.getCreatedAt(),

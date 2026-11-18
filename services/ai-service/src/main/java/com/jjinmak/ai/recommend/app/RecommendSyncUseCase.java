@@ -94,6 +94,10 @@ public class RecommendSyncUseCase {
         Long auctionId = event.auctionId();
         Long productId = event.productId();
 
+        if (recommendAuctionRepository.existsById(auctionId)){
+            return;
+        }
+
         recommendAuctionRepository.save(new RecommendAuction(
                 auctionId, event.productId(),
                 event.instantWinPrice(), event.startPrice(),

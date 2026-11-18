@@ -45,6 +45,9 @@ payment-service:
 
 wallet:
   fee-rate-percent: 10
+  charge:
+    min-amount: 10000      # 최소 충전 금액. 부족분 충전도 이 금액보다 작으면 이 금액으로 올려 충전한다
+    max-amount: 2000000    # 1회 최대 충전 금액 (계좌이체 1회 이체 한도)
 
 management:
   endpoints:

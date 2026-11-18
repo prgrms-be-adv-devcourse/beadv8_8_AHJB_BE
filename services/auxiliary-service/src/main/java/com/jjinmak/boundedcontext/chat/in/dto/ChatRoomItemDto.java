@@ -12,6 +12,8 @@ public record ChatRoomItemDto(
         String counterpartNickname,
         ChatRole myRole,
         ChatRoomStatus status,
-        LocalDateTime lastMessageAt
+        String lastMessageContent,
+        LocalDateTime lastMessageAt,
+        long unreadCount
 ) {
 }

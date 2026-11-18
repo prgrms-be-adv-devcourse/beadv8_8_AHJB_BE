@@ -17,18 +17,7 @@ import java.util.List;
 import static com.jjinmak.back.payment.domain.enums.PaymentStatus.*;
 import static com.jjinmak.back.payment.exception.PaymentErrorCode.*;
 
-/**
- * 주문 묶음(OrderGroup) 1건에 대한 결제 기록. 주문 그룹당 1개.
- *
- * 토스 결제 정보를 담지 않는다. 토스와 주고받은 것은 Charge 에만 있다.
- * 전액 예치금 결제든 부족분 충전 후 결제든, 주문 결제는 항상 이 엔티티를 거친다.
- *
- * 흐름: PENDING(주문 이벤트 수신) → [CHARGING(부족분 PG 충전 중)] → PAID(지갑 차감 + 주문별 Holding 생성) / FAILED
- *
- * - totalPrice   : 주문 총액 = 아이템 금액 합 = 홀딩 총액
- * - chargeAmount : 결제 요청 시점의 잔액으로 계산한 부족분. 0 이면 PG 를 타지 않는다
- * - idempotencyKey : 결제 요청·승인 콜백이 중복 도착해도 한 번만 처리하기 위한 키. orderGroupId 로 결정적으로 만든다
- */
+
 @Entity
 @Table(
         name = "payment",
@@ -92,10 +81,6 @@ public class Payment extends BaseIdAndTime {
         this.status = PENDING;
     }
 
-    /**
-     * OrderCreatePaymentEvent 를 받아 Payment 를 만든다.
-     * 아이템은 addItem 으로 추가한 뒤 validateItems 로 합계를 검증한다.
-     */
     public static Payment create(Long orderGroupId, Long holderId, Wallet buyerWallet, long totalPrice) {
         return new Payment(orderGroupId, holderId, buyerWallet, totalPrice);
     }
@@ -122,19 +107,27 @@ public class Payment extends BaseIdAndTime {
         }
     }
 
-    /**
-     * 결제 요청 시점의 지갑 잔액으로 부족분을 계산한다.
-     * 부족분이 있으면 CHARGING, 없으면 PENDING 에 머문 채 바로 홀딩으로 간다.
-     * 사용자가 결제창을 닫고 다시 주문하기를 누르면(CHARGING 상태) 잔액이 달라졌을 수 있으므로 다시 계산한다.
-     *
-     * @return 부족분 (0 이면 PG 불필요)
-     */
-    public long decideCharge(long walletBalance) {
+    // 이 잔액으로 결제하면 모자라는 금액. 모자라지 않으면 0
+    public long shortageOf(long walletBalance) {
+        return Math.max(0L, totalPrice - walletBalance);
+    }
+
+
+    // 결제 요청 시점에 PG 로 충전할 금액을 정한다. 금액은 부족분에 충전 정책(최소 충전 금액)을 적용해 호출하는 쪽이 계산한다.
+    // 충전할 금액이 있으면 CHARGING, 없으면 PENDING 에 머문 채 바로 홀딩으로 간다.
+    // 사용자가 결제창을 닫고 다시 주문하기를 누르면(CHARGING 상태) 잔액이 달라졌을 수 있으므로 다시 정한다.
+    public void decideCharge(long chargeAmount) {
         requireStatus(PENDING, CHARGING);
-        long shortage = Math.max(0L, totalPrice - walletBalance);
-        this.chargeAmount = shortage;
-        this.status = shortage > 0 ? CHARGING : PENDING;
-        return shortage;
+        if (chargeAmount < 0) {
+            throw new BusinessException(INVALID_PAYMENT_AMOUNT);
+        }
+        this.chargeAmount = chargeAmount;
+        this.status = chargeAmount > 0 ? CHARGING : PENDING;
+    }
+
+    // 충전하기 전부터 있던 예치금에서 나간 금액. 충전액이 총액 이상이면(최소 충전 금액으로 올려 충전) 0
+    public long getWalletUsedAmount() {
+        return Math.max(0L, totalPrice - chargeAmount);
     }
 
     public boolean needsCharge() {

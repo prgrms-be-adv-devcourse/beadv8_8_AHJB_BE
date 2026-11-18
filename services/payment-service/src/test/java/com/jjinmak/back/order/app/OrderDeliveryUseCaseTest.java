@@ -34,7 +34,6 @@ import static com.jjinmak.back.order.domain.OrderState.DELIVERY_ERROR;
 import static com.jjinmak.back.order.domain.OrderState.PAID;
 import static com.jjinmak.back.order.domain.OrderState.SHIPPED;
 import static com.jjinmak.back.order.domain.OrderState.SHIPPING;
-import static com.jjinmak.back.order.domain.OrderState.WAITING;
 import static com.jjinmak.back.order.exception.OrderErrorCode.ORDER_FORBIDDEN;
 import static com.jjinmak.back.order.exception.OrderErrorCode.ORDER_STATE_BAD_REQUEST;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -140,10 +139,24 @@ class OrderDeliveryUseCaseTest {
         assertThat(order.getState()).isEqualTo(SHIPPING);
     }
 
-    @Test
-    @DisplayName("결제 완료 상태가 아닌 주문의 배송이 생성되면 ORDER_STATE_BAD_REQUEST, 상태가 바뀌지 않는다")
-    void startDelivery_notPaid() {
-        Order order = order(WAITING);
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(value = OrderState.class, names = {"SHIPPING", "DELIVERY_ERROR", "SHIPPED", "CONFIRMED"})
+    @DisplayName("이미 배송이 시작된 주문의 배송 생성 이벤트를 다시 받으면 예외 없이 끝나고 상태가 바뀌지 않는다")
+    void startDelivery_alreadyStarted_skips(OrderState state) {
+        Order order = order(state);
+        when(orderSupport.getOrder(100L)).thenReturn(order);
+
+        assertThatCode(() -> orderDeliveryUseCase.startDelivery(new DeliveryCreatedEvent(100L)))
+                .doesNotThrowAnyException();
+
+        assertThat(order.getState()).isEqualTo(state);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(value = OrderState.class, names = {"PAID", "SHIPPING", "DELIVERY_ERROR", "SHIPPED", "CONFIRMED"}, mode = EXCLUDE)
+    @DisplayName("결제 완료 상태도, 배송이 시작된 뒤의 상태도 아닌 주문의 배송이 생성되면 ORDER_STATE_BAD_REQUEST, 상태가 바뀌지 않는다")
+    void startDelivery_notPaid(OrderState state) {
+        Order order = order(state);
         when(orderSupport.getOrder(100L)).thenReturn(order);
 
         assertThatThrownBy(() -> orderDeliveryUseCase.startDelivery(new DeliveryCreatedEvent(100L)))
@@ -151,7 +164,7 @@ class OrderDeliveryUseCaseTest {
                 .extracting("errorCode")
                 .isEqualTo(ORDER_STATE_BAD_REQUEST);
 
-        assertThat(order.getState()).isEqualTo(WAITING);
+        assertThat(order.getState()).isEqualTo(state);
     }
 
     @Test

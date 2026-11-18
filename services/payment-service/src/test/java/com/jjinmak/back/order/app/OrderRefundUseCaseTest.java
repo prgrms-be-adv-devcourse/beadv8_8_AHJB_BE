@@ -15,6 +15,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -36,7 +38,9 @@ import static com.jjinmak.back.order.exception.OrderErrorCode.ORDER_FORBIDDEN;
 import static com.jjinmak.back.order.exception.OrderErrorCode.ORDER_NOT_FOUND;
 import static com.jjinmak.back.order.exception.OrderErrorCode.ORDER_STATE_BAD_REQUEST;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -174,9 +178,23 @@ class OrderRefundUseCaseTest {
     }
 
     @Test
-    @DisplayName("환불 요청 상태가 아닌 주문의 환불이 승인되면 ORDER_STATE_BAD_REQUEST, 상태가 바뀌지 않고 이벤트를 발행하지 않는다")
-    void acceptRefund_notRefundRequested() {
-        Order order = order(SHIPPED);
+    @DisplayName("이미 환불된 주문의 환불 승인을 다시 받으면 예외 없이 끝나고, 상태가 그대로이며 이벤트를 발행하지 않는다")
+    void acceptRefund_alreadyRefunded_skips() {
+        Order order = order(REFUNDED);
+        when(orderRepository.findById(100L)).thenReturn(Optional.of(order));
+
+        assertThatCode(() -> orderRefundUseCase.acceptRefund(accepted))
+                .doesNotThrowAnyException();
+
+        assertThat(order.getState()).isEqualTo(REFUNDED);
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(value = OrderState.class, names = {"REFUND_REQUESTED", "REFUNDED"}, mode = EXCLUDE)
+    @DisplayName("환불 요청 상태도 환불된 상태도 아닌 주문의 환불이 승인되면 ORDER_STATE_BAD_REQUEST, 상태가 바뀌지 않고 이벤트를 발행하지 않는다")
+    void acceptRefund_notRefundRequested(OrderState state) {
+        Order order = order(state);
         when(orderRepository.findById(100L)).thenReturn(Optional.of(order));
 
         assertThatThrownBy(() -> orderRefundUseCase.acceptRefund(accepted))
@@ -184,7 +202,7 @@ class OrderRefundUseCaseTest {
                 .extracting("errorCode")
                 .isEqualTo(ORDER_STATE_BAD_REQUEST);
 
-        assertThat(order.getState()).isEqualTo(SHIPPED);
+        assertThat(order.getState()).isEqualTo(state);
         verifyNoInteractions(eventPublisher);
     }
 
@@ -214,9 +232,23 @@ class OrderRefundUseCaseTest {
     }
 
     @Test
-    @DisplayName("환불 요청 상태가 아닌 주문의 환불이 거절되면 ORDER_STATE_BAD_REQUEST, 상태가 바뀌지 않고 이벤트를 발행하지 않는다")
-    void rejectRefund_notRefundRequested() {
-        Order order = order(REFUNDED);
+    @DisplayName("이미 구매 확정된 주문의 환불 거절을 다시 받으면 예외 없이 끝나고, 상태가 그대로이며 이벤트를 발행하지 않는다")
+    void rejectRefund_alreadyConfirmed_skips() {
+        Order order = order(CONFIRMED);
+        when(orderSupport.getOrderWithParticipants(100L)).thenReturn(order);
+
+        assertThatCode(() -> orderRefundUseCase.rejectRefund(rejected))
+                .doesNotThrowAnyException();
+
+        assertThat(order.getState()).isEqualTo(CONFIRMED);
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(value = OrderState.class, names = {"REFUND_REQUESTED", "CONFIRMED"}, mode = EXCLUDE)
+    @DisplayName("환불 요청 상태도 구매 확정 상태도 아닌 주문의 환불이 거절되면 ORDER_STATE_BAD_REQUEST, 상태가 바뀌지 않고 이벤트를 발행하지 않는다")
+    void rejectRefund_notRefundRequested(OrderState state) {
+        Order order = order(state);
         when(orderSupport.getOrderWithParticipants(100L)).thenReturn(order);
 
         assertThatThrownBy(() -> orderRefundUseCase.rejectRefund(rejected))
@@ -224,7 +256,7 @@ class OrderRefundUseCaseTest {
                 .extracting("errorCode")
                 .isEqualTo(ORDER_STATE_BAD_REQUEST);
 
-        assertThat(order.getState()).isEqualTo(REFUNDED);
+        assertThat(order.getState()).isEqualTo(state);
         verifyNoInteractions(eventPublisher);
     }
 

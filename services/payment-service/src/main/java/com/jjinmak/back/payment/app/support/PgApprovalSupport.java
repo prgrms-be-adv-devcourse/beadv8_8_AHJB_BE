@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Objects;
 
+import static com.jjinmak.back.payment.exception.PaymentErrorCode.CHARGE_METHOD_NOT_ALLOWED;
 import static com.jjinmak.back.payment.exception.PaymentErrorCode.PG_NOT_APPROVED;
 import static com.jjinmak.back.payment.exception.PaymentErrorCode.PG_UNAVAILABLE;
 import static com.jjinmak.back.payment.out.toss.TossPaymentsClient.ALREADY_PROCESSED_PAYMENT;
@@ -21,13 +22,13 @@ import static com.jjinmak.back.payment.out.toss.TossPaymentsClient.ALREADY_PROCE
 @RequiredArgsConstructor
 public class PgApprovalSupport {
 
-    /**
-     * 토스 Idempotency-Key 접두사. 뒤에는 DB id 가 아니라 pgOrderId(UUID 기반) 를 붙인다.
-     * 토스는 같은 키의 요청에 첫 응답을 15일간 그대로 돌려주는데, DB id 는 로컬·서버가 같은 테스트 상점을 쓰거나
-     * create-drop 으로 DB 가 초기화되면 다시 1부터 시작해 예전 결제의 응답이 돌아오는 사고가 난다.
-     */
+
     private static final String CONFIRM_KEY_PREFIX = "charge-confirm-";
     private static final String CANCEL_KEY_PREFIX = "charge-cancel-";
+
+    // 허용되지 않은 결제수단으로 닫힌 충전의 실패 코드 · 사유 (Charge.failureCode / failureMessage)
+    public static final String METHOD_NOT_ALLOWED = "METHOD_NOT_ALLOWED";
+    public static final String METHOD_NOT_ALLOWED_REASON = "허용되지 않은 결제수단으로 결제되어 자동 취소";
 
     private final TossPaymentsClient toss;
     private final ChargeFailureRecorder failureRecorder;
@@ -40,6 +41,8 @@ public class PgApprovalSupport {
      *  - 네트워크 오류면 상태를 알 수 없으므로 기록 없이 예외 (복구 스케줄러가 조회해 정리)
      *  - 응답이 Charge 와 다르면 예외. 토스가 DONE 이면 자동 취소하되, 승인 요청한 바로 그 결제일 때만 한다
      *    (주문번호나 결제 키가 다른 결제를 돌려받았으면 취소하지 않고 로그만 남긴다)
+     *  - 결제수단이 이 충전에 허용된 수단(예치금 충전은 계좌이체)이 아니면 자동 취소하고 예외.
+     *    결제창을 어떤 수단으로 열지는 클라이언트가 정하므로, 실제 수단은 승인 응답으로만 확인할 수 있다
      */
     public TossPaymentResponse approve(Charge charge, String paymentKey) {
         TossPaymentResponse response;
@@ -80,7 +83,26 @@ public class PgApprovalSupport {
             }
             throw new BusinessException(PG_NOT_APPROVED);
         }
+        if (!charge.allowsMethod(response.method())) {
+            rejectMethod(charge, response);
+        }
         return response;
+    }
+
+    /**
+     * 허용되지 않은 결제수단으로 승인된 결제를 취소하고 예외를 던진다.
+     * 취소에 성공했을 때만 Charge 를 ABORTED 로 닫는다. 취소에 실패하면 토스에는 결제가 남아 있으므로
+     * REQUESTED 로 두고 복구 스케줄러가 같은 검증으로 다시 취소하게 한다.
+     */
+    private void rejectMethod(Charge charge, TossPaymentResponse response) {
+        log.warn("허용되지 않은 결제수단으로 승인됨. chargeId={} purpose={} required={} actual='{}'",
+                charge.getId(), charge.getPurpose(), charge.getRequiredMethod(), response.method());
+        boolean canceled = cancelApproved(charge, response.paymentKey(), METHOD_NOT_ALLOWED_REASON);
+        if (canceled) {
+            failureRecorder.recordAborted(charge.getId(), METHOD_NOT_ALLOWED,
+                    METHOD_NOT_ALLOWED_REASON + " (결제수단: " + response.method() + ")");
+        }
+        throw new BusinessException(CHARGE_METHOD_NOT_ALLOWED);
     }
 
     // 토스가 돌려준 결제가 서버 쪽에서 취소 요청을 보낸 결제 건이 맞는지 검증한다.
@@ -93,12 +115,16 @@ public class PgApprovalSupport {
      * 토스는 승인됐는데 우리 DB 반영이 실패했을 때 토스 결제를 취소한다.
      * 호출한 트랜잭션은 롤백되므로 Charge 는 REQUESTED 로 남고, 복구 스케줄러가 토스 상태(CANCELED)를 보고 ABORTED 로 닫는다.
      * 취소마저 실패하면 로그만 남긴다. 역시 복구 스케줄러 대상.
+     *
+     * 토스 취소에 성공했으면 true
      */
-    public void cancelApproved(Charge charge, String paymentKey, String reason) {
+    public boolean cancelApproved(Charge charge, String paymentKey, String reason) {
         try {
             toss.cancel(paymentKey, reason, CANCEL_KEY_PREFIX + charge.getPgOrderId());
+            return true;
         } catch (RuntimeException ex) {
             log.error("보상(토스 취소) 실패. chargeId={} paymentKey={} — 복구 스케줄러 대상", charge.getId(), paymentKey, ex);
+            return false;
         }
     }
 

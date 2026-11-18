@@ -26,6 +26,12 @@ public class MemberAuthenticateUseCase {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(()-> new BusinessException(AuthErrorCode.LOGIN_FAILED));
 
+        // 소셜 가입 회원은 비밀번호 로그인이 불가능하다.
+        // 실패 횟수를 올리지 않는다: 올리면 제3자가 이메일만 알고 틀린 비밀번호를 반복해 계정을 잠글 수 있다.
+        if (!member.hasPassword()) {
+            throw new BusinessException(AuthErrorCode.LOGIN_FAILED);
+        }
+
         member.prepareLogin(LocalDateTime.now());
 
         if(!member.matchesPassword(passwordEncoder, password)){

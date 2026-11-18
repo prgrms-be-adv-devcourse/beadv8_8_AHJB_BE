@@ -20,6 +20,12 @@ public enum AuthErrorCode implements ErrorCode {
     INVALID_ACCESS_TOKEN("AUTH106", "유효하지 않은 액세스 토큰입니다.", HttpStatus.UNAUTHORIZED),
     EXPIRED_ACCESS_TOKEN("AUTH107", "만료된 액세스 토큰입니다.", HttpStatus.UNAUTHORIZED),
 
+    INVALID_OAUTH_CODE("AUTH108", "유효하지 않은 인가 코드입니다. 다시 로그인해 주세요.", HttpStatus.UNAUTHORIZED),
+    OAUTH_PROVIDER_ERROR("AUTH109", "외부 인증 서버와 통신하지 못했습니다. 잠시 후 다시 시도해 주세요.", HttpStatus.BAD_GATEWAY),
+    INVALID_SIGNUP_TOKEN("AUTH110", "유효하지 않은 가입 요청입니다. 다시 로그인해 주세요.", HttpStatus.UNAUTHORIZED),
+    EXPIRED_SIGNUP_TOKEN("AUTH111", "가입 가능 시간이 만료되었습니다. 다시 로그인해 주세요.", HttpStatus.UNAUTHORIZED),
+    ALREADY_LINKED_SOCIAL_ACCOUNT("AUTH112", "이미 가입된 소셜 계정입니다.", HttpStatus.CONFLICT),
+
 
     ;
     private final String code;

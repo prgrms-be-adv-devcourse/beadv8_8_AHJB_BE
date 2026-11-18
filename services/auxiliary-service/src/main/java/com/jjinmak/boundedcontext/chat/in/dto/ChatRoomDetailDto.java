@@ -15,6 +15,7 @@ public record ChatRoomDetailDto(
         ChatRole myRole,
         ChatRoomStatus status,
         LocalDateTime lastMessageAt,
+        Long counterpartLastReadId,
         LocalDateTime createdAt
 ) {
 }

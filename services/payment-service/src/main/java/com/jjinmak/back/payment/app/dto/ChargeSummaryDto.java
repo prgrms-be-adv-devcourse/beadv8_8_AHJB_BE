@@ -8,12 +8,7 @@ import java.time.LocalDateTime;
 
 /**
  * 충전 1건의 요약. 결제창을 띄우는 데 필요한 값(pgOrderId, amount, orderName)과 상태·표시 정보를 담는다.
- * 클라이언트는 pgOrderId 를 토스 SDK 의 orderId 로, amount 를 결제 금액으로 넘긴다.
- *
- * - cancelable   : 지금 취소할 수 있는지. CHARGED 이고 선입선출상 한 푼도 쓰이지 않은 건만 true
- * - usedAmount / remainingAmount : 이 충전으로 들어온 돈 중 쓰인 금액 / 남은 금액. 일부 사용된 건은 취소 불가
- * - receiptUrl   : 토스 매출전표 링크. 승인된 건만 있다
- * - failureCode / failureMessage : ABORTED 인 건의 실패 사유
+ * 클라이언트는 pgOrderId 를 토스 SDK 의 orderId 로, amount 를 결제 금액으로, pgMethod 를 method 로 넘긴다.
  */
 public record ChargeSummaryDto(
         Long chargeId,
@@ -25,6 +20,7 @@ public record ChargeSummaryDto(
         boolean cancelable,
         long usedAmount,
         long remainingAmount,
+        String pgMethod,
         String method,
         String receiptUrl,
         LocalDateTime requestedAt,
@@ -48,6 +44,7 @@ public record ChargeSummaryDto(
                 charge.isCancelable(),
                 charge.getUsedAmount(),
                 charge.getRemainingAmount(),
+                charge.getRequiredMethod().name(),
                 charge.getMethod(),
                 charge.getReceiptUrl(),
                 charge.getCreatedAt(),
