@@ -7,13 +7,13 @@ import com.jjinmak.contracts.delivery.domain.DeliveryStatusCode;
 import com.jjinmak.contracts.delivery.event.DeliveryCreatedEvent;
 import com.jjinmak.contracts.delivery.event.DeliveryStatusUpdatedEvent;
 import com.jjinmak.contracts.order.event.OrderSendProductEvent;
-import com.jjinmak.back.order.app.OrderSupport;
 import com.jjinmak.back.order.domain.Order;
 import com.jjinmak.back.order.domain.OrderMember;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.EnumSet;
 
 import static com.jjinmak.contracts.delivery.domain.DeliveryStatusCode.EXCEPTION;
 import static com.jjinmak.back.order.domain.OrderState.*;
@@ -46,6 +46,9 @@ public class OrderDeliveryUseCase {
         Long orderId = event.orderId();
 
         Order order = orderSupport.getOrder(orderId);
+
+        if (EnumSet.of(SHIPPING, DELIVERY_ERROR, SHIPPED, CONFIRMED).contains(order.getState()))
+            return;
 
         order.validateAndUpdateState(PAID, SHIPPING);
     }

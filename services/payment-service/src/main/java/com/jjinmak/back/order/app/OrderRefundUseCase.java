@@ -49,6 +49,9 @@ public class OrderRefundUseCase {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new BusinessException(ORDER_NOT_FOUND));
 
+        if (order.getState() == REFUNDED)
+            return;
+
         order.validateAndUpdateState(REFUND_REQUESTED, REFUNDED);
 
         eventPublisher.publish(new OrderRefundAcceptedEvent(orderId, order.getAuctionId()));
@@ -58,6 +61,9 @@ public class OrderRefundUseCase {
         Long orderId = refund.orderId();
 
         Order order = orderSupport.getOrderWithParticipants(orderId);
+
+        if (order.getState() == CONFIRMED)
+            return;
 
         order.validateAndUpdateState(REFUND_REQUESTED, CONFIRMED);
 
