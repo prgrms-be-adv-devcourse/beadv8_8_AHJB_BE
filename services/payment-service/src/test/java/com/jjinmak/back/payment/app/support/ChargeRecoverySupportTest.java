@@ -2,6 +2,9 @@ package com.jjinmak.back.payment.app.support;
 
 import com.jjinmak.back.payment.domain.Charge;
 import com.jjinmak.back.payment.domain.Payment;
+import com.jjinmak.back.payment.domain.PaymentPlan;
+import com.jjinmak.back.payment.domain.enums.PayMethod;
+import com.jjinmak.back.payment.domain.enums.PgMethod;
 import com.jjinmak.back.payment.domain.Wallet;
 import com.jjinmak.back.payment.domain.WalletTransaction;
 import com.jjinmak.back.payment.domain.enums.ChargeStatus;
@@ -74,6 +77,29 @@ class ChargeRecoverySupportTest {
         Charge charge = Charge.requestForPayment(wallet, payment);
         ReflectionTestUtils.setField(charge, "id", 12L);
         return charge;
+    }
+
+    private Charge directCharge() {
+        Payment payment = Payment.create(101L, HOLDER_ID, wallet, AMOUNT);
+        payment.decide(new PaymentPlan(PayMethod.CARD, 0L, 0L, AMOUNT, AMOUNT, 0L, false));
+        Charge charge = Charge.requestDirectPayment(wallet, payment, PgMethod.CARD);
+        ReflectionTestUtils.setField(charge, "id", 13L);
+        return charge;
+    }
+
+    @Test
+    @DisplayName("승인만 되고 주문 결제가 끝나지 않은 직접 결제는 수단과 관계없이 토스 결제를 취소하고 ABORTED 로 닫는다")
+    void unfinishedDirectPaymentIsCanceled() {
+        Charge charge = directCharge();
+
+        boolean changed = support.recover(charge, done(charge, "카드"));
+
+        assertThat(changed).isTrue();
+        assertThat(charge.getStatus()).isEqualTo(ChargeStatus.ABORTED);
+        assertThat(charge.getFailureCode()).isEqualTo("RECOVERED_CANCELED");
+        assertThat(wallet.getBalance()).isZero();                       // 예치금으로 넣지 않는다
+        assertThat(ledger).isEmpty();
+        verify(toss).cancel(eq("pk-13"), anyString(), contains(charge.getPgOrderId()));
     }
 
     private static TossPaymentResponse done(Charge charge, String method) {

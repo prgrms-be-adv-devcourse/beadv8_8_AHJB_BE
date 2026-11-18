@@ -2,7 +2,11 @@ package com.jjinmak.back.payment.app.support;
 
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.back.payment.domain.Charge;
+import com.jjinmak.back.payment.domain.Payment;
+import com.jjinmak.back.payment.domain.PaymentPlan;
 import com.jjinmak.back.payment.domain.Wallet;
+import com.jjinmak.back.payment.domain.enums.PayMethod;
+import com.jjinmak.back.payment.domain.enums.PgMethod;
 import com.jjinmak.back.payment.domain.enums.WalletType;
 import com.jjinmak.back.payment.out.dto.TossPaymentResponse;
 import com.jjinmak.back.payment.out.toss.TossPaymentsClient;
@@ -58,6 +62,35 @@ class PgApprovalSupportTest {
 
     private void tossApprovesWith(String method) {
         when(toss.confirm(eq(PAYMENT_KEY), eq(charge.getPgOrderId()), eq(AMOUNT), anyString())).thenReturn(approved(method));
+    }
+
+    @Test
+    @DisplayName("직접 결제는 계좌이체를 골랐는데 카드로 승인돼도 취소하지 않고 승인 응답을 돌려준다")
+    void directPaymentAcceptsAnyMethod() {
+        Wallet wallet = new Wallet(null, WalletType.USER);
+        Payment payment = Payment.create(100L, 1L, wallet, AMOUNT);
+        payment.decide(new PaymentPlan(PayMethod.TRANSFER, 0L, 0L, AMOUNT, AMOUNT, 0L, false));
+        charge = Charge.requestDirectPayment(wallet, payment, PgMethod.TRANSFER);
+        ReflectionTestUtils.setField(charge, "id", CHARGE_ID);
+        tossApprovesWith("카드");
+
+        TossPaymentResponse response = support.approve(charge, PAYMENT_KEY);
+
+        assertThat(response.method()).isEqualTo("카드");
+        verify(toss, never()).cancel(anyString(), anyString(), anyString());
+        verify(failureRecorder, never()).recordAborted(anyLong(), any(), any());
+    }
+
+    @Test
+    @DisplayName("주문 환불의 부분 취소는 금액과 주문 단위 멱등 키로 토스에 요청한다")
+    void cancelPartiallyUsesOrderScopedKey() {
+        ReflectionTestUtils.setField(charge, "paymentKey", PAYMENT_KEY);
+
+        support.cancelPartially(charge, 1_001L, 7_000L, "주문 환불");
+        support.cancelPartially(charge, 1_002L, 3_000L, "주문 환불");
+
+        verify(toss).cancel(eq(PAYMENT_KEY), eq("주문 환불"), eq(7_000L), eq("order-refund-" + charge.getPgOrderId() + "-1001"));
+        verify(toss).cancel(eq(PAYMENT_KEY), eq("주문 환불"), eq(3_000L), eq("order-refund-" + charge.getPgOrderId() + "-1002"));
     }
 
     @Test

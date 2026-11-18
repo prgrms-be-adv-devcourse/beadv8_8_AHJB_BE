@@ -21,7 +21,7 @@ import static com.jjinmak.back.payment.exception.PaymentErrorCode.*;
  * 토스페이먼츠 코어 API 어댑터. 우리가 쓰는 다섯 개만 감싼다.
  *
  *  - confirm          POST /v1/payments/confirm
- *  - cancel           POST /v1/payments/{paymentKey}/cancel      (전액 취소만)
+ *  - cancel           POST /v1/payments/{paymentKey}/cancel      (전액 취소, 금액을 주면 부분 취소)
  *  - findByPaymentKey GET  /v1/payments/{paymentKey}
  *  - findByOrderId    GET  /v1/payments/orders/{orderId}
  *  - findTransactions GET  /v1/transactions                       (대사용)
@@ -55,6 +55,16 @@ public class TossPaymentsClient {
     // 전액 취소
     public TossPaymentResponse cancel(String paymentKey, String reason, String idempotencyKey) {
         TossCancelRequest body = new TossCancelRequest(reason);
+        return call(() -> tossPaymentsRestClient.post()
+                .uri("/v1/payments/{paymentKey}/cancel", paymentKey)
+                .header(IDEMPOTENCY_HEADER, idempotencyKey)
+                .body(body)
+                .exchange((req, res) -> readOrThrow(res, TossPaymentResponse.class, PG_CANCEL_FAILED)));
+    }
+
+    // 부분 취소. cancelAmount 만큼만 취소하고 나머지는 승인 상태로 남는다 (전부 취소되면 토스 상태가 CANCELED, 아니면 PARTIAL_CANCELED)
+    public TossPaymentResponse cancel(String paymentKey, String reason, long cancelAmount, String idempotencyKey) {
+        TossCancelRequest body = new TossCancelRequest(reason, cancelAmount);
         return call(() -> tossPaymentsRestClient.post()
                 .uri("/v1/payments/{paymentKey}/cancel", paymentKey)
                 .header(IDEMPOTENCY_HEADER, idempotencyKey)
