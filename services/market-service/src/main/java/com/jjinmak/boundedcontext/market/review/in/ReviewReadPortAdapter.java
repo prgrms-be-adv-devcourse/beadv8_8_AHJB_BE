@@ -1,6 +1,6 @@
-package com.jjinmak.boundedcontext.product.review.in;
+package com.jjinmak.boundedcontext.market.review.in;
 
-import com.jjinmak.boundedcontext.product.review.app.ReviewReadUseCase;
+import com.jjinmak.boundedcontext.market.review.app.ReviewReadUseCase;
 import com.jjinmak.contracts.review.dto.SellerRatingDto;
 import com.jjinmak.contracts.review.port.ReviewReadPort;
 import lombok.RequiredArgsConstructor;

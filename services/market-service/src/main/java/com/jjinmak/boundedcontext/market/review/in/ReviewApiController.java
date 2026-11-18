@@ -1,7 +1,7 @@
-package com.jjinmak.boundedcontext.product.review.in;
+package com.jjinmak.boundedcontext.market.review.in;
 
-import com.jjinmak.boundedcontext.product.review.app.ReviewFacade;
-import com.jjinmak.boundedcontext.product.review.in.dto.*;
+import com.jjinmak.boundedcontext.market.review.app.ReviewFacade;
+import com.jjinmak.boundedcontext.market.review.in.dto.*;
 import com.jjinmak.common.rsData.RsData;
 import com.jjinmak.common.security.AuthPrincipal;
 import jakarta.validation.Valid;

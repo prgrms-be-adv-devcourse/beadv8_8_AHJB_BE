@@ -1,4 +1,4 @@
-package com.jjinmak.boundedcontext.product.review.domain;
+package com.jjinmak.boundedcontext.market.review.domain;
 
 import com.jjinmak.common.exception.ErrorCode;
 import lombok.Getter;

@@ -1,6 +1,6 @@
-package com.jjinmak.boundedcontext.product.review.out;
+package com.jjinmak.boundedcontext.market.review.out;
 
-import com.jjinmak.boundedcontext.product.review.domain.Review;
+import com.jjinmak.boundedcontext.market.review.domain.Review;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;

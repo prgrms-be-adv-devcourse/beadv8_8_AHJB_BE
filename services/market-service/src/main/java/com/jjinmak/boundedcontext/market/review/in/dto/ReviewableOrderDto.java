@@ -1,6 +1,6 @@
-package com.jjinmak.boundedcontext.product.review.in.dto;
+package com.jjinmak.boundedcontext.market.review.in.dto;
 
-import com.jjinmak.boundedcontext.product.review.domain.ReviewableOrder;
+import com.jjinmak.boundedcontext.market.review.domain.ReviewableOrder;
 
 import java.time.LocalDateTime;
 

@@ -1,4 +1,4 @@
-package com.jjinmak.boundedcontext.product.review.in.dto;
+package com.jjinmak.boundedcontext.market.review.in.dto;
 
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;

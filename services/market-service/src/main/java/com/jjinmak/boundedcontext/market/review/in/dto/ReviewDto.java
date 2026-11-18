@@ -1,7 +1,7 @@
-package com.jjinmak.boundedcontext.product.review.in.dto;
+package com.jjinmak.boundedcontext.market.review.in.dto;
 
-import com.jjinmak.boundedcontext.product.review.domain.Review;
-import com.jjinmak.boundedcontext.product.review.domain.ReviewableOrder;
+import com.jjinmak.boundedcontext.market.review.domain.Review;
+import com.jjinmak.boundedcontext.market.review.domain.ReviewableOrder;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

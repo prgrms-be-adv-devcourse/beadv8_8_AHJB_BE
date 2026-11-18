@@ -1,7 +1,7 @@
-package com.jjinmak.boundedcontext.product.review.app;
+package com.jjinmak.boundedcontext.market.review.app;
 
-import com.jjinmak.boundedcontext.product.review.in.dto.ReviewableOrderDto;
-import com.jjinmak.boundedcontext.product.review.out.ReviewableOrderRepository;
+import com.jjinmak.boundedcontext.market.review.in.dto.ReviewableOrderDto;
+import com.jjinmak.boundedcontext.market.review.out.ReviewableOrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

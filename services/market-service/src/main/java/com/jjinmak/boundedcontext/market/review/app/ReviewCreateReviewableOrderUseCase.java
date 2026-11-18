@@ -1,9 +1,9 @@
-package com.jjinmak.boundedcontext.product.review.app;
+package com.jjinmak.boundedcontext.market.review.app;
 
 import com.jjinmak.boundedcontext.market.shared.domain.MarketMember;
 import com.jjinmak.boundedcontext.market.shared.out.MarketMemberRepository;
-import com.jjinmak.boundedcontext.product.review.domain.ReviewableOrder;
-import com.jjinmak.boundedcontext.product.review.out.ReviewableOrderRepository;
+import com.jjinmak.boundedcontext.market.review.domain.ReviewableOrder;
+import com.jjinmak.boundedcontext.market.review.out.ReviewableOrderRepository;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.exception.CommonErrorCode;
 import com.jjinmak.contracts.order.event.OrderConfirmPurchaseEvent;

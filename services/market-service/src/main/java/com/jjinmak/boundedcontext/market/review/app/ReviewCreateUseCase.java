@@ -1,12 +1,12 @@
-package com.jjinmak.boundedcontext.product.review.app;
+package com.jjinmak.boundedcontext.market.review.app;
 
-import com.jjinmak.boundedcontext.product.review.domain.Review;
-import com.jjinmak.boundedcontext.product.review.domain.ReviewErrorCode;
-import com.jjinmak.boundedcontext.product.review.domain.ReviewableOrder;
-import com.jjinmak.boundedcontext.product.review.in.dto.ReviewCreateRequestDto;
-import com.jjinmak.boundedcontext.product.review.in.dto.ReviewDto;
-import com.jjinmak.boundedcontext.product.review.out.ReviewRepository;
-import com.jjinmak.boundedcontext.product.review.out.ReviewableOrderRepository;
+import com.jjinmak.boundedcontext.market.review.domain.Review;
+import com.jjinmak.boundedcontext.market.review.domain.ReviewErrorCode;
+import com.jjinmak.boundedcontext.market.review.domain.ReviewableOrder;
+import com.jjinmak.boundedcontext.market.review.in.dto.ReviewCreateRequestDto;
+import com.jjinmak.boundedcontext.market.review.in.dto.ReviewDto;
+import com.jjinmak.boundedcontext.market.review.out.ReviewRepository;
+import com.jjinmak.boundedcontext.market.review.out.ReviewableOrderRepository;
 import com.jjinmak.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

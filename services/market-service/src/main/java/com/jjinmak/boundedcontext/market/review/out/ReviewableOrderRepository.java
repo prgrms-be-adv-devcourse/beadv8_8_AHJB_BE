@@ -1,6 +1,6 @@
-package com.jjinmak.boundedcontext.product.review.out;
+package com.jjinmak.boundedcontext.market.review.out;
 
-import com.jjinmak.boundedcontext.product.review.domain.ReviewableOrder;
+import com.jjinmak.boundedcontext.market.review.domain.ReviewableOrder;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 

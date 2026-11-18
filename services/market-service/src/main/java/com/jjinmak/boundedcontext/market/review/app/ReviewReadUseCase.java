@@ -1,9 +1,9 @@
-package com.jjinmak.boundedcontext.product.review.app;
+package com.jjinmak.boundedcontext.market.review.app;
 
-import com.jjinmak.boundedcontext.product.review.domain.Review;
-import com.jjinmak.boundedcontext.product.review.in.dto.ReviewDto;
-import com.jjinmak.boundedcontext.product.review.in.dto.ReviewListResponseDto;
-import com.jjinmak.boundedcontext.product.review.out.ReviewRepository;
+import com.jjinmak.boundedcontext.market.review.domain.Review;
+import com.jjinmak.boundedcontext.market.review.in.dto.ReviewDto;
+import com.jjinmak.boundedcontext.market.review.in.dto.ReviewListResponseDto;
+import com.jjinmak.boundedcontext.market.review.out.ReviewRepository;
 import com.jjinmak.contracts.review.dto.SellerRatingDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;

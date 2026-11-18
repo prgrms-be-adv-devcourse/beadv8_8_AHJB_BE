@@ -1,6 +1,6 @@
-package com.jjinmak.boundedcontext.product.review.in;
+package com.jjinmak.boundedcontext.market.review.in;
 
-import com.jjinmak.boundedcontext.product.review.app.ReviewFacade;
+import com.jjinmak.boundedcontext.market.review.app.ReviewFacade;
 import com.jjinmak.contracts.order.event.OrderConfirmPurchaseEvent;
 import com.jjinmak.contracts.order.event.OrderEventTopics;
 import lombok.RequiredArgsConstructor;

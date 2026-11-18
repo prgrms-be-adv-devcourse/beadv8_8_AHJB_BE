@@ -1,6 +1,6 @@
-package com.jjinmak.boundedcontext.product.review.app;
+package com.jjinmak.boundedcontext.market.review.app;
 
-import com.jjinmak.boundedcontext.product.review.in.dto.*;
+import com.jjinmak.boundedcontext.market.review.in.dto.*;
 import com.jjinmak.contracts.order.event.OrderConfirmPurchaseEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

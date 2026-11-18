@@ -1,4 +1,4 @@
-package com.jjinmak.boundedcontext.product.review.in.dto;
+package com.jjinmak.boundedcontext.market.review.in.dto;
 
 import java.util.List;
 
