@@ -10,7 +10,6 @@ import com.jjinmak.boundedcontext.product.product.in.dto.ProductMyListResponseDt
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductUpcomingListResponseDto;
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductUpdateRequestDto;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
-import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
 import com.jjinmak.contracts.member.dto.MemberDto;
 import com.jjinmak.contracts.product.dto.ProductSummaryDto;
@@ -82,17 +81,6 @@ public class ProductFacade {
     }
 
     @Transactional(readOnly = true)
-    public List<Long> findAuctionResendTargetIds(LocalDateTime now){
-        return productRequestAuctionUseCase.findResendTargetIds(now);
-    }
-
-    // 이벤트는 커밋 후 전송되므로 저장할 것이 없어도 트랜잭션 안에서 실행한다.
-    @Transactional
-    public void resendAuction(Long productId){
-        productRequestAuctionUseCase.resendAuction(productId);
-    }
-
-    @Transactional(readOnly = true)
     public ProductSummaryDto getProductSummary(Long productId){
         return productReadSummaryUseCase.getProductSummary(productId);
     }
@@ -115,11 +103,6 @@ public class ProductFacade {
     @Transactional(readOnly = true)
     public ProductDetailDto readDetail(Long memberId, Long productId){
         return productReadDetailUseCase.readDetail(memberId, productId);
-    }
-
-    @Transactional
-    public void startAuction(AuctionStartedEvent event){
-        productStartAuctionUseCase.startAuction(event);
     }
 
     @Transactional

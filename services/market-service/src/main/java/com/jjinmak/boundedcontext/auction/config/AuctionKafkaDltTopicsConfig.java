@@ -7,7 +7,6 @@ import org.springframework.kafka.core.KafkaAdmin;
 
 import static com.jjinmak.contracts.member.event.MemberEventTopics.MEMBER_CREATED;
 import static com.jjinmak.contracts.order.event.OrderEventTopics.*;
-import static com.jjinmak.contracts.product.event.ProductEventTopics.PRODUCT_REGISTERED;
 
 @Configuration
 public class AuctionKafkaDltTopicsConfig {
@@ -17,7 +16,6 @@ public class AuctionKafkaDltTopicsConfig {
     @Bean
     KafkaAdmin.NewTopics auctionDltTopics() {
         return new KafkaAdmin.NewTopics(
-                TopicBuilder.name(PRODUCT_REGISTERED + DLT).build(),
                 TopicBuilder.name(MEMBER_CREATED + DLT).build(),
                 TopicBuilder.name(ORDER_PAYMENT_SUCCEED + DLT).build(),
                 TopicBuilder.name(CART_PAYMENT_DEFAULT + DLT).build(),

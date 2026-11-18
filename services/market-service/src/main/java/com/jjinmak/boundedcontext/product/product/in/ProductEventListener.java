@@ -3,7 +3,6 @@ package com.jjinmak.boundedcontext.product.product.in;
 import com.jjinmak.boundedcontext.product.product.app.ProductFacade;
 import com.jjinmak.contracts.auction.event.AuctionEventTopics;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
-import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
 import com.jjinmak.contracts.member.event.MemberCreatedEvent;
 import com.jjinmak.contracts.member.event.MemberEventTopics;
@@ -22,12 +21,6 @@ public class ProductEventListener {
     @KafkaListener(topics = MemberEventTopics.MEMBER_CREATED, groupId = "product")
     public void handle(MemberCreatedEvent event){
         productFacade.syncMember(event.member());
-    }
-
-    // 경매가 시작되면 상품에 현재 회차의 경매 id와 진행 중 상태를 기록한다.
-    @KafkaListener(topics = AuctionEventTopics.AUCTION_STARTED, groupId = "product")
-    public void handle(AuctionStartedEvent event){
-        productFacade.startAuction(event);
     }
 
     // 낙찰되면 상품의 경매 상태를 낙찰로 바꾼다.

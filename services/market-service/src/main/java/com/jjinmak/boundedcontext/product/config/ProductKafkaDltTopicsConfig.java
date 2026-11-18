@@ -23,7 +23,6 @@ public class ProductKafkaDltTopicsConfig {
 
                 // 구독: 상품·후기가 처리에 실패하면 여기로 간다
                 TopicBuilder.name(MemberEventTopics.MEMBER_CREATED + "-dlt").build(),
-                TopicBuilder.name(AuctionEventTopics.AUCTION_STARTED + "-dlt").build(),
                 TopicBuilder.name(AuctionEventTopics.AUCTION_WON + "-dlt").build(),
                 TopicBuilder.name(AuctionEventTopics.AUCTION_FAILED + "-dlt").build(),
                 TopicBuilder.name(OrderEventTopics.ORDER_CONFIRM_PURCHASE + "-dlt").build()
