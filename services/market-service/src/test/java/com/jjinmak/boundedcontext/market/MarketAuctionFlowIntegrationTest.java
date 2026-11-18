@@ -10,7 +10,6 @@ import com.jjinmak.boundedcontext.market.app.MarketFacade;
 import com.jjinmak.boundedcontext.market.in.dto.MarketRelistResponseDto;
 import com.jjinmak.boundedcontext.product.product.domain.AuctionDuration;
 import com.jjinmak.boundedcontext.product.product.domain.Product;
-import com.jjinmak.boundedcontext.product.product.domain.ProductAuctionStatus;
 import com.jjinmak.boundedcontext.product.product.domain.ProductAuctionTerms;
 import com.jjinmak.boundedcontext.product.product.domain.ProductMember;
 import com.jjinmak.boundedcontext.product.product.domain.ShippingFeeType;
@@ -74,16 +73,15 @@ class MarketAuctionFlowIntegrationTest extends AuctionIntegrationTestSupport {
         Product opened = productRepository.findById(productId).orElseThrow();
         Long firstAuctionId = opened.getCurrentAuctionId();
         assertThat(firstAuctionId).isNotNull();
-        assertThat(opened.getAuctionStatus()).isEqualTo(ProductAuctionStatus.IN_PROGRESS);
+        assertThat(auctionRepository.findById(firstAuctionId).orElseThrow().getStatus()).isEqualTo(AuctionStatus.IN_PROGRESS);
 
         유찰시킨다(firstAuctionId);
         MarketRelistResponseDto response = marketFacade.relist(SELLER_ID, productId, RELIST_AT);
 
         assertThat(response.round()).isEqualTo(2);
         Product relisted = productRepository.findById(productId).orElseThrow();
-        assertThat(relisted.getAuctionRound()).isEqualTo(2);
+        assertThat(relisted.getRound()).isEqualTo(2);
         assertThat(relisted.getCurrentAuctionId()).isEqualTo(response.auctionId());
-        assertThat(relisted.getAuctionStatus()).isEqualTo(ProductAuctionStatus.IN_PROGRESS);
 
         List<Auction> auctions = auctionRepository.findAll();
         assertThat(auctions).extracting(Auction::getRound).containsExactlyInAnyOrder(1, 2);
@@ -104,7 +102,7 @@ class MarketAuctionFlowIntegrationTest extends AuctionIntegrationTestSupport {
 
         // 상품의 회차 변경까지 롤백된다
         Product product = productRepository.findById(productId).orElseThrow();
-        assertThat(product.getAuctionRound()).isEqualTo(1);
+        assertThat(product.getRound()).isEqualTo(1);
         assertThat(product.getCurrentAuctionId()).isEqualTo(firstAuctionId);
         assertThat(auctionRepository.count()).isEqualTo(1);
     }

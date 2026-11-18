@@ -1,9 +1,6 @@
 package com.jjinmak.boundedcontext.product.product.in;
 
 import com.jjinmak.boundedcontext.product.product.app.ProductFacade;
-import com.jjinmak.contracts.auction.event.AuctionEventTopics;
-import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
-import com.jjinmak.contracts.auction.event.AuctionWonEvent;
 import com.jjinmak.contracts.member.event.MemberCreatedEvent;
 import com.jjinmak.contracts.member.event.MemberEventTopics;
 import lombok.RequiredArgsConstructor;
@@ -21,17 +18,5 @@ public class ProductEventListener {
     @KafkaListener(topics = MemberEventTopics.MEMBER_CREATED, groupId = "product")
     public void handle(MemberCreatedEvent event){
         productFacade.syncMember(event.member());
-    }
-
-    // 낙찰되면 상품의 경매 상태를 낙찰로 바꾼다.
-    @KafkaListener(topics = AuctionEventTopics.AUCTION_WON, groupId = "product")
-    public void handle(AuctionWonEvent event){
-        productFacade.markAuctionSold(event);
-    }
-
-    // 무산되면(유찰·미결제·환불) 상품의 경매 상태를 무산으로 바꾸고 사유를 남긴다.
-    @KafkaListener(topics = AuctionEventTopics.AUCTION_FAILED, groupId = "product")
-    public void handle(AuctionFailedEvent event){
-        productFacade.markAuctionFailed(event);
     }
 }

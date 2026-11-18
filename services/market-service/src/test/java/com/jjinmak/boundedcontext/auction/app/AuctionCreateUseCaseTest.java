@@ -45,11 +45,10 @@ class AuctionCreateUseCaseTest {
         given(auctionRepository.save(any(Auction.class))).willAnswer(inv -> inv.getArgument(0));
         AuctionCreateDto request = 생성_요청();
 
-        AuctionCreateResultDto result = auctionCreateUseCase.createAuction(request);
+        auctionCreateUseCase.createAuction(request);
 
         then(auctionRepository).should().save(any(Auction.class));
         then(auctionEventPublisher).should().publishStarted(any(EnglishAuction.class));
-        assertThat(result.endAt()).isEqualTo(request.endAt());
     }
 
     @Test
@@ -63,7 +62,7 @@ class AuctionCreateUseCaseTest {
 
         then(auctionRepository).should(never()).save(any());
         then(auctionEventPublisher).should(never()).publishStarted(any());
-        assertThat(result.endAt()).isEqualTo(existing.getEndAt());
+        assertThat(result.auctionId()).isEqualTo(existing.getId());
     }
 
     @Test
@@ -89,7 +88,7 @@ class AuctionCreateUseCaseTest {
         given(auctionRepository.findByProductIdAndRound(PRODUCT_ID, 1)).willReturn(Optional.empty());
         given(auctionRepository.save(any(Auction.class))).willAnswer(inv -> inv.getArgument(0));
 
-        AuctionCreateResultDto result = auctionCreateUseCase.createAuction(dto);
+        auctionCreateUseCase.createAuction(dto);
 
         ArgumentCaptor<Auction> captor = ArgumentCaptor.forClass(Auction.class);
         then(auctionRepository).should().save(captor.capture());
@@ -97,6 +96,5 @@ class AuctionCreateUseCaseTest {
         assertThat(captor.getValue().getStartAt()).isEqualTo(startAt);
         assertThat(captor.getValue().getEndAt()).isEqualTo(startAt.plusMinutes(26));
         then(auctionEventPublisher).should().publishStarted(captor.getValue());
-        assertThat(result.endAt()).isNull();   // 네덜란드식은 시작 이벤트처럼 종료 시각을 넘기지 않는다
     }
 }

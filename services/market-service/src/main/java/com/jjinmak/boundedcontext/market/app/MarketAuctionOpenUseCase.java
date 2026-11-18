@@ -23,11 +23,11 @@ public class MarketAuctionOpenUseCase {
     }
 
     // 한 트랜잭션에서 처리한다. 어느 단계든 실패하면 모두 롤백되고 다음 주기에 다시 시도된다.
-    // 1) 상품: 요청 표시, 판매 조건 확정  2) 경매: 생성  3) 상품: 경매 id와 진행 중 상태 기록
+    // 1) 상품: 요청 표시, 판매 조건 확정  2) 경매: 생성  3) 상품: 경매 id 기록
     public void openAuction(Long productId, LocalDateTime now) {
         productFacade.prepareAuctionOpen(productId, now).ifPresent(open -> {
             AuctionCreateResultDto created = auctionFacade.createAuction(MarketAuctionRequests.from(open));
-            productFacade.startAuction(productId, created.auctionId(), created.endAt());
+            productFacade.startAuction(productId, created.auctionId());
         });
     }
 }

@@ -22,13 +22,13 @@ public class MarketRelistUseCase {
     // 한 트랜잭션에서 처리한다. 어느 단계든 실패하면 모두 롤백된다.
     // 1) 상품: 본인·방식 확인, 회차 +1, 새 회차 판매 조건 확정
     // 2) 경매: 이전 회차가 다시 열 수 있는 상태인지 확인 (유찰·미결제 무효)
-    // 3) 경매: 새 회차 생성  4) 상품: 경매 id와 진행 중 상태 기록
+    // 3) 경매: 새 회차 생성  4) 상품: 경매 id 기록
     public MarketRelistResponseDto relist(Long sellerId, Long productId, LocalDateTime now) {
         ProductRelistDto relist = productFacade.relist(sellerId, productId, now);
         auctionFacade.validateRelistable(relist.previousAuctionId());
 
         AuctionCreateResultDto created = auctionFacade.createAuction(MarketAuctionRequests.from(relist.open()));
-        productFacade.startAuction(productId, created.auctionId(), created.endAt());
+        productFacade.startAuction(productId, created.auctionId());
 
         return new MarketRelistResponseDto(created.auctionId(), relist.open().round());
     }

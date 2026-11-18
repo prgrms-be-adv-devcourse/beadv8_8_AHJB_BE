@@ -51,7 +51,7 @@ class MarketRelistUseCaseTest {
     @Test
     void 이전_회차를_확인하고_새_회차_경매를_바로_열어_경매_id와_회차를_돌려준다() {
         상품이_2회차로_넘어간다();
-        given(auctionFacade.createAuction(any())).willReturn(new AuctionCreateResultDto(NEW_AUCTION_ID, END_AT));
+        given(auctionFacade.createAuction(any())).willReturn(new AuctionCreateResultDto(NEW_AUCTION_ID));
 
         MarketRelistResponseDto response = useCase.relist(SELLER_ID, PRODUCT_ID, NOW);
 
@@ -61,7 +61,7 @@ class MarketRelistUseCaseTest {
         assertThat(captor.getValue().round()).isEqualTo(2);
         assertThat(captor.getValue().startAt()).isEqualTo(NOW);
         assertThat(captor.getValue().endAt()).isEqualTo(END_AT);
-        then(productFacade).should().startAuction(PRODUCT_ID, NEW_AUCTION_ID, END_AT);
+        then(productFacade).should().startAuction(PRODUCT_ID, NEW_AUCTION_ID);
         assertThat(response).isEqualTo(new MarketRelistResponseDto(NEW_AUCTION_ID, 2));
     }
 
@@ -75,6 +75,6 @@ class MarketRelistUseCaseTest {
                 .extracting("errorCode").isEqualTo(AuctionErrorCode.AUCTION_NOT_RELISTABLE);
 
         then(auctionFacade).should(never()).createAuction(any());
-        then(productFacade).should(never()).startAuction(any(), any(), any());
+        then(productFacade).should(never()).startAuction(any(), any());
     }
 }

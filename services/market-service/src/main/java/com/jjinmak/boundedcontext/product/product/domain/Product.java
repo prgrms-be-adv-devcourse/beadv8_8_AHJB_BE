@@ -80,21 +80,13 @@ public class Product extends BaseIdAndTime {
     // 경매 컨텍스트로 경매 생성을 요청한 시각 (null이면 아직 요청 전)
     private LocalDateTime auctionRequestedAt;
 
-    // 경매 회차 (재등록 시 증가)
+    // 현재 경매 회차 (1부터, 재등록하면 1씩 늘어난다)
     @Column(nullable = false)
     private int round;
 
     // 현재 회차의 경매 id. 경매가 생성되면 채워진다. (null이면 아직 경매 시작 전)
+    // 경매 상태·결과는 경매 컨텍스트에만 있다. 상품 화면은 ProductAuctionStateReader로 읽는다.
     private Long currentAuctionId;
-
-    // 현재 회차 (1부터). 재등록하면 1씩 늘어난다.
-    @Column(nullable = false)
-    private int auctionRound = 1;
-
-    // 경매 이벤트로 복제한 경매 상태와 결과 ('내 상품' 목록용)
-    // 컬럼 추가 전 상품은 컬럼이 모두 null이라 JPA가 null로 채운다. → auctionState() 로 접근한다.
-    @Embedded
-    private ProductAuctionState auctionState;
 
     private LocalDateTime deletedAt;
 
@@ -122,7 +114,6 @@ public class Product extends BaseIdAndTime {
         this.auctionTerms = auctionTerms;
         this.auctionScheduledAt = auctionScheduledAt;
         this.round = 1;
-        this.auctionState = ProductAuctionState.scheduled();
     }
 
     // 등록 시각 기준 경매 시작 예정 시각 (등록 전 경매 조건 검증에도 사용)
@@ -209,66 +200,21 @@ public class Product extends BaseIdAndTime {
         // 직접 지정한 종료 시각(CUSTOM)도 이전 회차의 기간 길이로 바꿔 쓴다.
         Duration auctionLength = Duration.between(auctionScheduledAt, auctionTerms.resolveEndAt(auctionScheduledAt));
 
-        this.auctionRound++;
+        this.round++;
         this.auctionScheduledAt = now;
         this.auctionRequestedAt = now;
         this.currentAuctionId = null;
-        this.auctionState = ProductAuctionState.scheduled();
         return now.plus(auctionLength);
     }
 
-    // 경매가 생성되면 현재 회차의 경매 id와 종료 시각을 기록한다.
-    public void startAuction(Long auctionId, LocalDateTime endAt) {
-        ProductAuctionState state = auctionState(); // currentAuctionId를 바꾸기 전에 기존 상태를 확정한다
+    // 경매가 생성되면 현재 회차의 경매 id를 기록한다.
+    public void startAuction(Long auctionId) {
         this.currentAuctionId = auctionId;
-        state.start(endAt);
-    }
-
-    public void markAuctionSold(Long auctionId) {
-        if (isOtherAuction(auctionId)) {
-            return;
-        }
-        auctionState().markSold();
-    }
-
-    public void markAuctionFailed(Long auctionId, ProductAuctionFailureReason reason) {
-        if (isOtherAuction(auctionId)) {
-            return;
-        }
-        auctionState().markFailed(reason);
-    }
-
-    // 경매 상태. 컬럼 추가 전 상품은 경매 id 유무로 추정한다.
-    public ProductAuctionStatus getAuctionStatus() {
-        if (auctionState == null || auctionState.getStatus() == null) {
-            return currentAuctionId == null ? ProductAuctionStatus.SCHEDULED : ProductAuctionStatus.IN_PROGRESS;
-        }
-        return auctionState.getStatus();
-    }
-
-    public LocalDateTime getAuctionEndAt() {
-        return auctionState == null ? null : auctionState.getEndAt();
-    }
-
-    public ProductAuctionFailureReason getAuctionFailureReason() {
-        return auctionState == null ? null : auctionState.getFailureReason();
     }
 
     // 경매 요청 전이고 시작 예정 시각 전이면 판매자가 수정/삭제할 수 있다.
     public boolean isEditable(LocalDateTime now) {
         return auctionRequestedAt == null && now.isBefore(auctionScheduledAt);
-    }
-
-    // 다른 경매의 이벤트면 무시한다. (경매 id가 아직 없으면 시작 이벤트 처리 전이라 받아들인다)
-    private boolean isOtherAuction(Long auctionId) {
-        return currentAuctionId != null && !currentAuctionId.equals(auctionId);
-    }
-
-    private ProductAuctionState auctionState() {
-        if (auctionState == null || auctionState.getStatus() == null) {
-            auctionState = ProductAuctionState.restore(getAuctionStatus());
-        }
-        return auctionState;
     }
 
     public boolean isSoldBy(Long memberId) {

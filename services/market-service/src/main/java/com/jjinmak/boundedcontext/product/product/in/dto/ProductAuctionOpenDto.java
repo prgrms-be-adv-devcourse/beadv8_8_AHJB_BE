@@ -36,7 +36,7 @@ public record ProductAuctionOpenDto(
 
         return new ProductAuctionOpenDto(
                 product.getId(),
-                product.getAuctionRound(),
+                product.getRound(),
                 product.getSeller().getId(),
                 terms.getAuctionType(),
                 terms.getStartPrice(),
