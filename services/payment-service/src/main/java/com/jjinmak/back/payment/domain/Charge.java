@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
+import static com.jjinmak.back.payment.domain.enums.ChargePurpose.DIRECT_PAYMENT;
 import static com.jjinmak.back.payment.domain.enums.ChargePurpose.FOR_PAYMENT;
 import static com.jjinmak.back.payment.domain.enums.ChargePurpose.MANUAL;
 import static com.jjinmak.back.payment.domain.enums.ChargeStatus.*;
@@ -67,8 +68,21 @@ public class Charge extends BaseIdAndTime {
     @Column(length = 200)
     private String paymentKey;
 
+    // 결제창을 열 때 쓰는 결제수단. 직접 결제는 사용자가 고른 수단, 예치금 충전은 계좌이체.
+    // 이 컬럼이 생기기 전의 충전 건은 null 이며 용도(purpose)의 기본 수단을 쓴다
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(length = 20)
+    private PgMethod requestedMethod;
+
+    // 토스가 실제로 승인한 결제수단 (승인 응답의 method)
     @Column(length = 30)
     private String method;
+
+    // 직접 결제 건에서 지금까지 토스로 취소(환불)한 금액의 합. 주문 묶음 중 일부 주문만 환불하면 그 주문 몫만 부분 취소한다
+    @ColumnDefault("0")
+    @Column(nullable = false)
+    private long canceledAmount;
 
     @Column(length = 500)
     private String receiptUrl;
@@ -100,11 +114,11 @@ public class Charge extends BaseIdAndTime {
     private String failureMessage;
 
 
-    private Charge(Wallet wallet, Long holderId, long amount, ChargePurpose purpose, Payment payment) {
+    private Charge(Wallet wallet, Long holderId, long amount, ChargePurpose purpose, Payment payment, PgMethod requestedMethod) {
         if (amount <= 0) {
             throw new BusinessException(INVALID_CHARGE_AMOUNT);
         }
-        if (purpose == FOR_PAYMENT && payment == null) {
+        if (purpose.isBoundToPayment() && payment == null) {
             throw new BusinessException(CHARGE_PAYMENT_REQUIRED);
         }
         this.wallet = wallet;
@@ -112,6 +126,8 @@ public class Charge extends BaseIdAndTime {
         this.amount = amount;
         this.purpose = purpose;
         this.payment = payment;
+        this.requestedMethod = requestedMethod;
+        this.canceledAmount = 0L;
         this.pgOrderId = generatePgOrderId();
         this.status = REQUESTED;
         this.remainingAmount = 0L;
@@ -119,12 +135,20 @@ public class Charge extends BaseIdAndTime {
 
     // 사용자가 직접 예치금을 충전
     public static Charge requestManual(Wallet wallet, Long holderId, long amount) {
-        return new Charge(wallet, holderId, amount, MANUAL, null);
+        return new Charge(wallet, holderId, amount, MANUAL, null, MANUAL.requiredMethod());
     }
 
     // 주문 결제 중 부족분만 충전. 금액은 Payment.chargeAmount 를 그대로 쓴다
     public static Charge requestForPayment(Wallet wallet, Payment payment) {
-        return new Charge(wallet, payment.getHolderId(), payment.getChargeAmount(), FOR_PAYMENT, payment);
+        return new Charge(wallet, payment.getHolderId(), payment.getChargeAmount(), FOR_PAYMENT, payment, FOR_PAYMENT.requiredMethod());
+    }
+
+    // 주문 대금을 결제창에서 직접 결제. 금액은 Payment.chargeAmount(= pgAmount), 결제수단은 사용자가 고른 수단
+    public static Charge requestDirectPayment(Wallet wallet, Payment payment, PgMethod method) {
+        if (method == null) {
+            throw new BusinessException(PAYMENT_METHOD_NOT_SUPPORTED);
+        }
+        return new Charge(wallet, payment.getHolderId(), payment.getChargeAmount(), DIRECT_PAYMENT, payment, method);
     }
 
     // 토스 orderId 규칙(6~64자, 영문·숫자·-·_)에 맞는 유일한 값. "CHG-" + 32자 hex = 36자
@@ -141,11 +165,14 @@ public class Charge extends BaseIdAndTime {
 
     // 결제창을 열 때 써야 하는 결제수단
     public PgMethod getRequiredMethod() {
-        return purpose.requiredMethod();
+        return requestedMethod != null ? requestedMethod : purpose.requiredMethod();
     }
 
     // 토스 승인 응답의 결제수단이 이 충전에 허용된 수단인지
+    // 예치금 충전은 계좌이체만 받는다. 직접 결제는 수단을 가리지 않고 받고, 실제 수단을 기록해 둔다
+    // (계좌이체를 골랐는데 카드로 결제했더라도 거절하지 않는다. 적립은 실제 수단 기준으로 계산한다)
     public boolean allowsMethod(String tossMethod) {
+        if (isDirectPayment()) return true;
         return getRequiredMethod().matches(tossMethod);
     }
 
@@ -168,6 +195,56 @@ public class Charge extends BaseIdAndTime {
         this.receiptUrl = receiptUrl;
         this.status = CHARGED;
         this.remainingAmount = this.amount;
+    }
+
+    // 직접 결제 승인 완료. 낸 돈이 예치금으로 들어오지 않고 바로 주문 대금(ESCROW)이 되므로
+    // CHARGED 를 거치지 않고 USED 로 가며, 미사용 금액(remainingAmount)은 0 이다. 같은 결제 키로 다시 오면 아무 것도 하지 않는다 (멱등)
+    public void markPaidDirectly(String paymentKey, LocalDateTime approvedAt, LocalDateTime paidAt,
+                                 String method, String receiptUrl) {
+        if (!isDirectPayment()) {
+            throw new BusinessException(INVALID_CHARGE_STATUS);
+        }
+        if (status != REQUESTED) {
+            if (Objects.equals(paymentKey, this.paymentKey)) return;
+            throw new BusinessException(INVALID_CHARGE_STATUS);
+        }
+        this.paymentKey = paymentKey;
+        this.approvedAt = approvedAt;
+        this.chargedAt = paidAt;
+        this.usedAt = paidAt;
+        this.method = method;
+        this.receiptUrl = receiptUrl;
+        this.status = USED;
+        this.remainingAmount = 0L;
+    }
+
+    // 직접 결제 건의 일부(주문 1건 몫)를 토스로 취소한 뒤 호출. 취소 누계가 결제 금액에 이르면 CANCELED 가 된다
+    public void cancelPartially(long cancelAmount, LocalDateTime canceledAt) {
+        if (!isDirectPayment() || status != USED) {
+            throw new BusinessException(CHARGE_NOT_CANCELABLE);
+        }
+        if (cancelAmount <= 0 || canceledAmount + cancelAmount > amount) {
+            throw new BusinessException(INVALID_CANCEL_AMOUNT);
+        }
+        this.canceledAmount += cancelAmount;
+        if (this.canceledAmount == amount) {
+            this.status = CANCELED;
+            this.canceledAt = canceledAt;
+        }
+    }
+
+    // 이 건이 연결된 결제(Payment)의 지금 결제 계획에 맞는 건인지 (금액 · 충전인지 직접 결제인지 · 직접 결제면 고른 수단).
+    // 사용자가 결제창을 닫고 수단이나 포인트를 바꿔 다시 주문하면 계획이 바뀌므로, 예전 계획으로 만든 건은 승인하지 않는다
+    public boolean matchesPaymentPlan() {
+        if (payment == null) return false;
+        if (amount != payment.getChargeAmount()) return false;
+        if (isDirectPayment() != payment.isDirectPayment()) return false;
+        return !isDirectPayment() || getRequiredMethod() == payment.getPayMethod().pgMethod();
+    }
+
+    // 토스에 남아 있어야 하는 금액 (승인 금액 − 취소 누계). 돈이 들어온 적 없거나 전액 취소됐으면 0
+    public long getPgBalanceAmount() {
+        return isCharged() ? amount - canceledAmount : 0L;
     }
 
     //예치금이 빠져나갈 때 이 충전의 미사용 금액을 소비한다 (DepositConsumer 가 호출).
@@ -202,6 +279,7 @@ public class Charge extends BaseIdAndTime {
         this.status = CANCELED;
         this.canceledAt = canceledAt;
         this.remainingAmount = 0L;
+        this.canceledAmount = this.amount;
     }
 
     // 토스 승인 실패 또는 만료. 토스 failure 객체의 code / message 를 남긴다
@@ -236,6 +314,16 @@ public class Charge extends BaseIdAndTime {
 
     public boolean isForPayment() {
         return purpose == FOR_PAYMENT;
+    }
+
+    // 결제창에서 낸 돈이 예치금을 거치지 않고 주문 대금이 되는 건인지
+    public boolean isDirectPayment() {
+        return purpose == DIRECT_PAYMENT;
+    }
+
+    // 주문 결제(Payment)에 묶인 건인지 (부족분 충전 또는 직접 결제)
+    public boolean isBoundToPayment() {
+        return purpose.isBoundToPayment();
     }
 
     public boolean isCharged() {

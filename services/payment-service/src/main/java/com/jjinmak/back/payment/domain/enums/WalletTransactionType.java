@@ -33,6 +33,10 @@ public enum WalletTransactionType {
     POINT_REFUND_PAY,        // 포인트 환불: ESCROW (-)
     POINT_REFUND_RECEIVE,    // 포인트 환불: 구매자 USER 포인트 (+)
 
+    // ===== 직접 결제 (PG) =====
+    PG_HOLD_RECEIVE,         // 직접 결제: 외부 PG → ESCROW (+). 상대가 원장 밖이라 한 줄
+    PG_REFUND_PAY,           // 직접 결제 환불: ESCROW (-) → 외부 PG (토스 취소). 상대가 원장 밖이라 한 줄
+
     // ===== 수정 =====
     REVERSAL                 // 수정: 잘못된 기록 수정 (+), (-)
 }

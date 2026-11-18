@@ -1,6 +1,7 @@
 package com.jjinmak.back.payment.support;
 
 import com.jjinmak.back.payment.domain.Holding;
+import com.jjinmak.back.payment.domain.PaymentShare;
 import com.jjinmak.back.payment.domain.Wallet;
 import com.jjinmak.back.payment.domain.enums.WalletType;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -23,6 +24,18 @@ public final class HoldingFixture {
     public static Holding held(long orderId, long winningPrice, long deliveryFee, long feeAmount) {
         return Holding.hold(orderId, PAYMENT_ID, wallet(BUYER_WALLET_ID), wallet(SELLER_WALLET_ID),
                 winningPrice, deliveryFee, feeAmount);
+    }
+
+    // 금액 구성(포인트 · 예치금 · 직접 결제)을 지정한 홀딩
+    public static Holding held(long orderId, long winningPrice, long deliveryFee, long feeAmount, PaymentShare share) {
+        return Holding.hold(orderId, PAYMENT_ID, wallet(BUYER_WALLET_ID), wallet(SELLER_WALLET_ID),
+                winningPrice, deliveryFee, feeAmount, share);
+    }
+
+    public static Holding refunded(long orderId, long winningPrice, long deliveryFee, long feeAmount, PaymentShare share) {
+        Holding holding = held(orderId, winningPrice, deliveryFee, feeAmount, share);
+        holding.refund(holding.getAmount());
+        return holding;
     }
 
     public static Holding confirmed(long orderId, long winningPrice, long deliveryFee, long feeAmount) {
