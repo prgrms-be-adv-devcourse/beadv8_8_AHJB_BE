@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
+import static com.jjinmak.back.payment.app.support.PgApprovalSupport.METHOD_NOT_ALLOWED;
+import static com.jjinmak.back.payment.app.support.PgApprovalSupport.METHOD_NOT_ALLOWED_REASON;
 import static com.jjinmak.back.payment.domain.enums.ChargeStatus.REQUESTED;
 import static com.jjinmak.back.payment.domain.enums.ReferenceType.PAYMENT;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.CHARGE;
@@ -21,10 +23,11 @@ import static com.jjinmak.back.payment.out.toss.TossPaymentsClient.NOT_FOUND_PAY
  * 충전 복구 스케줄러(40분 지난 건)와 토스 웹훅 처리가 같은 정책을 쓰도록 한 곳에 모았다.
  * 토스 조회는 호출하는 쪽이 하고(스케줄러는 orderId, 웹훅은 paymentKey), 여기서는 조회 결과를 받아 반영만 한다.
  *
- *  - 토스에 결제 기록이 없음 → ABORTED (결제창에서 결제하지 않음)
+ *  - 토스에 결제 기록이 없음 -> ABORTED (결제창에서 결제하지 않음)
  *  - 토스 DONE (승인은 됐는데 우리 승인 단계가 끝나지 못한 것)
- *      · MANUAL      → 사용자가 낸 돈이므로 지갑에 반영해 CHARGED (돈을 잃지 않게)
- *      · FOR_PAYMENT → 주문 흐름은 이미 깨졌으므로 토스 취소 후 ABORTED (카드로 환불)
+ *      · 허용되지 않은 결제수단 (예치금 충전인데 계좌이체가 아님) → 토스 취소 후 ABORTED. 승인 단계와 같은 검증이다
+ *      · MANUAL      -> 사용자가 낸 돈이므로 지갑에 반영해 CHARGED (돈을 잃지 않게)
+ *      · FOR_PAYMENT -> 주문 흐름은 이미 깨졌으므로 토스 취소 후 ABORTED (카드로 환불)
  *  - 그 외 (ABORTED / EXPIRED / CANCELED / READY / IN_PROGRESS) → ABORTED
  *
  * 주의: READY / IN_PROGRESS 도 닫으므로, 사용자가 아직 결제 중이거나 우리 승인 요청이 진행 중일 수 있는
@@ -37,17 +40,15 @@ import static com.jjinmak.back.payment.out.toss.TossPaymentsClient.NOT_FOUND_PAY
 @RequiredArgsConstructor
 public class ChargeRecoverySupport {
 
-    /** 토스 Idempotency-Key 접두사. 뒤에 pgOrderId 를 붙인다 (DB id 는 초기화 시 중복됨 — PgApprovalSupport 참고) */
+    // 토스 Idempotency-Key 접두사. 뒤에 pgOrderId 를 붙인다 (DB id 는 초기화 시 중복됨 — PgApprovalSupport 참고)
     private static final String CANCEL_KEY_PREFIX = "charge-recover-cancel-";
 
     private final WalletSupport walletSupport;
     private final LedgerRecorder ledgerRecorder;
     private final TossPaymentsClient toss;
 
-    /**
-     * 토스에 결제 기록이 없는 건 닫기.
-     * @return 반영했으면 true, 이미 REQUESTED 가 아니라 할 일이 없으면 false
-     */
+    // 토스에 결제 기록이 없는 건 닫기.
+    // 반영했으면 true, 이미 REQUESTED 가 아니라 할 일이 없으면 false
     public boolean closeNotFound(Charge charge) {
         if (charge.getStatus() != REQUESTED) return false;
 
@@ -56,16 +57,22 @@ public class ChargeRecoverySupport {
         return true;
     }
 
-    /**
-     * 토스 조회 결과로 REQUESTED 충전 건 반영.
-     * @return 반영했으면 true, 이미 REQUESTED 가 아니라 할 일이 없으면 false
-     */
+
+    // 토스 조회 결과로 REQUESTED 충전 건 반영.
+    //반영했으면 true, 이미 REQUESTED 가 아니라 할 일이 없으면 false
     public boolean recover(Charge charge, TossPaymentResponse remote) {
         if (charge.getStatus() != REQUESTED) return false;
 
         LocalDateTime now = LocalDateTime.now();
 
         if (remote.isDone()) {
+            if (!charge.allowsMethod(remote.method())) {
+                toss.cancel(remote.paymentKey(), METHOD_NOT_ALLOWED_REASON, CANCEL_KEY_PREFIX + charge.getPgOrderId());
+                charge.markAborted(now, METHOD_NOT_ALLOWED, METHOD_NOT_ALLOWED_REASON + " (결제수단: " + remote.method() + ")");
+                log.warn("REQUESTED 충전 정리: chargeId={} purpose={} 허용되지 않은 결제수단='{}'",
+                        charge.getId(), charge.getPurpose(), remote.method());
+                return true;
+            }
             if (charge.isForPayment()) {
                 toss.cancel(remote.paymentKey(), "미완료 주문 결제 자동 취소", CANCEL_KEY_PREFIX + charge.getPgOrderId());
                 charge.markAborted(now, "RECOVERED_CANCELED", "승인 후 주문 결제가 완료되지 않아 취소");
