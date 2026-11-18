@@ -29,7 +29,7 @@ public class WalletFacade {
     private final WalletGetHoldingsUseCase walletGetHoldingsUseCase;
     private final WalletWithdrawUseCase walletWithdrawUseCase;
     private final WalletGetWithdrawalsUseCase walletGetWithdrawalsUseCase;
-    private final PaymentCloseOnOrderDeletedUseCase paymentCloseOnOrderDeletedUseCase;
+    private final PaymentCloseUseCase paymentCloseUseCase;
 
     @Transactional
     public WalletMember syncMember(MemberDto member) {
@@ -58,7 +58,7 @@ public class WalletFacade {
 
     @Transactional
     public void closePaymentByOrderGroupDeleted(Long orderGroupId) {
-        paymentCloseOnOrderDeletedUseCase.close(orderGroupId);
+        paymentCloseUseCase.closeOnOrderDeleted(orderGroupId);
     }
 
     @Transactional

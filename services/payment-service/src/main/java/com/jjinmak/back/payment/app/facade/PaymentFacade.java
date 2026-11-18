@@ -2,6 +2,7 @@ package com.jjinmak.back.payment.app.facade;
 
 
 import com.jjinmak.back.payment.app.usecase.*;
+import com.jjinmak.contracts.payment.dto.PaymentCloseResultDto;
 import com.jjinmak.contracts.payment.dto.PaymentRequestDto;
 import com.jjinmak.contracts.payment.dto.PaymentResultDto;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ public class PaymentFacade {
     private final ChargeCancelUseCase chargeCancelUseCase;
     private final PaymentRequestUseCase paymentRequestUseCase;
     private final PaymentConfirmUseCase paymentConfirmUseCase;
+    private final PaymentCloseUseCase paymentCloseUseCase;
     private final ChargeRecoveryUseCase chargeRecoveryUseCase;
     private final WalletGetBalanceUseCase walletGetBalanceUseCase;
     private final PaymentGetHistoryUseCase paymentGetHistoryUseCase;
@@ -53,6 +55,11 @@ public class PaymentFacade {
     @Transactional
     public com.jjinmak.back.payment.app.dto.PaymentSummaryDto confirmPayment(Long holderId, String pgOrderId, String paymentKey, long amount) {
         return paymentConfirmUseCase.confirm(holderId, pgOrderId, paymentKey, amount);
+    }
+
+    @Transactional
+    public PaymentCloseResultDto closePayment(Long orderGroupId, Long buyerId) {
+        return paymentCloseUseCase.closeByOrder(orderGroupId, buyerId);
     }
 
     // 조회
