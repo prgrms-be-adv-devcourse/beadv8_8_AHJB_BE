@@ -20,6 +20,7 @@ public class ChatFacade {
     private final ChatGetMessagesUseCase chatGetMessagesUseCase;
     private final ChatSendMessageUseCase chatSendMessageUseCase;
     private final ChatMarkReadUseCase chatMarkReadUseCase;
+    private final ChatGetUnreadCountUseCase chatGetUnreadCountUseCase;
 
     @Transactional
     public void createRoom(AuctionWonEvent event) {
@@ -64,5 +65,10 @@ public class ChatFacade {
     @Transactional
     public ChatReadResultDto markRead(Long memberId, Long roomId, Long lastReadMessageId) {
         return chatMarkReadUseCase.markRead(memberId, roomId, lastReadMessageId);
+    }
+
+    @Transactional(readOnly = true)
+    public ChatUnreadCountDto getUnreadCount(Long memberId) {
+        return chatGetUnreadCountUseCase.getUnreadCount(memberId);
     }
 }

@@ -67,4 +67,13 @@ public class ChatApiController {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new RsData<>(new ChatReadResponseDto(result.roomId(), result.lastReadMessageId())));
     }
+
+    @GetMapping("/unread-count")
+    public ResponseEntity<RsData<ChatUnreadCountDto>> getUnreadCount(
+            @AuthenticationPrincipal AuthPrincipal principal
+    ) {
+        ChatUnreadCountDto response = chatFacade.getUnreadCount(principal.memberId());
+
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
 }
