@@ -67,6 +67,21 @@ class AuctionCreateUseCaseTest {
     }
 
     @Test
+    void 같은_상품이라도_다음_회차면_새_경매를_생성한다() {
+        LocalDateTime now = LocalDateTime.now();
+        AuctionCreateDto secondRound = AuctionCreateDto.english(PRODUCT_ID, 2, 100L, 10_000L, 3_000L,
+                now, "CONSOLE", null, now.plusDays(3));
+        given(auctionRepository.findByProductIdAndRound(PRODUCT_ID, 2)).willReturn(Optional.empty());
+        given(auctionRepository.save(any(Auction.class))).willAnswer(inv -> inv.getArgument(0));
+
+        auctionCreateUseCase.createAuction(secondRound);
+
+        ArgumentCaptor<Auction> captor = ArgumentCaptor.forClass(Auction.class);
+        then(auctionRepository).should().save(captor.capture());
+        assertThat(captor.getValue().getRound()).isEqualTo(2);
+    }
+
+    @Test
     void 네덜란드식_요청이면_가격_곡선으로_종료_시각을_계산해_생성한다() {
         LocalDateTime startAt = LocalDateTime.now().plusMinutes(1).truncatedTo(ChronoUnit.SECONDS);
         AuctionCreateDto dto = AuctionCreateDto.dutch(PRODUCT_ID, 1, 100L, 300_000L, 3_000L,

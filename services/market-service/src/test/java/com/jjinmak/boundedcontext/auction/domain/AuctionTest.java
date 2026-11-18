@@ -277,4 +277,56 @@ class AuctionTest {
             assertThat(auction.getWinnerId()).isNull();
         }
     }
+
+
+    @Nested
+    class 재등록_가능_여부 {
+
+        @Test
+        void 유찰된_경매는_다시_열_수_있다() {
+            EnglishAuction auction = 진행중_경매();
+            auction.fail(NO_BID);
+
+            assertThat(auction.isRelistable()).isTrue();
+        }
+
+        @Test
+        void 미결제로_무효가_된_경매는_다시_열_수_있다() {
+            EnglishAuction auction = 낙찰된_경매();
+            auction.fail(UNPAID);
+
+            assertThat(auction.isRelistable()).isTrue();
+        }
+
+        @Test
+        void 환불된_경매는_거래가_성사됐던_것이라_다시_열_수_없다() {
+            EnglishAuction auction = 결제된_경매();
+            auction.fail(REFUNDED);
+
+            assertThat(auction.isRelistable()).isFalse();
+        }
+
+        @Test
+        void 진행중_낙찰_결제된_경매는_다시_열_수_없다() {
+            assertThat(진행중_경매().isRelistable()).isFalse();
+            assertThat(낙찰된_경매().isRelistable()).isFalse();
+            assertThat(결제된_경매().isRelistable()).isFalse();
+        }
+    }
+
+    @Nested
+    class 회차 {
+
+        @Test
+        void 회차를_지정하지_않으면_1회차다() {
+            assertThat(진행중_경매().getRound()).isEqualTo(1);
+        }
+
+        @Test
+        void 회차는_1_이상이어야_한다() {
+            assertThatThrownBy(() -> EnglishAuction.create(PRODUCT_ID, SELLER_ID, START_PRICE, INSTANT_WIN_PRICE,
+                    SHIPPING_FEE, CATEGORY, END_AT, START_AT, 0))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
 }

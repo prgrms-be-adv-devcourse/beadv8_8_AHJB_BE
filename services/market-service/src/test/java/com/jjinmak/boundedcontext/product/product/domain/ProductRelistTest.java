@@ -73,6 +73,18 @@ class ProductRelistTest {
     }
 
     @Test
+    void 네덜란드식_이벤트_상품은_재등록할_수_없다() {
+        Product product = Product.createDutch(new ProductMember(SELLER_ID, "관리자"), "스위치", ProductCategory.CONSOLE,
+                Manufacturer.NINTENDO, null, "설명", ShippingFeeType.FREE, null, false, CREATED_AT,
+                ProductAuctionTerms.createDutch(300_000L, 150_000L, 2, 60), SCHEDULED_AT);
+        product.requestAuction(SCHEDULED_AT);
+        product.startAuction(10L, null);
+
+        assertThatThrownBy(() -> product.relist(SELLER_ID, RELIST_AT))
+                .extracting("errorCode").isEqualTo(ProductErrorCode.DUTCH_NOT_RELISTABLE);
+    }
+
+    @Test
     void 경매가_열린_적_없으면_재등록할_수_없다() {
         Product product = 상품(AuctionDuration.DAYS_1, null);
 
