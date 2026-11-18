@@ -1,5 +1,6 @@
 package com.jjinmak.boundedcontext.product.product.domain;
 
+import com.jjinmak.boundedcontext.market.shared.domain.AuctionType;
 import com.jjinmak.common.exception.BusinessException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;

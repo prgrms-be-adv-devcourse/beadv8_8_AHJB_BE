@@ -1,5 +1,6 @@
 package com.jjinmak.boundedcontext.product.product.in.dto;
 
+import com.jjinmak.boundedcontext.market.shared.domain.AuctionType;
 import com.jjinmak.boundedcontext.market.shared.domain.MarketMember;
 import com.jjinmak.contracts.product.domain.Manufacturer;
 import com.jjinmak.contracts.product.domain.ProductCategory;

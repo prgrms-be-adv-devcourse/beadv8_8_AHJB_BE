@@ -1,6 +1,5 @@
 package com.jjinmak.boundedcontext.market.app;
 
-import com.jjinmak.boundedcontext.auction.domain.AuctionType;
 import com.jjinmak.boundedcontext.auction.dto.AuctionCreateDto;
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductAuctionOpenDto;
 
@@ -11,9 +10,7 @@ final class MarketAuctionRequests {
     }
 
     static AuctionCreateDto from(ProductAuctionOpenDto open) {
-        AuctionType auctionType = AuctionType.valueOf(open.auctionType().name());
-
-        return switch (auctionType) {
+        return switch (open.auctionType()) {
             case ENGLISH -> AuctionCreateDto.english(open.productId(), open.round(), open.sellerId(), open.startPrice(),
                     open.shippingFee(), open.startAt(), open.category(),
                     open.instantWinPrice(), open.endAt());

@@ -1,10 +1,10 @@
 package com.jjinmak.boundedcontext.market.app;
 
+import com.jjinmak.boundedcontext.market.shared.domain.AuctionType;
 import com.jjinmak.boundedcontext.auction.app.AuctionFacade;
 import com.jjinmak.boundedcontext.auction.dto.AuctionCreateDto;
 import com.jjinmak.boundedcontext.auction.dto.AuctionCreateResultDto;
 import com.jjinmak.boundedcontext.product.product.app.ProductFacade;
-import com.jjinmak.boundedcontext.product.product.domain.AuctionType;
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductAuctionOpenDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,7 +50,7 @@ class MarketAuctionOpenUseCaseTest {
         useCase.openAuction(PRODUCT_ID, NOW);
 
         AuctionCreateDto dto = 경매_생성_요청();
-        assertThat(dto.auctionType()).isEqualTo(com.jjinmak.boundedcontext.auction.domain.AuctionType.ENGLISH);
+        assertThat(dto.auctionType()).isEqualTo(AuctionType.ENGLISH);
         assertThat(dto.round()).isEqualTo(1);
         assertThat(dto.startAt()).isEqualTo(NOW);
         assertThat(dto.endAt()).isEqualTo(endAt);
@@ -68,7 +68,7 @@ class MarketAuctionOpenUseCaseTest {
         useCase.openAuction(PRODUCT_ID, NOW);
 
         AuctionCreateDto dto = 경매_생성_요청();
-        assertThat(dto.auctionType()).isEqualTo(com.jjinmak.boundedcontext.auction.domain.AuctionType.DUTCH);
+        assertThat(dto.auctionType()).isEqualTo(AuctionType.DUTCH);
         assertThat(dto.startAt()).isEqualTo(NOW);
         assertThat(dto.floorPrice()).isEqualTo(150_000L);
         assertThat(dto.dropRatePercent()).isEqualTo(2);

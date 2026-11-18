@@ -1,7 +1,7 @@
 package com.jjinmak.boundedcontext.auction.dto;
 
+import com.jjinmak.boundedcontext.market.shared.domain.AuctionType;
 import com.jjinmak.boundedcontext.auction.domain.AuctionStatus;
-import com.jjinmak.boundedcontext.auction.domain.AuctionType;
 import com.jjinmak.boundedcontext.auction.domain.EnglishAuction;
 import com.jjinmak.boundedcontext.auction.domain.FailureReason;
 

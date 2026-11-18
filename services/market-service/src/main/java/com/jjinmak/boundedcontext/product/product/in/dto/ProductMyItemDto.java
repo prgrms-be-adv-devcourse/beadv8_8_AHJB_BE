@@ -1,6 +1,6 @@
 package com.jjinmak.boundedcontext.product.product.in.dto;
 
-import com.jjinmak.boundedcontext.product.product.domain.AuctionType;
+import com.jjinmak.boundedcontext.market.shared.domain.AuctionType;
 import com.jjinmak.boundedcontext.product.product.domain.Product;
 import com.jjinmak.boundedcontext.product.product.domain.ProductAuctionFailureReason;
 import com.jjinmak.boundedcontext.product.product.domain.ProductAuctionStatus;

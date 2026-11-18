@@ -1,5 +1,6 @@
 package com.jjinmak.boundedcontext.auction.app;
 
+import com.jjinmak.boundedcontext.market.shared.domain.AuctionType;
 import com.jjinmak.boundedcontext.auction.domain.*;
 import com.jjinmak.boundedcontext.auction.out.eventPublisher.EventPublisher;
 import com.jjinmak.contracts.auction.event.*;
