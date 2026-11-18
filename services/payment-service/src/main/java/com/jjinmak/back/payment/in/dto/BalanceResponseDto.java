@@ -5,9 +5,10 @@ import com.jjinmak.back.payment.app.dto.WalletBalanceDto;
 
 public record BalanceResponseDto(
         long balance,
-        long settlementBalance
+        long settlementBalance,
+        long pointBalance
 ) {
     public static BalanceResponseDto from(WalletBalanceDto dto) {
-        return new BalanceResponseDto(dto.balance(), dto.settlementBalance());
+        return new BalanceResponseDto(dto.balance(), dto.settlementBalance(), dto.pointBalance());
     }
 }

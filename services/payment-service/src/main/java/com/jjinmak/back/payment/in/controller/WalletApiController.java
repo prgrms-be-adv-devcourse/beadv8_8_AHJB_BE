@@ -30,7 +30,8 @@ public class WalletApiController {
 
     @Operation(
             summary = "내 잔액 조회",
-            description = "balance 는 예치금(결제에 쓸 수 있는 돈), settlementBalance 는 정산금(구매 확정으로 받은 판매 대금, 예치금과 분리 보관)입니다."
+            description = "balance 는 예치금(결제에 쓸 수 있는 돈), settlementBalance 는 정산금(구매 확정으로 받은 판매 대금, 예치금과 분리 보관), "
+                    + "pointBalance 는 포인트(결제에 쓸 수 있으나 출금할 수 없음, 1포인트 = 1원)입니다."
     )
     @GetMapping("/me")
     public ResponseEntity<RsData<BalanceResponseDto>> getBalance(@AuthenticationPrincipal AuthPrincipal principal) {
@@ -41,7 +42,7 @@ public class WalletApiController {
     @Operation(
             summary = "내 원장 조회",
             description = "충전·결제·환불·정산 등 입출금 내역을 최신순으로 조회합니다. amount 는 입금 +, 출금 - 이고 balanceAfter 는 그 시점의 해당 주머니 잔액입니다. "
-                    + "account 를 주면 그 주머니만 (DEPOSIT = 예치금, SETTLEMENT = 정산금), "
+                    + "account 를 주면 그 주머니만 (DEPOSIT = 예치금, SETTLEMENT = 정산금, POINT = 포인트), "
                     + "type 을 주면 그 유형만 조회합니다 (예: SETTLEMENT_RECEIVE = 정산 수령 내역, REFUND_RECEIVE = 환불 수령 내역). size 최대 50."
     )
     @GetMapping("/me/ledger")
@@ -77,7 +78,7 @@ public class WalletApiController {
     @Operation(
             summary = "예치금 전액 출금 (명목상)",
             description = "보유 중인 예치금 전액을 등록된 계좌로 환급한 것으로 기록합니다. 현재 실제 송금은 이루어지지 않으며 잔액이 0 이 되고 출금 내역과 원장(WITHDRAWAL)에 남습니다. "
-                    + "정산금은 출금되지 않습니다. 출금 후에는 이전 충전 건을 취소할 수 없으니, 취소 가능한 충전이 있으면 먼저 안내해 주세요. 잔액이 0 이면 WALLET601."
+                    + "정산금과 포인트는 출금되지 않습니다. 출금 후에는 이전 충전 건을 취소할 수 없으니, 취소 가능한 충전이 있으면 먼저 안내해 주세요. 잔액이 0 이면 WALLET601."
     )
     @PostMapping("/me/withdrawals")
     public ResponseEntity<RsData<WithdrawalDto>> withdrawAll(@AuthenticationPrincipal AuthPrincipal principal) {
