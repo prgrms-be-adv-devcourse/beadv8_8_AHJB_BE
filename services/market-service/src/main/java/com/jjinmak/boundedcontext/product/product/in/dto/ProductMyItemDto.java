@@ -21,12 +21,14 @@ public record ProductMyItemDto(
         Long instantWinPrice,       // 네덜란드식은 null
         ProductAuctionStatus status,
         LocalDateTime auctionScheduledAt,   // 경매 시작 예정 시각
-        LocalDateTime auctionEndAt,         // 진행 중일 때 종료 예정 시각 (연장 미반영, 네덜란드식은 정해진 종료 시각이 없어 null)
+        LocalDateTime auctionEndAt,         // 경매 종료(예정) 시각 (연장 반영, 시작 전이거나 네덜란드식은 null)
         ProductAuctionFailureReason failureReason,  // FAILED일 때만 값이 있음
         boolean editable,           // 수정/삭제 가능 여부 (시작 예정 시각 전, 네덜란드식은 항상 false)
         LocalDateTime createdAt
 ) {
-    public static ProductMyItemDto of(Product product, String thumbnailUrl, LocalDateTime now) {
+    // 경매 상태는 경매 컨텍스트에서 읽은 값을 받는다. (ProductAuctionStateReader)
+    public static ProductMyItemDto of(Product product, String thumbnailUrl, ProductAuctionStateDto auction,
+                                      LocalDateTime now) {
         ProductAuctionTerms terms = product.getAuctionTerms();
 
         return new ProductMyItemDto(
@@ -38,10 +40,10 @@ public record ProductMyItemDto(
                 product.getCategory(),
                 terms.getStartPrice(),
                 terms.getInstantWinPrice(),
-                product.getAuctionStatus(),
+                auction.status(),
                 product.getAuctionScheduledAt(),
-                product.getAuctionEndAt(),
-                product.getAuctionFailureReason(),
+                auction.endAt(),
+                auction.failureReason(),
                 product.isSellerEditable(now),
                 product.getCreatedAt()
         );
