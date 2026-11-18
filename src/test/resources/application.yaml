@@ -1,0 +1,34 @@
+spring:
+  kafka:
+    admin:
+      auto-create: false
+    producer:
+      properties:
+        "[max.block.ms]": 0
+  servlet:
+    multipart:
+      max-file-size: 10MB      # 파일 하나당 최대 크기
+      max-request-size: 12MB   # 요청 전체 최대 크기 (파일을 제외하고 2MB를 넉넉하게 할당함)
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+jwt:
+  secret: dGhpcy1pcy1hLXZlcnktbG9uZy1zZWNyZXQta2V5LWZvci1qd3QtaHMyNTY=
+  access-token-expiration: 900000
+  refresh-token-expiration: 1209600000
+
+auth:
+  refresh-cookie:
+    name: refresh_token
+    path: /api/v1/auth
+    same-site: Strict
+    secure: true

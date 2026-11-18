@@ -1,0 +1,51 @@
+# 앱 서비스 메트릭 수집 대상
+# kube-prometheus-stack 설치 후 적용 (PodMonitor CRD 필요)
+#   kubectl apply -f k8s/monitoring/app-podmonitor.yaml
+#
+# job 라벨: 파드의 app 라벨 값 (예: member-service)
+# application 라벨: Spring Boot JVM 대시보드에서 서비스 선택용
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: app-services
+  namespace: monitoring
+spec:
+  namespaceSelector:
+    matchNames: ["app"]
+  selector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values:
+          - member-service
+          - market-service
+          - payment-service
+          - ai-service
+          - auxiliary-service
+  jobLabel: app
+  podMetricsEndpoints:
+    - port: http
+      path: /actuator/prometheus
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_label_app]
+          targetLabel: application
+---
+# gateway는 관리 포트(8081)에서만 actuator를 노출
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: gateway
+  namespace: monitoring
+spec:
+  namespaceSelector:
+    matchNames: ["app"]
+  selector:
+    matchLabels:
+      app: gateway-service
+  jobLabel: app
+  podMetricsEndpoints:
+    - port: management
+      path: /actuator/prometheus
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_label_app]
+          targetLabel: application

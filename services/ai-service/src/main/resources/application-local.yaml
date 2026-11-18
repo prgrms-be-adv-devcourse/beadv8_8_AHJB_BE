@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ai_db
+    username: postgres
+    password: p@ssword
+  kafka:
+    bootstrap-servers: localhost:9092
+  elasticsearch:
+    uris: http://localhost:9200

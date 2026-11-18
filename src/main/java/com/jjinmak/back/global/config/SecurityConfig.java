@@ -1,0 +1,69 @@
+package com.jjinmak.back.global.config;
+
+import com.jjinmak.back.boundedContext.product.out.imageStorage.ProductImageProperties;
+import com.jjinmak.back.global.security.CustomAccessDeniedHandler;
+import com.jjinmak.back.global.security.CustomAuthenticationEntryPoint;
+import com.jjinmak.back.global.security.JwtAuthenticationFilter;
+import com.jjinmak.back.global.security.JwtTokenProvider;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+@Configuration
+@EnableMethodSecurity
+@RequiredArgsConstructor
+public class SecurityConfig {
+
+    private final CustomAuthenticationEntryPoint authenticationEntryPoint;
+    private final CustomAccessDeniedHandler accessDeniedHandler;
+    private final JwtTokenProvider jwtTokenProvider;
+
+    private static final String[] PUBLIC_URLS = {
+            "/api/v1/auth/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/v3/api-docs/**"
+    };
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults())
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(PUBLIC_URLS).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/order/{orderId}/delivery/{deliveryId}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auctions").permitAll()
+                        // 경매 목록 화면의 "곧 시작" 탭 (경매 목록과 같이 비로그인 조회 가능)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/products/upcoming").permitAll()
+                        // 로컬 저장소 이미지 조회 (<img> 요청에는 토큰이 없다)
+                        .requestMatchers(HttpMethod.GET, ProductImageProperties.LOCAL_URL_PATH).permitAll()
+                        .anyRequest().authenticated())
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler)
+                )
+                .addFilterBefore(
+                        new JwtAuthenticationFilter(jwtTokenProvider)
+                        , UsernamePasswordAuthenticationFilter.class
+                );
+        return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder(){
+        return new BCryptPasswordEncoder();
+    }
+}

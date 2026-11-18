@@ -1,0 +1,47 @@
+{
+  "number_of_shards": 1,
+  "number_of_replicas": 0,
+  "analysis": {
+    "tokenizer": {
+      "korean_tokenizer": {
+        "type": "nori_tokenizer",
+        "decompound_mode": "mixed",
+        "user_dictionary_rules": [
+          "플스", "플레이스테이션",
+          "엑박", "엑스박스",
+          "닌텐도", "스위치",
+          "한정판", "리미티드",
+          "게임기", "콘솔"
+        ]
+      }
+    },
+    "filter": {
+      "korean_pos_filter": {
+        "type": "nori_part_of_speech"
+      },
+      "product_synonym_filter": {
+        "type": "synonym_graph",
+        "lenient": true,
+        "synonyms": [
+          "플스, 플레이스테이션, playstation",
+          "엑박, 엑스박스, xbox",
+          "스위치, 닌텐도 스위치, switch",
+          "한정판, 리미티드, limited",
+          "게임기, 콘솔, console"
+        ]
+      }
+    },
+    "analyzer": {
+      "korean_index_analyzer": {
+        "type": "custom",
+        "tokenizer": "korean_tokenizer",
+        "filter": ["korean_pos_filter", "lowercase"]
+      },
+      "korean_search_analyzer": {
+        "type": "custom",
+        "tokenizer": "korean_tokenizer",
+        "filter": ["korean_pos_filter", "lowercase", "product_synonym_filter"]
+      }
+    }
+  }
+}

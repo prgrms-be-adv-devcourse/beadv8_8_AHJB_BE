@@ -1,0 +1,96 @@
+server:
+  port: 8091
+
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowed-origins: ${CORS_ALLOWED_ORIGINS}
+                allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+                allowed-headers: Authorization,Content-Type
+                allow-credentials: true
+                max-age: 3600
+          routes:
+            - id: member-service
+              uri: ${service-uri.member}
+              predicates:
+                - Path=/api/v1/auth/**,/api/v1/member/**
+            - id: delivery-service
+              uri: ${service-uri.delivery}
+              predicates:
+                - Path=/api/v1/order/*/delivery/**
+            - id: order-service
+              uri: ${service-uri.order}
+              predicates:
+                - Path=/api/v1/cart/**,/api/v1/order/**
+            - id: recommend-service
+              uri: ${service-uri.recommend}
+              predicates:
+                - Path=/api/v1/recommend/**
+            - id: payment-service
+              uri: ${service-uri.payment}
+              predicates:
+                - Path=/api/v1/payments/**, /api/v1/wallet/**, /webhooks/toss
+            - id: auction-service
+              uri: ${service-uri.auction}
+              predicates:
+                - Path=/api/v1/auctions/**
+            - id: notification-service
+              uri: ${service-uri.notification}
+              predicates:
+                - Path=/api/v1/notifications/**
+            - id: refund-service
+              uri: ${service-uri.refund}
+              predicates:
+                - Path=/api/v1/refunds/**
+            - id: settlement-service
+              uri: ${service-uri.settlement}
+              predicates:
+                - Path=/api/v1/settlements/**
+            - id: product-service
+              uri: ${service-uri.product}
+              predicates:
+                - Path=/api/v1/products/**,/api/v1/wishes/**,/api/v1/qnas/**,/api/v1/reviews/**,/api/v1/admin/products/**
+            - id: search-service
+              uri: ${service-uri.search}
+              predicates:
+                - Path=/api/v1/search/**
+            - id: chat-service
+              uri: ${service-uri.chat}
+              predicates:
+                - Path=/api/v1/chat-rooms/**,/ws/chat/**
+
+service-uri:
+  member: http://member-service
+  order: http://order-service
+  delivery: http://delivery-service
+  recommend: http://recommend-service
+  payment: http://payment-service
+  auction: http://auction-service
+  notification: http://notification-service
+  refund: http://refund-service
+  settlement: http://settlement-service
+  product: http://product-service
+  search: http://search-service
+  chat: http://chat-service
+
+management:
+  server:
+    port: 8081
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+        # 관리 포트를 분리해도 probe는 메인 포트(/livez, /readyz)로 받기 위함
+        add-additional-paths: true
+
+jwt:
+  public-key: ${JWT_PUBLIC_KEY}

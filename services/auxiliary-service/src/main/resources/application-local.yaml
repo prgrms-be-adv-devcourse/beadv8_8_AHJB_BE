@@ -1,0 +1,17 @@
+spring:
+  config:
+    import: optional:file:.env[.properties],optional:file:../../.env[.properties]   # FCM·Delivery Tracker 키 (git 제외)
+  datasource:
+    url: jdbc:postgresql://localhost:5432/auxiliary_module_db
+    username: postgres
+    password: p@ssword
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+  kafka:
+    bootstrap-servers: localhost:9092
+
+logging:
+  level:
+    org.hibernate.SQL: debug

@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/payment_db
+    username: postgres
+    password: p@ssword
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+  kafka:
+    bootstrap-servers: localhost:9092
+logging:
+  level:
+    org.hibernate.SQL: debug
+
+
+payment-service:
+  base-url: http://localhost:8085

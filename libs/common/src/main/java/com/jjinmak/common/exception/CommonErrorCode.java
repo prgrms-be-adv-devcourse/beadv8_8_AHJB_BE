@@ -1,0 +1,22 @@
+package com.jjinmak.common.exception;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+
+@Getter
+@RequiredArgsConstructor
+public enum CommonErrorCode implements ErrorCode{
+
+    BAD_REQUEST("COMMON001", "잘못된 요청(필수값 누락, 형식 오류)", HttpStatus.BAD_REQUEST),
+    UNAUTHORIZED("COMMON002", "인증 필요, 토큰 만료", HttpStatus.UNAUTHORIZED),
+    FORBIDDEN("COMMON003", "접근 권한 없음", HttpStatus.FORBIDDEN),
+    INTERNAL_ERROR("COMMON004", "서버 내부 오류", HttpStatus.INTERNAL_SERVER_ERROR),
+
+    USER_NOT_FOUND("COMMON103", "존재하지 않는 회원", HttpStatus.NOT_FOUND),
+    CONFLICT("COMMON005", "동시에 수정되어 처리하지 못했습니다. 다시 시도해 주세요.", HttpStatus.CONFLICT)
+    ;
+    private final String code;
+    private final String message;
+    private final HttpStatus status;
+}

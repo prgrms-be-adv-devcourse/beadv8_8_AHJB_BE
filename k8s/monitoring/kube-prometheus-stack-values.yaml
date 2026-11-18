@@ -1,0 +1,188 @@
+# kube-prometheus-stack values (k3s 2노드용 축소 설정)
+#
+# 설치 (217 서버에서 실행, CD 범위 밖이라 수동 설치)
+#   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+#   helm repo update
+#   (고정 버전: chart 93.4.0 / operator v0.95.2)
+#   helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+#     -n monitoring --version 93.4.0 -f kube-prometheus-stack-values.yaml
+#
+# 설치 전 필요한 Secret (레포에 커밋하지 않음, 공개 저장소)
+#   kubectl create namespace monitoring
+#   kubectl -n monitoring create secret generic grafana-admin \
+#     --from-literal=admin-user=admin --from-literal=admin-password='<비밀번호>'
+#   kubectl -n monitoring create secret generic alertmanager-slack \
+#     --from-literal=webhook-url='<Slack Incoming Webhook URL>'
+#
+# 배치: infra 노드는 NoSchedule taint가 있어 toleration이 없는 본체는 자동으로 앱 노드(217)에 뜬다.
+#       node-exporter만 toleration으로 양쪽 노드에 배치한다.
+# 메모리: request=limit으로 잡아 실사용이 request를 넘지 않게 해 노드 압박 시 축출 우선순위를 낮춘다.
+
+# ---------------------------------------------------------------
+# k3s는 controller-manager, scheduler, proxy, etcd를 k3s 프로세스 안에서 돌려
+# 기본 수집 대상으로 잡히지 않는다. 끄지 않으면 TargetDown 알림이 계속 발생한다.
+# ---------------------------------------------------------------
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+kubeEtcd:
+  enabled: false
+
+defaultRules:
+  rules:
+    etcd: false
+    kubeControllerManager: false
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
+    kubeProxy: false
+
+# ---------------------------------------------------------------
+# Prometheus
+# ---------------------------------------------------------------
+prometheus:
+  prometheusSpec:
+    retention: 7d
+    retentionSize: 4GB
+    scrapeInterval: 30s
+    # helm release 라벨이 없는 PodMonitor/ServiceMonitor/Rule도 수집 (k8s/monitoring/app-podmonitor.yaml)
+    podMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        memory: 512Mi
+    # k3s 기본 local-path 프로비저너, PV는 처음 스케줄된 노드(217) 디스크에 생성됨
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 5Gi
+
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 128Mi
+  prometheusConfigReloader:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 32Mi
+
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 20m
+      memory: 96Mi
+    limits:
+      memory: 96Mi
+
+prometheus-node-exporter:
+  # infra 노드(NoSchedule taint)에도 배치
+  tolerations:
+    - operator: Exists
+      effect: NoSchedule
+  resources:
+    requests:
+      cpu: 20m
+      memory: 48Mi
+    limits:
+      memory: 48Mi
+
+# ---------------------------------------------------------------
+# Alertmanager -> Slack
+# Webhook URL은 Secret(alertmanager-slack)을 파일로 마운트해 읽는다.
+# ---------------------------------------------------------------
+alertmanager:
+  alertmanagerSpec:
+    secrets:
+      - alertmanager-slack   # /etc/alertmanager/secrets/alertmanager-slack/ 에 마운트
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 64Mi
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      receiver: slack
+      group_by: ["alertname", "namespace"]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      routes:
+        # Watchdog: 알림 파이프라인 생존 확인용으로 항상 firing 상태인 알림
+        - receiver: "null"
+          matchers: ['alertname = "Watchdog"']
+        - receiver: "null"
+          matchers: ['alertname = "InfoInhibitor"']
+        - receiver: "null"
+          matchers: ['severity = "info"']
+    receivers:
+      - name: "null"
+      - name: slack
+        slack_configs:
+          - api_url_file: /etc/alertmanager/secrets/alertmanager-slack/webhook-url
+            send_resolved: true
+            title: '[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}'
+            text: >-
+              {{ range .Alerts }}
+              *{{ .Labels.severity }}* {{ .Labels.namespace }}/{{ .Labels.pod }}
+              {{ .Annotations.summary }}
+              {{ .Annotations.description }}
+              {{ end }}
+
+# ---------------------------------------------------------------
+# Grafana
+# ---------------------------------------------------------------
+grafana:
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  # UI에서 만든 대시보드/설정이 재시작 후에도 남도록 보존
+  persistence:
+    enabled: true
+    storageClassName: local-path
+    size: 1Gi
+  # 256Mi에서 첫 기동 시 253Mi까지 사용해 상향 (2026-11-18 실측)
+  resources:
+    requests:
+      cpu: 50m
+      memory: 384Mi
+    limits:
+      memory: 384Mi
+  # 대시보드/데이터소스 사이드카 2개에 각각 적용, 64Mi에서 OOMKilled 발생해 상향 (2026-11-18)
+  sidecar:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 128Mi
+      limits:
+        memory: 128Mi
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - grafana.jjinmak.kro.kr
+    tls:
+      - secretName: grafana-jjinmak-tls
+        hosts:
+          - grafana.jjinmak.kro.kr
