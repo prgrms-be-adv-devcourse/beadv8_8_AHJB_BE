@@ -101,7 +101,7 @@ class DutchAuctionResponseJsonTest {
 
         @Test
         void 목록_카드에도_최저가와_종료_시각이_없다() {
-            String json = json(DutchAuctionListItemDto.from(하향식_경매(), MIDDLE));
+            String json = json(DutchAuctionListItemDto.from(하향식_경매(), null, MIDDLE));
 
             비공개_항목이_없다(json);
             assertThat(json).doesNotContain("150000");
@@ -113,7 +113,7 @@ class DutchAuctionResponseJsonTest {
 
         @Test
         void 마지막_단계_목록_카드에도_종료_시각이_없다() {
-            String json = json(DutchAuctionListItemDto.from(하향식_경매(), LAST_STEP));
+            String json = json(DutchAuctionListItemDto.from(하향식_경매(), null, LAST_STEP));
 
             비공개_항목이_없다(json);
             assertThat(json)
