@@ -121,6 +121,12 @@ public abstract class Auction extends BaseIdAndTime {
         validateStatus(PAID);
         this.status = COMPLETED;
     }
+    // 유찰(입찰 없음)이거나 낙찰 후 미결제로 무효가 된 경매만 다음 회차로 다시 열 수 있다.
+    // 환불은 거래가 한 번 성사된 것이라 제외한다.
+    public boolean isRelistable() {
+        return status == FAILED && failureReason != FailureReason.REFUNDED;
+    }
+
     private void validateStatus(AuctionStatus expected) {
         if (this.status != expected) {
             throw new BusinessException(INVALID_STATUS_TRANSITION);

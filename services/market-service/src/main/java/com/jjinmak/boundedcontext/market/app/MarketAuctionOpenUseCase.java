@@ -1,11 +1,8 @@
 package com.jjinmak.boundedcontext.market.app;
 
 import com.jjinmak.boundedcontext.auction.app.AuctionFacade;
-import com.jjinmak.boundedcontext.auction.domain.AuctionType;
-import com.jjinmak.boundedcontext.auction.dto.AuctionCreateDto;
 import com.jjinmak.boundedcontext.auction.dto.AuctionCreateResultDto;
 import com.jjinmak.boundedcontext.product.product.app.ProductFacade;
-import com.jjinmak.boundedcontext.product.product.in.dto.ProductAuctionOpenDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -29,21 +26,8 @@ public class MarketAuctionOpenUseCase {
     // 1) 상품: 요청 표시, 판매 조건 확정  2) 경매: 생성  3) 상품: 경매 id와 진행 중 상태 기록
     public void openAuction(Long productId, LocalDateTime now) {
         productFacade.prepareAuctionOpen(productId, now).ifPresent(open -> {
-            AuctionCreateResultDto created = auctionFacade.createAuction(toCreateDto(open));
+            AuctionCreateResultDto created = auctionFacade.createAuction(MarketAuctionRequests.from(open));
             productFacade.startAuction(productId, created.auctionId(), created.endAt());
         });
-    }
-
-    private AuctionCreateDto toCreateDto(ProductAuctionOpenDto open) {
-        AuctionType auctionType = AuctionType.valueOf(open.auctionType().name());
-
-        return switch (auctionType) {
-            case ENGLISH -> AuctionCreateDto.english(open.productId(), open.round(), open.sellerId(), open.startPrice(),
-                    open.shippingFee(), open.startAt(), open.category(),
-                    open.instantWinPrice(), open.endAt());
-            case DUTCH -> AuctionCreateDto.dutch(open.productId(), open.round(), open.sellerId(), open.startPrice(),
-                    open.shippingFee(), open.startAt(), open.category(),
-                    open.floorPrice(), open.dropRatePercent(), open.dropIntervalSec());
-        };
     }
 }

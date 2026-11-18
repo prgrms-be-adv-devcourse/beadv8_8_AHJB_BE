@@ -7,6 +7,7 @@ import com.jjinmak.boundedcontext.product.product.in.dto.ProductCreateRequestDto
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductDetailDto;
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductDutchCreateRequestDto;
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductMyListResponseDto;
+import com.jjinmak.boundedcontext.product.product.in.dto.ProductRelistDto;
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductUpcomingListResponseDto;
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductUpdateRequestDto;
 import com.jjinmak.contracts.auction.event.AuctionFailedEvent;
@@ -36,6 +37,7 @@ public class ProductFacade {
     private final ProductReadDetailUseCase productReadDetailUseCase;
     private final ProductReadUpcomingUseCase productReadUpcomingUseCase;
     private final ProductStartAuctionUseCase productStartAuctionUseCase;
+    private final ProductRelistUseCase productRelistUseCase;
     private final ProductAuctionResultUseCase productAuctionResultUseCase;
     private final ProductReadMineUseCase productReadMineUseCase;
 
@@ -78,6 +80,12 @@ public class ProductFacade {
     @Transactional
     public void startAuction(Long productId, Long auctionId, LocalDateTime endAt){
         productStartAuctionUseCase.startAuction(productId, auctionId, endAt);
+    }
+
+    // market 재등록 흐름(MarketRelistUseCase)의 트랜잭션에 참여한다.
+    @Transactional
+    public ProductRelistDto relist(Long sellerId, Long productId, LocalDateTime now){
+        return productRelistUseCase.relist(sellerId, productId, now);
     }
 
     @Transactional(readOnly = true)

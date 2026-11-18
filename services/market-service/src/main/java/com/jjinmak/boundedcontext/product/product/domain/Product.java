@@ -189,6 +189,34 @@ public class Product extends BaseIdAndTime {
         this.auctionRequestedAt = now;
     }
 
+    // 판매자가 상품을 다음 회차 경매에 다시 올린다. 지금 바로 시작하고, 경매 기간은 이전 회차와 같다.
+    // 이전 회차가 다시 열 수 있는 상태(유찰·미결제 무효)인지는 경매 컨텍스트가 확인한다.
+    // 반환값: 새 회차의 종료 시각
+    public LocalDateTime relist(Long sellerId, LocalDateTime now) {
+        if (deletedAt != null) {
+            throw new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND);
+        }
+        if (!isSoldBy(sellerId)) {
+            throw new BusinessException(ProductErrorCode.NOT_PRODUCT_OWNER);
+        }
+        if (isDutch()) {
+            throw new BusinessException(ProductErrorCode.DUTCH_NOT_RELISTABLE);
+        }
+        if (currentAuctionId == null) {
+            throw new BusinessException(ProductErrorCode.NOT_RELISTABLE);
+        }
+
+        // 직접 지정한 종료 시각(CUSTOM)도 이전 회차의 기간 길이로 바꿔 쓴다.
+        Duration auctionLength = Duration.between(auctionScheduledAt, auctionTerms.resolveEndAt(auctionScheduledAt));
+
+        this.auctionRound++;
+        this.auctionScheduledAt = now;
+        this.auctionRequestedAt = now;
+        this.currentAuctionId = null;
+        this.auctionState = ProductAuctionState.scheduled();
+        return now.plus(auctionLength);
+    }
+
     // 경매가 생성되면 현재 회차의 경매 id와 종료 시각을 기록한다.
     public void startAuction(Long auctionId, LocalDateTime endAt) {
         ProductAuctionState state = auctionState(); // currentAuctionId를 바꾸기 전에 기존 상태를 확정한다

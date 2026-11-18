@@ -1,5 +1,6 @@
 package com.jjinmak.boundedcontext.market.app;
 
+import com.jjinmak.boundedcontext.market.in.dto.MarketRelistResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +14,7 @@ import java.util.List;
 public class MarketFacade {
 
     private final MarketAuctionOpenUseCase marketAuctionOpenUseCase;
+    private final MarketRelistUseCase marketRelistUseCase;
 
     @Transactional(readOnly = true)
     public List<Long> findAuctionOpenTargetIds(LocalDateTime now) {
@@ -23,5 +25,10 @@ public class MarketFacade {
     @Transactional
     public void openAuction(Long productId, LocalDateTime now) {
         marketAuctionOpenUseCase.openAuction(productId, now);
+    }
+
+    @Transactional
+    public MarketRelistResponseDto relist(Long sellerId, Long productId, LocalDateTime now) {
+        return marketRelistUseCase.relist(sellerId, productId, now);
     }
 }

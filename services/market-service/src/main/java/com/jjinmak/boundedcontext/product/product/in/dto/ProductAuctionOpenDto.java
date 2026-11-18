@@ -24,6 +24,12 @@ public record ProductAuctionOpenDto(
         Integer dropIntervalSec         // 네덜란드식
 ) {
     public static ProductAuctionOpenDto from(Product product) {
+        LocalDateTime startAt = product.getAuctionScheduledAt();
+        return of(product, product.getAuctionTerms().resolveEndAt(startAt));
+    }
+
+    // 종료 시각을 따로 정한 경우 (재등록: 이전 회차와 같은 기간)
+    public static ProductAuctionOpenDto of(Product product, LocalDateTime endAt) {
         ProductAuctionTerms terms = product.getAuctionTerms();
         LocalDateTime startAt = product.getAuctionScheduledAt();
         boolean dutch = terms.isDutch();
@@ -38,7 +44,7 @@ public record ProductAuctionOpenDto(
                 product.getCategory().name(),
                 startAt,
                 dutch ? null : terms.getInstantWinPrice(),
-                terms.resolveEndAt(startAt),
+                dutch ? null : endAt,
                 dutch ? terms.getFloorPrice() : null,
                 dutch ? terms.getDropRatePercent() : null,
                 dutch ? terms.getDropIntervalSec() : null

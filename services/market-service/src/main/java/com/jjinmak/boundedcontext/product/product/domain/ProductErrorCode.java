@@ -35,7 +35,9 @@ public enum ProductErrorCode implements ErrorCode {
     INVALID_DUTCH_DROP_INTERVAL("PRODUCT025", "하락 주기는 30초, 60초, 90초, 120초 중에서 선택해야 합니다.", HttpStatus.BAD_REQUEST),
     DUTCH_DROP_AMOUNT_TOO_SMALL("PRODUCT026", "한 번에 내려가는 금액이 100원 이상이 되도록 시작가나 하락률을 높여 주세요.", HttpStatus.BAD_REQUEST),
     INVALID_DUTCH_OPEN_AT("PRODUCT027", "오픈 시각은 현재 시각 이후로 지정해야 합니다.", HttpStatus.BAD_REQUEST),
-    DUTCH_NOT_SELLER_EDITABLE("PRODUCT028", "네덜란드식 이벤트 상품은 판매자 수정/삭제로 변경할 수 없습니다.", HttpStatus.BAD_REQUEST)
+    DUTCH_NOT_SELLER_EDITABLE("PRODUCT028", "네덜란드식 이벤트 상품은 판매자 수정/삭제로 변경할 수 없습니다.", HttpStatus.BAD_REQUEST),
+    NOT_RELISTABLE("PRODUCT029", "경매가 열린 적 없는 상품은 다시 경매에 올릴 수 없습니다.", HttpStatus.BAD_REQUEST),
+    DUTCH_NOT_RELISTABLE("PRODUCT030", "네덜란드식 이벤트 상품은 다시 경매에 올릴 수 없습니다.", HttpStatus.BAD_REQUEST)
     ;
     private final String code;
     private final String message;

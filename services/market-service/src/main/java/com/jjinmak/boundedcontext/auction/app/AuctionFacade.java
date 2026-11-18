@@ -25,6 +25,7 @@ public class AuctionFacade {
     private final AuctionListUseCase auctionListUseCase;
     private final AuctionDutchBuyUseCase auctionDutchBuyUseCase;
     private final AuctionEndingSoonUseCase auctionEndingSoonUseCase;
+    private final AuctionRelistCheckUseCase auctionRelistCheckUseCase;
 
 
     @Transactional
@@ -35,6 +36,12 @@ public class AuctionFacade {
     @Transactional
     public AuctionCreateResultDto createAuction(AuctionCreateDto dto){
         return auctionCreateUseCase.createAuction(dto);
+    }
+
+    // market 재등록 흐름(MarketRelistUseCase)의 트랜잭션에 참여한다.
+    @Transactional
+    public void validateRelistable(Long auctionId){
+        auctionRelistCheckUseCase.validateRelistable(auctionId);
     }
 
     @Transactional

@@ -21,7 +21,8 @@ public enum AuctionErrorCode implements ErrorCode {
     INVALID_PRICE("AUCTION011", "가격이 올바르지 않습니다.", HttpStatus.BAD_REQUEST),
     AUCTION_TYPE_MISMATCH("AUCTION012", "이 경매 유형에서는 사용할 수 없는 기능입니다.", HttpStatus.BAD_REQUEST),
     DUTCH_PRICE_CHANGED("AUCTION013", "가격이 바뀌었습니다. 현재 가격을 확인하고 다시 시도해 주세요.", HttpStatus.CONFLICT),
-    DUTCH_ALREADY_SOLD("AUCTION014", "이미 판매된 경매입니다.", HttpStatus.CONFLICT);
+    DUTCH_ALREADY_SOLD("AUCTION014", "이미 판매된 경매입니다.", HttpStatus.CONFLICT),
+    AUCTION_NOT_RELISTABLE("AUCTION015", "유찰되었거나 미결제로 무효가 된 경매만 다시 열 수 있습니다.", HttpStatus.BAD_REQUEST);
     private final String code;
     private final String message;
     private final HttpStatus status;
