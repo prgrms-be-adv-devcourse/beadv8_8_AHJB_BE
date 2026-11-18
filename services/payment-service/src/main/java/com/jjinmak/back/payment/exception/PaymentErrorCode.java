@@ -33,6 +33,9 @@ public enum PaymentErrorCode implements com.jjinmak.common.exception.ErrorCode {
     CHARGE_PAYMENT_REQUIRED("CHARGE006", "주문 결제용 충전은 Payment 에 연결되어야 합니다.", HttpStatus.BAD_REQUEST),
     CHARGE_FORBIDDEN("CHARGE007", "충전 건에 대한 권한이 없습니다.", HttpStatus.FORBIDDEN),
     CHARGE_PAYMENT_MISMATCH("CHARGE008", "이 충전 건은 해당 결제의 것이 아닙니다.", HttpStatus.BAD_REQUEST),
+    CHARGE_METHOD_NOT_ALLOWED("CHARGE009", "예치금 충전은 계좌이체로만 할 수 있습니다. 결제는 취소되었습니다.", HttpStatus.BAD_REQUEST, true),
+    CHARGE_AMOUNT_OUT_OF_RANGE("CHARGE010", "충전 금액이 허용 범위(최소·최대 충전 금액)를 벗어났습니다.", HttpStatus.BAD_REQUEST),
+    CHARGE_LIMIT_EXCEEDED("CHARGE011", "부족한 금액이 1회 충전 한도를 넘습니다. 예치금을 먼저 충전한 뒤 다시 결제해 주세요.", HttpStatus.BAD_REQUEST),
 
     // ===== PG (토스페이먼츠) =====
     PG_APPROVE_FAILED("PG001", "PG 결제 승인에 실패했습니다.", HttpStatus.BAD_GATEWAY, true),
