@@ -1,5 +1,6 @@
 package com.jjinmak.boundedcontext.product.product.domain;
 
+import com.jjinmak.boundedcontext.market.shared.domain.MarketMember;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.*;
@@ -21,15 +22,15 @@ public class ProductWish extends BaseIdAndTime {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
-    private ProductMember member;
+    private MarketMember member;
 
-    private ProductWish(Product product, ProductMember member) {
+    private ProductWish(Product product, MarketMember member) {
         this.product = product;
         this.member = member;
     }
 
     // 본인이 등록한 상품은 찜할 수 없다.
-    public static ProductWish create(Product product, ProductMember member) {
+    public static ProductWish create(Product product, MarketMember member) {
         if (product.getSeller().getId().equals(member.getId())) {
             throw new BusinessException(ProductErrorCode.CANNOT_WISH_OWN_PRODUCT);
         }

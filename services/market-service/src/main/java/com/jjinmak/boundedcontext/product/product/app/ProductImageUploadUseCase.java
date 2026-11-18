@@ -1,12 +1,12 @@
 package com.jjinmak.boundedcontext.product.product.app;
 
+import com.jjinmak.boundedcontext.market.shared.domain.MarketMember;
+import com.jjinmak.boundedcontext.market.shared.out.MarketMemberRepository;
 import com.jjinmak.boundedcontext.product.product.domain.ProductErrorCode;
 import com.jjinmak.boundedcontext.product.product.domain.ProductImage;
 import com.jjinmak.boundedcontext.product.product.domain.ProductImageFormat;
-import com.jjinmak.boundedcontext.product.product.domain.ProductMember;
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductImageUploadResponseDto;
 import com.jjinmak.boundedcontext.product.product.out.ProductImageRepository;
-import com.jjinmak.boundedcontext.product.product.out.ProductMemberRepository;
 import com.jjinmak.boundedcontext.product.product.out.imageStorage.ProductImageStorage;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.exception.CommonErrorCode;
@@ -23,13 +23,13 @@ public class ProductImageUploadUseCase {
 
     public static final long MAX_IMAGE_SIZE = 10L * 1024 * 1024; // 10MB
 
-    private final ProductMemberRepository productMemberRepository;
+    private final MarketMemberRepository marketMemberRepository;
     private final ProductImageRepository productImageRepository;
     private final ProductImageStorage productImageStorage;
 
     // 검증 → DB 저장 → 저장소 업로드. 업로드가 실패하면 트랜잭션이 롤백되어 DB 행도 남지 않는다.
     public ProductImageUploadResponseDto upload(Long uploaderId, MultipartFile file){
-        ProductMember uploader = productMemberRepository.findById(uploaderId)
+        MarketMember uploader = marketMemberRepository.findById(uploaderId)
                 .orElseThrow(() -> new BusinessException(CommonErrorCode.USER_NOT_FOUND));
 
         if (file == null || file.isEmpty()){

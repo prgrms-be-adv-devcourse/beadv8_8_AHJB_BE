@@ -1,12 +1,12 @@
 package com.jjinmak.boundedcontext.product.product.app;
 
+import com.jjinmak.boundedcontext.market.shared.domain.MarketMember;
+import com.jjinmak.boundedcontext.market.shared.out.MarketMemberRepository;
 import com.jjinmak.boundedcontext.product.product.domain.Product;
 import com.jjinmak.boundedcontext.product.product.domain.ProductErrorCode;
-import com.jjinmak.boundedcontext.product.product.domain.ProductMember;
 import com.jjinmak.boundedcontext.product.product.domain.ProductQna;
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductQnaCreateRequestDto;
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductQnaDto;
-import com.jjinmak.boundedcontext.product.product.out.ProductMemberRepository;
 import com.jjinmak.boundedcontext.product.product.out.ProductQnaRepository;
 import com.jjinmak.boundedcontext.product.product.out.ProductRepository;
 import com.jjinmak.common.exception.BusinessException;
@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 public class ProductQnaCreateUseCase {
 
     private final ProductRepository productRepository;
-    private final ProductMemberRepository productMemberRepository;
+    private final MarketMemberRepository marketMemberRepository;
     private final ProductQnaRepository productQnaRepository;
 
     // parentId가 없으면 질문, 있으면 답글을 작성한다. 작성된 Q&A를 반환해서 화면에 바로 추가할 수 있게 한다.
@@ -27,7 +27,7 @@ public class ProductQnaCreateUseCase {
         Product product = productRepository.findByIdAndDeletedAtIsNull(productId)
                 .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
-        ProductMember writer = productMemberRepository.findById(writerId)
+        MarketMember writer = marketMemberRepository.findById(writerId)
                 .orElseThrow(() -> new BusinessException(CommonErrorCode.USER_NOT_FOUND));
 
         ProductQna qna;

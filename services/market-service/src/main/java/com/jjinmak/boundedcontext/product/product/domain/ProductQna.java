@@ -1,5 +1,6 @@
 package com.jjinmak.boundedcontext.product.product.domain;
 
+import com.jjinmak.boundedcontext.market.shared.domain.MarketMember;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.*;
@@ -21,7 +22,7 @@ public class ProductQna extends BaseIdAndTime {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
-    private ProductMember writer;
+    private MarketMember writer;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private ProductQna parent;
@@ -31,19 +32,19 @@ public class ProductQna extends BaseIdAndTime {
 
     private LocalDateTime deletedAt;
 
-    private ProductQna(Product product, ProductMember writer, ProductQna parent, String content) {
+    private ProductQna(Product product, MarketMember writer, ProductQna parent, String content) {
         this.product = product;
         this.writer = writer;
         this.parent = parent;
         this.content = content;
     }
 
-    public static ProductQna createQuestion(Product product, ProductMember writer, String content) {
+    public static ProductQna createQuestion(Product product, MarketMember writer, String content) {
         return new ProductQna(product, writer, null, content);
     }
 
     // 답글은 상품 판매자만, 같은 상품의 삭제되지 않은 질문에만 달 수 있다.
-    public static ProductQna createReply(Product product, ProductMember writer, ProductQna parent, String content) {
+    public static ProductQna createReply(Product product, MarketMember writer, ProductQna parent, String content) {
         if (!product.getSeller().getId().equals(writer.getId())) {
             throw new BusinessException(ProductErrorCode.ONLY_SELLER_CAN_REPLY);
         }

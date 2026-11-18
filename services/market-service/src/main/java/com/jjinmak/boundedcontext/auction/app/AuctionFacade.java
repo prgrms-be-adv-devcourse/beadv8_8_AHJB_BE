@@ -2,7 +2,6 @@ package com.jjinmak.boundedcontext.auction.app;
 
 import com.jjinmak.boundedcontext.auction.domain.*;
 import com.jjinmak.boundedcontext.auction.dto.*;
-import com.jjinmak.contracts.member.dto.MemberDto;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,7 +12,6 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class AuctionFacade {
-    private final AuctionSyncMemberUseCase auctionSyncMemberUseCase;
     private final AuctionCreateUseCase auctionCreateUseCase;
     private final AuctionBidUseCase auctionBidUseCase;
     private final AuctionInstantWinUseCase auctionInstantWinUseCase;
@@ -27,11 +25,6 @@ public class AuctionFacade {
     private final AuctionEndingSoonUseCase auctionEndingSoonUseCase;
     private final AuctionRelistCheckUseCase auctionRelistCheckUseCase;
 
-
-    @Transactional
-    public AuctionMember syncMember(MemberDto dto){
-        return auctionSyncMemberUseCase.syncMember(dto);
-    }
 
     @Transactional
     public AuctionCreateResultDto createAuction(AuctionCreateDto dto){

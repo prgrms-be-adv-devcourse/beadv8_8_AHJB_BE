@@ -1,5 +1,6 @@
 package com.jjinmak.boundedcontext.product.product.domain;
 
+import com.jjinmak.boundedcontext.market.shared.domain.MarketMember;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.jpa.entity.BaseIdAndTime;
 import com.jjinmak.contracts.product.domain.Manufacturer;
@@ -28,7 +29,7 @@ public class Product extends BaseIdAndTime {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
-    private ProductMember seller;
+    private MarketMember seller;
 
     @Column(name = "product_name", nullable = false, length = 100)
     private String name;
@@ -94,7 +95,7 @@ public class Product extends BaseIdAndTime {
     @Version
     private Long version;
 
-    private Product(ProductMember seller, String name, ProductCategory category,
+    private Product(MarketMember seller, String name, ProductCategory category,
                     Manufacturer manufacturer, String manufacturerEtc, String description,
                     ShippingFeeType shippingFeeType, Long shippingFee, boolean bundleShipping,
                     String policyVersion, LocalDateTime now,
@@ -133,7 +134,7 @@ public class Product extends BaseIdAndTime {
         return manufacturerEtc.strip();
     }
 
-    public static Product create(ProductMember seller, String name, ProductCategory category,
+    public static Product create(MarketMember seller, String name, ProductCategory category,
                                  Manufacturer manufacturer, String manufacturerEtc, String description,
                                  ShippingFeeType shippingFeeType, Long customShippingFee, boolean bundleShipping,
                                  String policyVersion, LocalDateTime now, ProductAuctionTerms auctionTerms) {
@@ -147,7 +148,7 @@ public class Product extends BaseIdAndTime {
 
     // 네덜란드식 이벤트 상품. 관리자가 오픈 시각을 직접 정한다. (지금보다 뒤여야 한다)
     // 오픈 시각이 되면 영국식과 같은 스케줄러가 경매를 요청한다.
-    public static Product createDutch(ProductMember admin, String name, ProductCategory category,
+    public static Product createDutch(MarketMember admin, String name, ProductCategory category,
                                       Manufacturer manufacturer, String manufacturerEtc, String description,
                                       ShippingFeeType shippingFeeType, Long customShippingFee, boolean bundleShipping,
                                       LocalDateTime now, ProductAuctionTerms dutchTerms, LocalDateTime openAt) {

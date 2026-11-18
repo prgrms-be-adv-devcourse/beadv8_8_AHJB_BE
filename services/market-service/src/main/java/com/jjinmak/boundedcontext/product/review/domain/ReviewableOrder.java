@@ -1,5 +1,6 @@
 package com.jjinmak.boundedcontext.product.review.domain;
 
+import com.jjinmak.boundedcontext.market.shared.domain.MarketMember;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.*;
@@ -25,12 +26,12 @@ public class ReviewableOrder extends BaseIdAndTime {
     // 후기 작성자 (구매자)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
-    private ReviewMember buyer;
+    private MarketMember buyer;
 
     // 후기 대상 (판매자)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
-    private ReviewMember seller;
+    private MarketMember seller;
 
     @Column(nullable = false)
     private Long productId;
@@ -52,7 +53,7 @@ public class ReviewableOrder extends BaseIdAndTime {
     @Column(nullable = false)
     private boolean reviewed;
 
-    public ReviewableOrder(Long orderId, ReviewMember buyer, ReviewMember seller,
+    public ReviewableOrder(Long orderId, MarketMember buyer, MarketMember seller,
                            Long productId, String productName, Long winningPrice, LocalDateTime confirmedAt) {
         this.orderId = orderId;
         this.buyer = buyer;

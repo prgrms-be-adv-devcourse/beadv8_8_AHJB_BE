@@ -1,13 +1,13 @@
 package com.jjinmak.boundedcontext.product.product.app;
 
+import com.jjinmak.boundedcontext.market.shared.domain.MarketMember;
+import com.jjinmak.boundedcontext.market.shared.out.MarketMemberRepository;
 import com.jjinmak.contracts.product.event.ProductWishChangeType;
 import com.jjinmak.contracts.product.event.ProductWishChangedEvent;
 import com.jjinmak.boundedcontext.product.product.domain.Product;
 import com.jjinmak.boundedcontext.product.product.domain.ProductErrorCode;
-import com.jjinmak.boundedcontext.product.product.domain.ProductMember;
 import com.jjinmak.boundedcontext.product.product.domain.ProductWish;
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductWishResponseDto;
-import com.jjinmak.boundedcontext.product.product.out.ProductMemberRepository;
 import com.jjinmak.boundedcontext.product.product.out.ProductRepository;
 import com.jjinmak.boundedcontext.product.product.out.ProductWishRepository;
 import com.jjinmak.common.exception.BusinessException;
@@ -24,7 +24,7 @@ import java.time.LocalDateTime;
 public class ProductWishCreateUseCase {
 
     private final ProductRepository productRepository;
-    private final ProductMemberRepository productMemberRepository;
+    private final MarketMemberRepository marketMemberRepository;
     private final ProductWishRepository productWishRepository;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -32,7 +32,7 @@ public class ProductWishCreateUseCase {
         Product product = productRepository.findByIdAndDeletedAtIsNull(productId)
                 .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
-        ProductMember member = productMemberRepository.findById(memberId)
+        MarketMember member = marketMemberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(CommonErrorCode.USER_NOT_FOUND));
 
         if (productWishRepository.existsByMemberIdAndProductId(memberId, productId)){

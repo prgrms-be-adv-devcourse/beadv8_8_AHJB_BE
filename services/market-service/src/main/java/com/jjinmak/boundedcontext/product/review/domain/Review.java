@@ -1,5 +1,6 @@
 package com.jjinmak.boundedcontext.product.review.domain;
 
+import com.jjinmak.boundedcontext.market.shared.domain.MarketMember;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.*;
@@ -27,12 +28,12 @@ public class Review extends BaseIdAndTime {
     // 작성자 (구매자)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
-    private ReviewMember writer;
+    private MarketMember writer;
 
     // 후기를 받은 사람 (판매자)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
-    private ReviewMember target;
+    private MarketMember target;
 
     @Column(nullable = false, precision = 2, scale = 1)
     private BigDecimal rating;

@@ -1,8 +1,8 @@
 package com.jjinmak.boundedcontext.product.review.app;
 
-import com.jjinmak.boundedcontext.product.review.domain.ReviewMember;
+import com.jjinmak.boundedcontext.market.shared.domain.MarketMember;
+import com.jjinmak.boundedcontext.market.shared.out.MarketMemberRepository;
 import com.jjinmak.boundedcontext.product.review.domain.ReviewableOrder;
-import com.jjinmak.boundedcontext.product.review.out.ReviewMemberRepository;
 import com.jjinmak.boundedcontext.product.review.out.ReviewableOrderRepository;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.exception.CommonErrorCode;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 public class ReviewCreateReviewableOrderUseCase {
 
     private final ReviewableOrderRepository reviewableOrderRepository;
-    private final ReviewMemberRepository reviewMemberRepository;
+    private final MarketMemberRepository marketMemberRepository;
     private final ProductReadPort productReadPort;
 
     // 구매확정 이벤트를 받아 후기 작성 가능 주문을 만든다. 같은 주문이 다시 들어오면 무시한다.
@@ -26,8 +26,8 @@ public class ReviewCreateReviewableOrderUseCase {
             return;
         }
 
-        ReviewMember buyer = getMember(event.winnerId());
-        ReviewMember seller = getMember(event.sellerId());
+        MarketMember buyer = getMember(event.winnerId());
+        MarketMember seller = getMember(event.sellerId());
 
         ProductSummaryDto product = productReadPort.getProductSummary(event.productId());
 
@@ -38,8 +38,8 @@ public class ReviewCreateReviewableOrderUseCase {
         ));
     }
 
-    private ReviewMember getMember(Long memberId){
-        return reviewMemberRepository.findById(memberId)
+    private MarketMember getMember(Long memberId){
+        return marketMemberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(CommonErrorCode.USER_NOT_FOUND));
     }
 }

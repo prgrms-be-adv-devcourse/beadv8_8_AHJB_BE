@@ -1,5 +1,6 @@
 package com.jjinmak.boundedcontext.product.product.domain;
 
+import com.jjinmak.boundedcontext.market.shared.domain.MarketMember;
 import com.jjinmak.contracts.product.domain.Manufacturer;
 import com.jjinmak.contracts.product.domain.ProductCategory;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,7 @@ class ProductRelistTest {
 
     private Product 상품(AuctionDuration duration, LocalDateTime customEndAt) {
         ProductAuctionTerms terms = ProductAuctionTerms.create(10_000L, null, duration, customEndAt, SCHEDULED_AT);
-        return Product.create(new ProductMember(SELLER_ID, "판매자"), "스위치", ProductCategory.CONSOLE,
+        return Product.create(new MarketMember(SELLER_ID, "판매자"), "스위치", ProductCategory.CONSOLE,
                 Manufacturer.NINTENDO, null, "설명", ShippingFeeType.FREE, null, false,
                 "v1", CREATED_AT, terms);
     }
@@ -72,7 +73,7 @@ class ProductRelistTest {
 
     @Test
     void 네덜란드식_이벤트_상품은_재등록할_수_없다() {
-        Product product = Product.createDutch(new ProductMember(SELLER_ID, "관리자"), "스위치", ProductCategory.CONSOLE,
+        Product product = Product.createDutch(new MarketMember(SELLER_ID, "관리자"), "스위치", ProductCategory.CONSOLE,
                 Manufacturer.NINTENDO, null, "설명", ShippingFeeType.FREE, null, false, CREATED_AT,
                 ProductAuctionTerms.createDutch(300_000L, 150_000L, 2, 60), SCHEDULED_AT);
         product.requestAuction(SCHEDULED_AT);

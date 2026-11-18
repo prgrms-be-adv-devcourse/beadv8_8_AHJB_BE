@@ -1,5 +1,6 @@
 package com.jjinmak.boundedcontext.product.product.in.dto;
 
+import com.jjinmak.boundedcontext.market.shared.domain.MarketMember;
 import com.jjinmak.contracts.product.domain.Manufacturer;
 import com.jjinmak.contracts.product.domain.ProductCategory;
 import com.jjinmak.boundedcontext.product.product.domain.*;
@@ -76,7 +77,7 @@ public record ProductDetailDto(
     public static ProductDetailDto of(Product product, List<String> imageUrls, SellerRatingDto sellerRating,
                                       boolean wished, boolean isMine) {
         ProductAuctionTerms terms = product.getAuctionTerms();
-        ProductMember seller = product.getSeller();
+        MarketMember seller = product.getSeller();
 
         return new ProductDetailDto(
                 product.getId(),

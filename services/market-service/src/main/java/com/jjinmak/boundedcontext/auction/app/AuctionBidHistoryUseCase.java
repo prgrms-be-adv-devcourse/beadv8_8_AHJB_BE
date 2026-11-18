@@ -1,12 +1,11 @@
 package com.jjinmak.boundedcontext.auction.app;
 
-
-import com.jjinmak.boundedcontext.auction.domain.AuctionMember;
+import com.jjinmak.boundedcontext.market.shared.domain.MarketMember;
+import com.jjinmak.boundedcontext.market.shared.out.MarketMemberRepository;
 import com.jjinmak.boundedcontext.auction.domain.Bid;
 import com.jjinmak.boundedcontext.auction.dto.AuctionBidHistoryItemDto;
 import com.jjinmak.boundedcontext.auction.dto.AuctionBidHistoryResponseDto;
 import com.jjinmak.boundedcontext.auction.exception.AuctionErrorCode;
-import com.jjinmak.boundedcontext.auction.out.AuctionMemberRepository;
 import com.jjinmak.boundedcontext.auction.out.AuctionRepository;
 import com.jjinmak.boundedcontext.auction.out.BidRepository;
 import com.jjinmak.common.exception.BusinessException;
@@ -26,7 +25,7 @@ import java.util.stream.Collectors;
 public class AuctionBidHistoryUseCase {
     private final AuctionRepository auctionRepository;
     private final BidRepository bidRepository;
-    private final AuctionMemberRepository auctionMemberRepository;
+    private final MarketMemberRepository marketMemberRepository;
 
     public AuctionBidHistoryResponseDto bidHistory(Long auctionId,Long memberId,int page,int size){
         if(!auctionRepository.existsById(auctionId)){
@@ -38,8 +37,8 @@ public class AuctionBidHistoryUseCase {
         Page<Bid> bids = bidRepository.findByAuctionId(auctionId,pageRequest);
         //입찰자id로 닉네임 한번에 조회
         Set<Long> bidderIds = bids.stream().map(Bid::getBidderId).collect(Collectors.toSet());
-        Map<Long,String> nicknameMap = auctionMemberRepository.findAllById(bidderIds).stream()
-                .collect(Collectors.toMap(AuctionMember::getId, AuctionMember::getNickname));
+        Map<Long,String> nicknameMap = marketMemberRepository.findAllById(bidderIds).stream()
+                .collect(Collectors.toMap(MarketMember::getId, MarketMember::getNickname));
         //dto로 변환
         List<AuctionBidHistoryItemDto> content = bids.stream().map(bid -> new AuctionBidHistoryItemDto(
                 bid.getId(),

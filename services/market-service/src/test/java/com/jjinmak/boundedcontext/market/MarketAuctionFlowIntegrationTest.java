@@ -1,5 +1,7 @@
 package com.jjinmak.boundedcontext.market;
 
+import com.jjinmak.boundedcontext.market.shared.domain.MarketMember;
+import com.jjinmak.boundedcontext.market.shared.out.MarketMemberRepository;
 import com.jjinmak.boundedcontext.auction.domain.Auction;
 import com.jjinmak.boundedcontext.auction.domain.AuctionStatus;
 import com.jjinmak.boundedcontext.auction.domain.FailureReason;
@@ -11,9 +13,7 @@ import com.jjinmak.boundedcontext.market.in.dto.MarketRelistResponseDto;
 import com.jjinmak.boundedcontext.product.product.domain.AuctionDuration;
 import com.jjinmak.boundedcontext.product.product.domain.Product;
 import com.jjinmak.boundedcontext.product.product.domain.ProductAuctionTerms;
-import com.jjinmak.boundedcontext.product.product.domain.ProductMember;
 import com.jjinmak.boundedcontext.product.product.domain.ShippingFeeType;
-import com.jjinmak.boundedcontext.product.product.out.ProductMemberRepository;
 import com.jjinmak.boundedcontext.product.product.out.ProductRepository;
 import com.jjinmak.contracts.product.domain.Manufacturer;
 import com.jjinmak.contracts.product.domain.ProductCategory;
@@ -41,7 +41,7 @@ class MarketAuctionFlowIntegrationTest extends AuctionIntegrationTestSupport {
 
     @Autowired MarketFacade marketFacade;
     @Autowired ProductRepository productRepository;
-    @Autowired ProductMemberRepository productMemberRepository;
+    @Autowired MarketMemberRepository marketMemberRepository;
     @Autowired AuctionRepository auctionRepository;
     @Autowired TransactionTemplate transactionTemplate;
 
@@ -49,11 +49,11 @@ class MarketAuctionFlowIntegrationTest extends AuctionIntegrationTestSupport {
     void tearDown() {
         auctionRepository.deleteAllInBatch();
         productRepository.deleteAllInBatch();
-        productMemberRepository.deleteAllInBatch();
+        marketMemberRepository.deleteAllInBatch();
     }
 
     private Long 상품을_등록한다() {
-        ProductMember seller = productMemberRepository.save(new ProductMember(SELLER_ID, "판매자"));
+        MarketMember seller = marketMemberRepository.save(new MarketMember(SELLER_ID, "판매자"));
         ProductAuctionTerms terms = ProductAuctionTerms.create(10_000L, null, AuctionDuration.DAYS_1, null, OPEN_AT);
         return productRepository.save(Product.create(seller, "스위치", ProductCategory.CONSOLE, Manufacturer.NINTENDO,
                 null, "설명", ShippingFeeType.FREE, null, false, "v1", CREATED_AT, terms)).getId();

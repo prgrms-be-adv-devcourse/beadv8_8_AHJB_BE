@@ -1,13 +1,13 @@
 package com.jjinmak.boundedcontext.product.product.app;
 
+import com.jjinmak.boundedcontext.market.shared.domain.MarketMember;
+import com.jjinmak.boundedcontext.market.shared.out.MarketMemberRepository;
 import com.jjinmak.boundedcontext.product.product.domain.Product;
 import com.jjinmak.boundedcontext.product.product.domain.ProductAuctionTerms;
 import com.jjinmak.boundedcontext.product.product.domain.ProductErrorCode;
-import com.jjinmak.boundedcontext.product.product.domain.ProductMember;
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductCreateRequestDto;
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductCreateRequestDto.AuctionTerms;
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductCreateRequestDto.Shipping;
-import com.jjinmak.boundedcontext.product.product.out.ProductMemberRepository;
 import com.jjinmak.boundedcontext.product.product.out.ProductRepository;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.exception.CommonErrorCode;
@@ -22,13 +22,13 @@ import java.time.LocalDateTime;
 public class ProductCreateUseCase {
 
     private final ProductRepository productRepository;
-    private final ProductMemberRepository productMemberRepository;
+    private final MarketMemberRepository marketMemberRepository;
     private final ProductImageAttachUseCase productImageAttachUseCase;
     private final ProductPublishChangedUseCase productPublishChangedUseCase;
 
     public Product createProduct(Long sellerId, ProductCreateRequestDto request){
         // 판매자 등록 여부, 계정 정지/차단은 컨트롤러의 PERM_SELL 권한 검사에서 확인한다.
-        ProductMember seller = productMemberRepository.findById(sellerId)
+        MarketMember seller = marketMemberRepository.findById(sellerId)
                 .orElseThrow(() -> new BusinessException(CommonErrorCode.USER_NOT_FOUND));
 
         // TODO: 정책 저장 방식이 정해지면 현재 정책 버전과 일치하는지도 검사

@@ -1,8 +1,6 @@
 package com.jjinmak.boundedcontext.product.review.app;
 
-import com.jjinmak.boundedcontext.product.review.domain.ReviewMember;
 import com.jjinmak.boundedcontext.product.review.in.dto.*;
-import com.jjinmak.contracts.member.dto.MemberDto;
 import com.jjinmak.contracts.order.event.OrderConfirmPurchaseEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,18 +12,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ReviewFacade {
 
-    private final ReviewSyncMemberUseCase reviewSyncMemberUseCase;
     private final ReviewCreateReviewableOrderUseCase reviewCreateReviewableOrderUseCase;
     private final ReviewReadReviewableOrderUseCase reviewReadReviewableOrderUseCase;
     private final ReviewCreateUseCase reviewCreateUseCase;
     private final ReviewReadUseCase reviewReadUseCase;
     private final ReviewUpdateUseCase reviewUpdateUseCase;
     private final ReviewDeleteUseCase reviewDeleteUseCase;
-
-    @Transactional
-    public ReviewMember syncMember(MemberDto memberDto){
-        return reviewSyncMemberUseCase.syncMember(memberDto);
-    }
 
     @Transactional
     public void createReviewableOrder(OrderConfirmPurchaseEvent event){

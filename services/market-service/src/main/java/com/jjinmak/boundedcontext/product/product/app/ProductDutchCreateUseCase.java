@@ -1,15 +1,15 @@
 package com.jjinmak.boundedcontext.product.product.app;
 
+import com.jjinmak.boundedcontext.market.shared.domain.MarketMember;
+import com.jjinmak.boundedcontext.market.shared.out.MarketMemberRepository;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.exception.CommonErrorCode;
 import com.jjinmak.contracts.product.event.ProductChangeType;
 import com.jjinmak.boundedcontext.product.product.domain.Product;
 import com.jjinmak.boundedcontext.product.product.domain.ProductAuctionTerms;
-import com.jjinmak.boundedcontext.product.product.domain.ProductMember;
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductCreateRequestDto.Shipping;
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductDutchCreateRequestDto;
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductDutchCreateRequestDto.DutchTerms;
-import com.jjinmak.boundedcontext.product.product.out.ProductMemberRepository;
 import com.jjinmak.boundedcontext.product.product.out.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,13 +22,13 @@ import java.time.LocalDateTime;
 public class ProductDutchCreateUseCase {
 
     private final ProductRepository productRepository;
-    private final ProductMemberRepository productMemberRepository;
+    private final MarketMemberRepository marketMemberRepository;
     private final ProductImageAttachUseCase productImageAttachUseCase;
     private final ProductPublishChangedUseCase productPublishChangedUseCase;
 
     public Product createDutchProduct(Long adminId, ProductDutchCreateRequestDto request){
         // 관리자 여부는 컨트롤러의 ROLE_ADMIN 권한 검사에서 확인한다.
-        ProductMember admin = productMemberRepository.findById(adminId)
+        MarketMember admin = marketMemberRepository.findById(adminId)
                 .orElseThrow(() -> new BusinessException(CommonErrorCode.USER_NOT_FOUND));
 
         DutchTerms terms = request.auctionTerms();

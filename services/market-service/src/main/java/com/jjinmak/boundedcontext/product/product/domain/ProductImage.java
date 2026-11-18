@@ -1,5 +1,6 @@
 package com.jjinmak.boundedcontext.product.product.domain;
 
+import com.jjinmak.boundedcontext.market.shared.domain.MarketMember;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.*;
@@ -19,7 +20,7 @@ public class ProductImage extends BaseIdAndTime {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
-    private ProductMember uploader;
+    private MarketMember uploader;
 
     // 업로드 직후에는 null
     @ManyToOne(fetch = FetchType.LAZY)
@@ -40,7 +41,7 @@ public class ProductImage extends BaseIdAndTime {
     // 0번이 대표 이미지. 상품에 연결되기 전에는 null
     private Integer sortOrder;
 
-    public ProductImage(ProductMember uploader, String storageKey, ProductImageFormat format, long size) {
+    public ProductImage(MarketMember uploader, String storageKey, ProductImageFormat format, long size) {
         this.uploader = uploader;
         this.storageKey = storageKey;
         this.format = format;
