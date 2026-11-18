@@ -4,6 +4,7 @@ import com.jjinmak.boundedcontext.product.product.domain.Product;
 import com.jjinmak.boundedcontext.product.product.domain.ProductAuctionStatus;
 import com.jjinmak.boundedcontext.product.product.domain.ProductAuctionTerms;
 import com.jjinmak.boundedcontext.product.product.domain.ProductErrorCode;
+import com.jjinmak.boundedcontext.product.product.in.dto.ProductAuctionOpenDto;
 import com.jjinmak.boundedcontext.product.product.out.ProductRepository;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.contracts.product.event.ProductRegisteredEvent;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -40,20 +42,22 @@ public class ProductRequestAuctionUseCase {
                 now.minus(RESEND_UNTIL), now.minus(RESEND_AFTER), ProductAuctionStatus.SCHEDULED);
     }
 
-    // 시작 예정 시각이 된 상품의 경매 생성을 경매 컨텍스트에 요청한다.
-    // 요청 표시는 저장되고 이벤트는 커밋 후 전송된다. 전송이 실패하면 resendAuction이 다시 보낸다.
-    public void requestAuction(Long productId, LocalDateTime now){
+    // 시작 예정 시각이 된 상품에 요청 표시를 하고, 경매를 열 판매 조건을 돌려준다.
+    // 경매 생성은 market 흐름(MarketAuctionOpenUseCase)이 같은 트랜잭션에서 이어서 한다.
+    // 상품 등록 이벤트는 정산·채팅이 상품명·썸네일을 저장하는 데 쓰므로 계속 발행한다. (커밋 후 전송)
+    public Optional<ProductAuctionOpenDto> prepareAuctionOpen(Long productId, LocalDateTime now){
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
         // 조회 이후 삭제되었거나 이미 요청된 경우
         if (!product.isAuctionRequestable(now)){
-            return;
+            return Optional.empty();
         }
 
         product.requestAuction(now);
 
         publishAuctionRequest(product);
+        return Optional.of(ProductAuctionOpenDto.from(product));
     }
 
     // 요청했는데 경매가 시작되지 않은 상품의 요청을 다시 보낸다.

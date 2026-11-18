@@ -2,6 +2,7 @@ package com.jjinmak.boundedcontext.product.product.app;
 
 import com.jjinmak.boundedcontext.product.product.domain.Product;
 import com.jjinmak.boundedcontext.product.product.domain.ProductMember;
+import com.jjinmak.boundedcontext.product.product.in.dto.ProductAuctionOpenDto;
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductCreateRequestDto;
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductDetailDto;
 import com.jjinmak.boundedcontext.product.product.in.dto.ProductDutchCreateRequestDto;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -68,10 +70,15 @@ public class ProductFacade {
         return productRequestAuctionUseCase.findTargetIds(now);
     }
 
-    // 상품마다 별도 트랜잭션으로 처리해서, 하나가 실패해도 다른 상품은 경매로 넘어간다.
+    // market 경매 시작 흐름(MarketAuctionOpenUseCase)의 트랜잭션에 참여한다.
     @Transactional
-    public void requestAuction(Long productId, LocalDateTime now){
-        productRequestAuctionUseCase.requestAuction(productId, now);
+    public Optional<ProductAuctionOpenDto> prepareAuctionOpen(Long productId, LocalDateTime now){
+        return productRequestAuctionUseCase.prepareAuctionOpen(productId, now);
+    }
+
+    @Transactional
+    public void startAuction(Long productId, Long auctionId, LocalDateTime endAt){
+        productStartAuctionUseCase.startAuction(productId, auctionId, endAt);
     }
 
     @Transactional(readOnly = true)

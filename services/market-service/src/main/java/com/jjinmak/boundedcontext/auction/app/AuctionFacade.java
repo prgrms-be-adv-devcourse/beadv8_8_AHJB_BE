@@ -33,8 +33,8 @@ public class AuctionFacade {
     }
 
     @Transactional
-    public void createAuction(AuctionCreateDto dto){
-         auctionCreateUseCase.createAuction(dto);
+    public AuctionCreateResultDto createAuction(AuctionCreateDto dto){
+        return auctionCreateUseCase.createAuction(dto);
     }
 
     @Transactional

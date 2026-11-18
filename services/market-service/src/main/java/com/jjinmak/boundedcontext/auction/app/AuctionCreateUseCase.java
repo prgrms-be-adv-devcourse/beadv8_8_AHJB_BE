@@ -4,12 +4,14 @@ import com.jjinmak.boundedcontext.auction.domain.Auction;
 import com.jjinmak.boundedcontext.auction.domain.DutchAuction;
 import com.jjinmak.boundedcontext.auction.domain.EnglishAuction;
 import com.jjinmak.boundedcontext.auction.dto.AuctionCreateDto;
+import com.jjinmak.boundedcontext.auction.dto.AuctionCreateResultDto;
 import com.jjinmak.boundedcontext.auction.out.AuctionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -18,10 +20,13 @@ public class AuctionCreateUseCase {
     private final AuctionRepository auctionRepository;
     private final AuctionEventPublisher auctionEventPublisher;
 
-    public void createAuction(AuctionCreateDto dto){
-        if (auctionRepository.existsByProductId(dto.productId())) {
-            log.info("경매 생성 중복 수신, 무시: productId={}", dto.productId());
-            return;
+    // 같은 상품의 경매가 이미 있으면 새로 만들지 않고 그 경매를 돌려준다. (같은 요청이 두 번 와도 결과가 같다)
+    public AuctionCreateResultDto createAuction(AuctionCreateDto dto){
+        Optional<Auction> existing = auctionRepository.findTopByProductIdOrderByIdDesc(dto.productId());
+        if (existing.isPresent()) {
+            log.info("경매 생성 중복 요청, 기존 경매 반환: productId={}, auctionId={}",
+                    dto.productId(), existing.get().getId());
+            return AuctionCreateResultDto.from(existing.get());
         }
         Auction auction = switch (dto.auctionType()) {
             case ENGLISH -> EnglishAuction.create(dto.productId(), dto.sellerId(), dto.startPrice(),
@@ -36,5 +41,6 @@ public class AuctionCreateUseCase {
         }
         Auction saved = auctionRepository.save(auction);
         auctionEventPublisher.publishStarted(saved);
+        return AuctionCreateResultDto.from(saved);
     }
 }
