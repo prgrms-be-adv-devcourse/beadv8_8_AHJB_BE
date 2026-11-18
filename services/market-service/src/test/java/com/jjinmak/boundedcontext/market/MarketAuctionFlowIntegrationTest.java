@@ -2,12 +2,12 @@ package com.jjinmak.boundedcontext.market;
 
 import com.jjinmak.boundedcontext.market.shared.domain.MarketMember;
 import com.jjinmak.boundedcontext.market.shared.out.MarketMemberRepository;
-import com.jjinmak.boundedcontext.auction.domain.Auction;
-import com.jjinmak.boundedcontext.auction.domain.AuctionStatus;
-import com.jjinmak.boundedcontext.auction.domain.FailureReason;
-import com.jjinmak.boundedcontext.auction.exception.AuctionErrorCode;
-import com.jjinmak.boundedcontext.auction.out.AuctionRepository;
-import com.jjinmak.boundedcontext.auction.support.AuctionIntegrationTestSupport;
+import com.jjinmak.boundedcontext.market.auction.domain.Auction;
+import com.jjinmak.boundedcontext.market.auction.domain.AuctionStatus;
+import com.jjinmak.boundedcontext.market.auction.domain.FailureReason;
+import com.jjinmak.boundedcontext.market.auction.exception.AuctionErrorCode;
+import com.jjinmak.boundedcontext.market.auction.out.AuctionRepository;
+import com.jjinmak.boundedcontext.market.auction.support.AuctionIntegrationTestSupport;
 import com.jjinmak.boundedcontext.market.app.MarketFacade;
 import com.jjinmak.boundedcontext.market.in.dto.MarketRelistResponseDto;
 import com.jjinmak.boundedcontext.market.product.app.ProductFacade;

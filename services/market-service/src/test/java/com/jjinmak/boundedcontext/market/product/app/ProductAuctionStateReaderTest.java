@@ -1,9 +1,9 @@
 package com.jjinmak.boundedcontext.market.product.app;
 
-import com.jjinmak.boundedcontext.auction.app.AuctionQueryFacade;
-import com.jjinmak.boundedcontext.auction.domain.AuctionStatus;
-import com.jjinmak.boundedcontext.auction.domain.FailureReason;
-import com.jjinmak.boundedcontext.auction.dto.AuctionStateDto;
+import com.jjinmak.boundedcontext.market.auction.app.AuctionQueryFacade;
+import com.jjinmak.boundedcontext.market.auction.domain.AuctionStatus;
+import com.jjinmak.boundedcontext.market.auction.domain.FailureReason;
+import com.jjinmak.boundedcontext.market.auction.dto.AuctionStateDto;
 import com.jjinmak.boundedcontext.market.product.domain.Product;
 import com.jjinmak.boundedcontext.market.product.domain.ProductAuctionFailureReason;
 import com.jjinmak.boundedcontext.market.product.domain.ProductAuctionStatus;

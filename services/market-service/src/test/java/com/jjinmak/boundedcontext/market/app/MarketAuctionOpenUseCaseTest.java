@@ -1,9 +1,9 @@
 package com.jjinmak.boundedcontext.market.app;
 
 import com.jjinmak.boundedcontext.market.shared.domain.AuctionType;
-import com.jjinmak.boundedcontext.auction.app.AuctionFacade;
-import com.jjinmak.boundedcontext.auction.dto.AuctionCreateDto;
-import com.jjinmak.boundedcontext.auction.dto.AuctionCreateResultDto;
+import com.jjinmak.boundedcontext.market.auction.app.AuctionFacade;
+import com.jjinmak.boundedcontext.market.auction.dto.AuctionCreateDto;
+import com.jjinmak.boundedcontext.market.auction.dto.AuctionCreateResultDto;
 import com.jjinmak.boundedcontext.market.product.app.ProductFacade;
 import com.jjinmak.boundedcontext.market.product.in.dto.ProductAuctionOpenDto;
 import org.junit.jupiter.api.Test;
