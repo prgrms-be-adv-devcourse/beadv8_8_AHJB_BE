@@ -19,6 +19,7 @@ import java.util.List;
 import static com.jjinmak.back.payment.domain.enums.MismatchType.LEDGER_GROUP_UNBALANCED;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.CHARGE;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.CHARGE_CANCEL;
+import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_EARN;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.WITHDRAWAL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -86,15 +87,15 @@ class LedgerGroupCheckerTest {
     }
 
     @Test
-    @DisplayName("대상일 0시부터 다음 날 0시 전까지를 보고, 한 줄만 남는 충전 · 충전 취소 · 출금은 뺀다")
+    @DisplayName("대상일 0시부터 다음 날 0시 전까지를 보고, 한 줄만 남는 충전 · 충전 취소 · 출금 · 포인트 적립은 뺀다")
     void queriesTargetDateWithoutExternalTypes() {
         checker.check(TARGET_DATE);
 
         assertThat(askedStartAts).containsExactly(TARGET_DATE.atStartOfDay(), TARGET_DATE.atStartOfDay());
         assertThat(askedEndAts).containsExactly(TARGET_DATE.plusDays(1).atStartOfDay(), TARGET_DATE.plusDays(1).atStartOfDay());
         assertThat(askedExcludedTypes).hasSize(2);
-        assertThat(askedExcludedTypes.get(0)).containsExactly(CHARGE, CHARGE_CANCEL, WITHDRAWAL);
-        assertThat(askedExcludedTypes.get(1)).containsExactly(CHARGE, CHARGE_CANCEL, WITHDRAWAL);
+        assertThat(askedExcludedTypes.get(0)).containsExactly(CHARGE, CHARGE_CANCEL, WITHDRAWAL, POINT_EARN);
+        assertThat(askedExcludedTypes.get(1)).containsExactly(CHARGE, CHARGE_CANCEL, WITHDRAWAL, POINT_EARN);
     }
 
     @Test

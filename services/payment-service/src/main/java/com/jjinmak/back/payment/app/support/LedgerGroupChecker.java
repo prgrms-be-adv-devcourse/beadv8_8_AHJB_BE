@@ -18,6 +18,7 @@ import java.util.List;
 import static com.jjinmak.back.payment.domain.enums.MismatchType.LEDGER_GROUP_UNBALANCED;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.CHARGE;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.CHARGE_CANCEL;
+import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_EARN;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.WITHDRAWAL;
 
 /**
@@ -25,7 +26,8 @@ import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.WITHDR
  *
  * 지갑 사이로 돈을 옮기는 거래(결제 · 환불 · 정산 · 수수료)는 나가는 쪽(-)과 들어오는 쪽(+)을 같은 그룹으로 기록하므로
  * 그룹 안의 금액을 다 더하면 0 이다. 0 이 아니면 한쪽 기록이 빠졌거나 금액이 다르게 적힌 것이다.
- * 충전 · 충전 취소 · 출금은 상대가 원장 밖(PG, 계좌)이라 한 줄만 남으므로 이 검사에서 뺀다.
+ * 충전 · 충전 취소 · 출금 · 포인트 적립은 상대가 원장 밖(PG, 계좌, 플랫폼)이라 한 줄만 남으므로 이 검사에서 뺀다.
+ * 포인트 결제 · 포인트 환불은 주머니가 달라도(구매자 포인트 ↔ ESCROW 예치금) 같은 그룹의 두 줄이라 합이 0 이다.
  *
  * 대상일에 기록이 생긴 그룹을 본다. 합계는 그 그룹의 전체 기록으로 낸다 (자정에 걸친 그룹이 반쪽만 잡히지 않게).
  *  - expected : 0
@@ -37,7 +39,7 @@ import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.WITHDR
 public class LedgerGroupChecker implements LedgerInvariantChecker {
 
     // 상대 계정이 원장 밖이라 한 줄만 남는 유형
-    private static final List<WalletTransactionType> EXTERNAL_TYPES = List.of(CHARGE, CHARGE_CANCEL, WITHDRAWAL);
+    private static final List<WalletTransactionType> EXTERNAL_TYPES = List.of(CHARGE, CHARGE_CANCEL, WITHDRAWAL, POINT_EARN);
 
     private final WalletTransactionRepository walletTransactionRepository;
 
