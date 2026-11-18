@@ -46,9 +46,15 @@ import static com.jjinmak.back.payment.domain.enums.ReconciliationRunStatus.FAIL
 import static com.jjinmak.back.payment.domain.enums.ReconciliationRunStatus.MATCHED;
 import static com.jjinmak.back.payment.domain.enums.ReconciliationRunStatus.MISMATCHED;
 import static com.jjinmak.back.payment.domain.enums.ReconciliationType.LEDGER;
+import static com.jjinmak.back.payment.domain.enums.ReferenceType.ORDER;
 import static com.jjinmak.back.payment.domain.enums.ReferenceType.PAYMENT;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.CHARGE;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.CHARGE_CANCEL;
+import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_EARN;
+import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_HOLD_PAY;
+import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_HOLD_RECEIVE;
+import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_REFUND_PAY;
+import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_REFUND_RECEIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -188,6 +194,30 @@ class ReconciliationLedgerIntegrationTest extends PaymentIntegrationTestSupport 
         walletFacade.withdrawAll(OTHER_ID);
     }
 
+    // 포인트 적립. 플랫폼이 주는 돈이라 원장에 한 줄만 남는다
+    private void earnPoint(long memberId, long orderId, long amount) {
+        transactionTemplate.executeWithoutResult(status -> {
+            Wallet wallet = walletRepository.findByHolderId(memberId).orElseThrow();
+            ledgerRecorder.depositPoint(wallet, POINT_EARN, amount, ORDER, orderId);
+        });
+    }
+
+    // 포인트로 결제했다가 그대로 환불받는다 (구매자 포인트 → ESCROW → 구매자 포인트). 끝나면 ESCROW 잔액은 원래대로다
+    private void payWithPointThenRefund(long memberId, long orderId, long amount) {
+        transactionTemplate.executeWithoutResult(status -> {
+            Wallet wallet = walletRepository.findByHolderId(memberId).orElseThrow();
+            Wallet escrow = walletRepository.findById(escrowWalletId).orElseThrow();
+            ledgerRecorder.transferPointToDeposit(wallet, POINT_HOLD_PAY, escrow, POINT_HOLD_RECEIVE,
+                    amount, UUID.randomUUID().toString(), ORDER, orderId);
+            ledgerRecorder.transferDepositToPoint(escrow, POINT_REFUND_PAY, wallet, POINT_REFUND_RECEIVE,
+                    amount, UUID.randomUUID().toString(), ORDER, orderId);
+        });
+    }
+
+    private Wallet walletOf(long memberId) {
+        return walletRepository.findByHolderId(memberId).orElseThrow();
+    }
+
     // 원장을 거치지 않고 DB 값만 바꾼다. 파라미터는 SQL 의 ?1, ?2 ... 자리에 들어간다
     private void tamper(String sql, Object... params) {
         transactionTemplate.executeWithoutResult(status -> {
@@ -261,6 +291,78 @@ class ReconciliationLedgerIntegrationTest extends PaymentIntegrationTestSupport 
 
         assertStatus(run, MATCHED);
         assertThat(run.getAttempt()).isEqualTo(1);
+    }
+
+    // ===== 포인트 =====
+
+    @Test
+    @DisplayName("포인트 적립 · 포인트 결제 · 포인트 환불이 있어도 검사는 모두 일치하고, 전액 출금은 포인트를 건드리지 않는다")
+    void pointFlowMatches() {
+        scenario();
+        earnPoint(BUYER_ID, 102L, 1_000);
+        payWithPointThenRefund(BUYER_ID, 201L, 600);
+
+        charge(OTHER_ID, 3_000);
+        earnPoint(OTHER_ID, 202L, 500);
+        walletFacade.withdrawAll(OTHER_ID);
+
+        ReconciliationRun run = reconcile(today);
+
+        assertStatus(run, MATCHED);
+        assertThat(mismatchesOf(run)).isEmpty();
+
+        Wallet buyer = walletOf(BUYER_ID);
+        assertThat(buyer.getPointBalance()).isEqualTo(1_000);            // 600 을 썼다가 포인트로 돌려받았다
+        assertThat(buyer.getBalance()).isEqualTo(92_000);                // 예치금은 기본 시나리오 그대로
+
+        Wallet other = walletOf(OTHER_ID);
+        assertThat(other.getBalance()).isZero();                         // 예치금만 출금됐다
+        assertThat(other.getPointBalance()).isEqualTo(500);
+
+        assertThat(walletRepository.findById(escrowWalletId).orElseThrow().getBalance()).isEqualTo(38_000);
+    }
+
+    @Test
+    @DisplayName("포인트 잔액만 바뀌면 포인트 주머니가 원장 합계와 어긋난다")
+    void pointBalanceChangedWithoutLedger() {
+        scenario();
+        earnPoint(BUYER_ID, 102L, 1_000);
+        tamper("update wallet set point_balance = point_balance + 300 where id = ?1", buyerWalletId);
+
+        ReconciliationRun run = reconcile(today);
+
+        assertStatus(run, MISMATCHED);
+        assertThat(mismatchesOf(run)).hasSize(1);
+        ReconciliationMismatch mismatch = onlyMismatchOf(run, BALANCE_LEDGER_MISMATCH);
+        assertThat(mismatch.getTargetType()).isEqualTo(MismatchTargetType.WALLET);
+        assertThat(mismatch.getTargetKey()).isEqualTo(buyerWalletId + ":POINT");
+        assertThat(mismatch.getExpectedAmount()).isEqualTo(1_000L);      // 원장 합계
+        assertThat(mismatch.getActualAmount()).isEqualTo(1_300L);        // 지갑 포인트
+    }
+
+    @Test
+    @DisplayName("포인트 결제의 한쪽 기록이 없으면 그룹 합이 0 이 아니고, ESCROW 원장 합계도 어긋난다")
+    void oneSideOfPointTransferMissing() {
+        scenario();
+        earnPoint(BUYER_ID, 102L, 1_000);
+        payWithPointThenRefund(BUYER_ID, 201L, 600);
+        tamper("delete from wallet_transactions where type = 'POINT_HOLD_RECEIVE' and reference_type = 'ORDER' and reference_id = ?1",
+                201L);
+
+        ReconciliationRun run = reconcile(today);
+
+        assertStatus(run, MISMATCHED);
+        assertThat(mismatchesOf(run)).extracting(ReconciliationMismatch::getType)
+                .containsExactlyInAnyOrder(LEDGER_GROUP_UNBALANCED, BALANCE_LEDGER_MISMATCH);
+
+        ReconciliationMismatch group = onlyMismatchOf(run, LEDGER_GROUP_UNBALANCED);
+        assertThat(group.getExpectedAmount()).isEqualTo(0L);
+        assertThat(group.getActualAmount()).isEqualTo(-600L);            // 구매자 포인트에서 나간 기록만 남았다
+
+        ReconciliationMismatch balance = onlyMismatchOf(run, BALANCE_LEDGER_MISMATCH);
+        assertThat(balance.getTargetKey()).isEqualTo(escrowWalletId + ":DEPOSIT");
+        assertThat(balance.getExpectedAmount()).isEqualTo(37_400L);      // ESCROW 원장 합계 (38,000 - 600)
+        assertThat(balance.getActualAmount()).isEqualTo(38_000L);
     }
 
     // ===== 검사별 불일치 =====
