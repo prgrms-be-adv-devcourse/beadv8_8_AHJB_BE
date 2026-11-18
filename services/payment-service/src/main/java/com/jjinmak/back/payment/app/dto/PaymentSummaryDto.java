@@ -7,8 +7,8 @@ import java.time.LocalDateTime;
 
 /**
  * 결제 내역 목록의 한 줄. 주문 묶음(OrderGroup) 단위.
- * - walletUsedAmount : 예치금에서 나간 금액 = 총액 − 부족분 충전액
- * - chargeAmount     : 토스로 결제한 부족분. 0 이면 전액 예치금 결제
+ * - walletUsedAmount : 충전 전부터 있던 예치금에서 나간 금액 = 총액 − 충전액 (충전액이 총액 이상이면 0)
+ * - chargeAmount     : 부족분을 메우려고 계좌이체로 충전한 금액. 0 이면 전액 예치금 결제. 최소 충전 금액 때문에 부족분보다 클 수 있고, 차액은 예치금에 남는다
  */
 public record PaymentSummaryDto(
         Long paymentId,
@@ -26,7 +26,7 @@ public record PaymentSummaryDto(
                 payment.getId(),
                 payment.getOrderGroupId(),
                 payment.getTotalPrice(),
-                payment.getTotalPrice() - payment.getChargeAmount(),
+                payment.getWalletUsedAmount(),
                 payment.getChargeAmount(),
                 payment.getItems().size(),
                 payment.getStatus(),

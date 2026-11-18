@@ -33,7 +33,8 @@ spec:
         - name: ai-service
           image: ghcr.io/prgrms-be-adv-devcourse/beadv8_8_ahjb_be/ai-service:initial
           ports:
-            - containerPort: 8084
+            - name: http
+              containerPort: 8084
           envFrom:
             - configMapRef:
                 name: ai-config

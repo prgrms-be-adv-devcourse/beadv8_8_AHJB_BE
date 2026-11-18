@@ -38,7 +38,8 @@ spec:
         - name: market-service
           image: ghcr.io/prgrms-be-adv-devcourse/beadv8_8_ahjb_be/market-service:initial
           ports:
-            - containerPort: 8086
+            - name: http
+              containerPort: 8086
           envFrom:
             - configMapRef:
                 name: market-config

@@ -1,9 +1,11 @@
 package com.jjinmak.back.payment.domain;
 
+import com.jjinmak.back.payment.app.support.DepositConsumer;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.jpa.entity.BaseIdAndTime;
 import com.jjinmak.back.payment.domain.enums.ChargePurpose;
 import com.jjinmak.back.payment.domain.enums.ChargeStatus;
+import com.jjinmak.back.payment.domain.enums.PgMethod;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -130,14 +132,21 @@ public class Charge extends BaseIdAndTime {
         return PG_ORDER_ID_PREFIX + UUID.randomUUID().toString().replace("-", "");
     }
 
-    /**
-     * 승인 요청의 amount 가 결제창 요청 시 저장한 금액과 같은지 검증한다.
-     * 클라이언트가 금액을 바꿔 보내는 것을 막는 토스 연동의 핵심 검증이다.
-     */
+
     public void validateAmount(long requestedAmount) {
         if (this.amount != requestedAmount) {
             throw new BusinessException(CHARGE_AMOUNT_MISMATCH);
         }
+    }
+
+    // 결제창을 열 때 써야 하는 결제수단
+    public PgMethod getRequiredMethod() {
+        return purpose.requiredMethod();
+    }
+
+    // 토스 승인 응답의 결제수단이 이 충전에 허용된 수단인지
+    public boolean allowsMethod(String tossMethod) {
+        return getRequiredMethod().matches(tossMethod);
     }
 
     // 토스 승인 성공 + 지갑 CHARGE 기록 완료. 이미 CHARGED 이상이면 아무 것도 하지 않는다 (멱등)
@@ -161,10 +170,8 @@ public class Charge extends BaseIdAndTime {
         this.remainingAmount = this.amount;
     }
 
-    /**
-     * 예치금이 빠져나갈 때 이 충전의 미사용 금액을 소비한다 (DepositConsumer 가 호출).
-     * 남은 금액까지만 소비하고 실제로 소비한 금액을 돌려준다.
-     */
+    //예치금이 빠져나갈 때 이 충전의 미사용 금액을 소비한다 (DepositConsumer 가 호출).
+    // 남은 금액까지만 소비하고 실제로 소비한 금액을 돌려준다.
     public long consume(long requested) {
         if (requested <= 0 || status != CHARGED) return 0L;
         long consumed = Math.min(requested, remainingAmount);
@@ -173,6 +180,8 @@ public class Charge extends BaseIdAndTime {
     }
 
     // FOR_PAYMENT 충전이 해당 주문의 홀딩에 소비됨. 같은 트랜잭션에서 홀딩 직후 호출
+    // 최소 충전 금액 때문에 부족분보다 많이 충전했다면 남은 금액은 예치금에 그대로 있고, 이 충전의 미사용 금액으로는 세지 않는다
+    // (USED 충전은 취소할 수 없으므로 남은 돈은 환불금처럼 충전 건에 묶이지 않은 예치금이 된다)
     public void markUsed(LocalDateTime usedAt) {
         if (status == USED) return;
         if (purpose != FOR_PAYMENT) {

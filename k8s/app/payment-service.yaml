@@ -33,7 +33,8 @@ spec:
         - name: payment-service
           image: ghcr.io/prgrms-be-adv-devcourse/beadv8_8_ahjb_be/payment-service:initial
           ports:
-            - containerPort: 8085
+            - name: http
+              containerPort: 8085
           envFrom:
             - configMapRef:
                 name: payment-config
