@@ -84,8 +84,12 @@ public class Product extends BaseIdAndTime {
     @Column(nullable = false)
     private int round;
 
-    // 현재 회차의 경매 id. 경매 시작 이벤트로 채워진다. (null이면 아직 경매 시작 전)
+    // 현재 회차의 경매 id. 경매가 생성되면 채워진다. (null이면 아직 경매 시작 전)
     private Long currentAuctionId;
+
+    // 현재 회차 (1부터). 재등록하면 1씩 늘어난다.
+    @Column(nullable = false)
+    private int auctionRound = 1;
 
     // 경매 이벤트로 복제한 경매 상태와 결과 ('내 상품' 목록용)
     // 컬럼 추가 전 상품은 컬럼이 모두 null이라 JPA가 null로 채운다. → auctionState() 로 접근한다.

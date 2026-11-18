@@ -24,11 +24,17 @@ import static com.jjinmak.boundedcontext.auction.exception.AuctionErrorCode.*;
 @Table(indexes = {
         @Index(name = "idx_auction_status_end_at", columnList = "status, end_at"),
         @Index(name = "idx_auction_status_category_end_at", columnList = "status, category, end_at")
+}, uniqueConstraints = {
+        @UniqueConstraint(name = "uk_auction_product_round", columnNames = {"product_id", "round"})
 })
 public abstract class Auction extends BaseIdAndTime {
 
     @Column(nullable = false)
     private Long productId;
+
+    // 같은 상품의 몇 번째 경매인지 (재등록하면 1씩 늘어난다)
+    @Column(nullable = false)
+    private int round;
 
     @Column(nullable = false)
     private Long sellerId;
@@ -64,10 +70,14 @@ public abstract class Auction extends BaseIdAndTime {
     @Version
     private Long version;
 
-    protected Auction(Long productId, Long sellerId, Long startPrice,
+    protected Auction(Long productId, int round, Long sellerId, Long startPrice,
                     Long shippingFee, String category,
                     LocalDateTime startAt, LocalDateTime endAt) {
+        if (round < 1) {
+            throw new IllegalArgumentException("경매 회차는 1 이상이어야 합니다. round=" + round);
+        }
         this.productId = productId;
+        this.round = round;
         this.sellerId = sellerId;
         this.startPrice = startPrice;
         this.shippingFee = shippingFee;

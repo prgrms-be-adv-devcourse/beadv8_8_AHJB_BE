@@ -35,13 +35,13 @@ class AuctionCreateUseCaseTest {
 
     private AuctionCreateDto 생성_요청() {
         LocalDateTime now = LocalDateTime.now();
-        return AuctionCreateDto.english(PRODUCT_ID, 100L, 10_000L, 3_000L,
+        return AuctionCreateDto.english(PRODUCT_ID, 1, 100L, 10_000L, 3_000L,
                 now, "CONSOLE", null, now.plusDays(3));
     }
 
     @Test
     void 처음_받은_요청이면_경매를_생성하고_시작_이벤트를_발행한다() {
-        given(auctionRepository.findTopByProductIdOrderByIdDesc(PRODUCT_ID)).willReturn(Optional.empty());
+        given(auctionRepository.findByProductIdAndRound(PRODUCT_ID, 1)).willReturn(Optional.empty());
         given(auctionRepository.save(any(Auction.class))).willAnswer(inv -> inv.getArgument(0));
         AuctionCreateDto request = 생성_요청();
 
@@ -57,7 +57,7 @@ class AuctionCreateUseCaseTest {
         AuctionCreateDto request = 생성_요청();
         EnglishAuction existing = EnglishAuction.create(PRODUCT_ID, 100L, 10_000L, null, 3_000L,
                 "CONSOLE", request.endAt(), request.startAt());
-        given(auctionRepository.findTopByProductIdOrderByIdDesc(PRODUCT_ID)).willReturn(Optional.of(existing));
+        given(auctionRepository.findByProductIdAndRound(PRODUCT_ID, 1)).willReturn(Optional.of(existing));
 
         AuctionCreateResultDto result = auctionCreateUseCase.createAuction(request);
 
@@ -69,9 +69,9 @@ class AuctionCreateUseCaseTest {
     @Test
     void 네덜란드식_요청이면_가격_곡선으로_종료_시각을_계산해_생성한다() {
         LocalDateTime startAt = LocalDateTime.now().plusMinutes(1).truncatedTo(ChronoUnit.SECONDS);
-        AuctionCreateDto dto = AuctionCreateDto.dutch(PRODUCT_ID, 100L, 300_000L, 3_000L,
+        AuctionCreateDto dto = AuctionCreateDto.dutch(PRODUCT_ID, 1, 100L, 300_000L, 3_000L,
                 startAt, "CONSOLE", 150_000L, 2, 60);
-        given(auctionRepository.findTopByProductIdOrderByIdDesc(PRODUCT_ID)).willReturn(Optional.empty());
+        given(auctionRepository.findByProductIdAndRound(PRODUCT_ID, 1)).willReturn(Optional.empty());
         given(auctionRepository.save(any(Auction.class))).willAnswer(inv -> inv.getArgument(0));
 
         AuctionCreateResultDto result = auctionCreateUseCase.createAuction(dto);

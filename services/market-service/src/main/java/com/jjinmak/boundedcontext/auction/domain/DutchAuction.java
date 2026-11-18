@@ -22,23 +22,32 @@ public class DutchAuction extends Auction {
     private Integer dropRatePercent;
     private Integer dropIntervalSec;
 
-    private DutchAuction(Long productId, Long sellerId, Long startPrice, Long floorPrice,
+    private DutchAuction(Long productId, int round, Long sellerId, Long startPrice, Long floorPrice,
                          Integer dropRatePercent, Integer dropIntervalSec,
                          Long shippingFee, String category,
                          LocalDateTime startAt, LocalDateTime endAt) {
-        super(productId, sellerId, startPrice, shippingFee, category, startAt, endAt);
+        super(productId, round, sellerId, startPrice, shippingFee, category, startAt, endAt);
         this.floorPrice = floorPrice;
         this.dropRatePercent = dropRatePercent;
         this.dropIntervalSec = dropIntervalSec;
     }
 
+    // 1회차 경매
     public static DutchAuction create(Long productId, Long sellerId, Long startPrice, Long floorPrice,
                                       Integer dropRatePercent, Integer dropIntervalSec,
                                       Long shippingFee, String category,
                                       LocalDateTime startAt) {
+        return create(productId, sellerId, startPrice, floorPrice, dropRatePercent, dropIntervalSec,
+                shippingFee, category, startAt, 1);
+    }
+
+    public static DutchAuction create(Long productId, Long sellerId, Long startPrice, Long floorPrice,
+                                      Integer dropRatePercent, Integer dropIntervalSec,
+                                      Long shippingFee, String category,
+                                      LocalDateTime startAt, int round) {
         DutchPricePolicy policy = DutchPricePolicy.of(
                 startPrice, floorPrice, dropRatePercent, dropIntervalSec, startAt);
-        return new DutchAuction(productId, sellerId, startPrice, floorPrice,
+        return new DutchAuction(productId, round, sellerId, startPrice, floorPrice,
                 dropRatePercent, dropIntervalSec, shippingFee, category,
                 startAt, policy.endAt());
     }

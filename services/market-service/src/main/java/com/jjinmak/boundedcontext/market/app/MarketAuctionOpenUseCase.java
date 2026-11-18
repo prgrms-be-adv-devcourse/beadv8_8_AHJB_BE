@@ -38,10 +38,10 @@ public class MarketAuctionOpenUseCase {
         AuctionType auctionType = AuctionType.valueOf(open.auctionType().name());
 
         return switch (auctionType) {
-            case ENGLISH -> AuctionCreateDto.english(open.productId(), open.sellerId(), open.startPrice(),
+            case ENGLISH -> AuctionCreateDto.english(open.productId(), open.round(), open.sellerId(), open.startPrice(),
                     open.shippingFee(), open.startAt(), open.category(),
                     open.instantWinPrice(), open.endAt());
-            case DUTCH -> AuctionCreateDto.dutch(open.productId(), open.sellerId(), open.startPrice(),
+            case DUTCH -> AuctionCreateDto.dutch(open.productId(), open.round(), open.sellerId(), open.startPrice(),
                     open.shippingFee(), open.startAt(), open.category(),
                     open.floorPrice(), open.dropRatePercent(), open.dropIntervalSec());
         };

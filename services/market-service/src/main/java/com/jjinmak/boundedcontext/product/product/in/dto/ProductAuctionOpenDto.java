@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 // 경매 방식에 맞는 조건만 채우고 다른 방식의 조건은 null이다.
 public record ProductAuctionOpenDto(
         Long productId,
+        int round,                      // 열 경매의 회차
         Long sellerId,
         AuctionType auctionType,
         Long startPrice,
@@ -29,6 +30,7 @@ public record ProductAuctionOpenDto(
 
         return new ProductAuctionOpenDto(
                 product.getId(),
+                product.getAuctionRound(),
                 product.getSeller().getId(),
                 terms.getAuctionType(),
                 terms.getStartPrice(),

@@ -35,8 +35,11 @@ class AuctionEndingSoonQueryTest extends AuctionIntegrationTestSupport {
         auctionRepository.deleteAllInBatch();
     }
 
+    // 같은 상품·같은 회차의 경매는 하나만 만들 수 있어서 경매마다 다른 상품 id를 쓴다
+    private long nextProductId = 1L;
+
     private EnglishAuction 영국식(LocalDateTime endAt, boolean hasBid) {
-        EnglishAuction auction = EnglishAuction.create(1L, 100L, 10_000L, null, 3_000L, "CONSOLE", endAt, NOW.minusDays(3));
+        EnglishAuction auction = EnglishAuction.create(nextProductId++, 100L, 10_000L, null, 3_000L, "CONSOLE", endAt, NOW.minusDays(3));
         if (hasBid) {
             auction.updateHighestBid(200L, 10_000L);
         }
@@ -60,7 +63,7 @@ class AuctionEndingSoonQueryTest extends AuctionIntegrationTestSupport {
         EnglishAuction won = 영국식(NOW.plusMinutes(5), true);
         won.close(NOW);                                    // 낙찰로 끝남
         auctionRepository.save(won);
-        auctionRepository.save(DutchAuction.create(2L, 100L, 300_000L, 150_000L, 2, 60, 3_000L, "CONSOLE",
+        auctionRepository.save(DutchAuction.create(nextProductId++, 100L, 300_000L, 150_000L, 2, 60, 3_000L, "CONSOLE",
                 NOW.minusMinutes(20)));                    // 하향식(종료 NOW+6분)
 
         assertThat(대상()).containsExactly(target);

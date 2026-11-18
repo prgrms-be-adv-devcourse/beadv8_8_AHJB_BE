@@ -18,8 +18,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface AuctionRepository extends JpaRepository<Auction,Long> {
-    // 같은 상품의 가장 최근 경매
-    Optional<Auction> findTopByProductIdOrderByIdDesc(Long productId);
+    // 같은 상품의 해당 회차 경매 (product_id, round 유니크)
+    Optional<Auction> findByProductIdAndRound(Long productId, int round);
 
     @Query(
             """

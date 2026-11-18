@@ -43,7 +43,7 @@ class MarketAuctionOpenUseCaseTest {
     void 영국식은_상품이_확정한_시작_종료_시각으로_경매를_열고_상품에_경매_id를_기록한다() {
         LocalDateTime endAt = NOW.plusDays(3);
         given(productFacade.prepareAuctionOpen(PRODUCT_ID, NOW)).willReturn(Optional.of(
-                new ProductAuctionOpenDto(PRODUCT_ID, 100L, AuctionType.ENGLISH, 10_000L, 3_000L, "CONSOLE",
+                new ProductAuctionOpenDto(PRODUCT_ID, 1, 100L, AuctionType.ENGLISH, 10_000L, 3_000L, "CONSOLE",
                         NOW, 80_000L, endAt, null, null, null)));
         given(auctionFacade.createAuction(any())).willReturn(new AuctionCreateResultDto(AUCTION_ID, endAt));
 
@@ -51,6 +51,7 @@ class MarketAuctionOpenUseCaseTest {
 
         AuctionCreateDto dto = 경매_생성_요청();
         assertThat(dto.auctionType()).isEqualTo(com.jjinmak.boundedcontext.auction.domain.AuctionType.ENGLISH);
+        assertThat(dto.round()).isEqualTo(1);
         assertThat(dto.startAt()).isEqualTo(NOW);
         assertThat(dto.endAt()).isEqualTo(endAt);
         assertThat(dto.instantWinPrice()).isEqualTo(80_000L);
@@ -60,7 +61,7 @@ class MarketAuctionOpenUseCaseTest {
     @Test
     void 네덜란드식은_가격_조건을_넘겨_경매를_연다() {
         given(productFacade.prepareAuctionOpen(PRODUCT_ID, NOW)).willReturn(Optional.of(
-                new ProductAuctionOpenDto(PRODUCT_ID, 100L, AuctionType.DUTCH, 300_000L, 3_000L, "CONSOLE",
+                new ProductAuctionOpenDto(PRODUCT_ID, 1, 100L, AuctionType.DUTCH, 300_000L, 3_000L, "CONSOLE",
                         NOW, null, null, 150_000L, 2, 60)));
         given(auctionFacade.createAuction(any())).willReturn(new AuctionCreateResultDto(AUCTION_ID, null));
 
