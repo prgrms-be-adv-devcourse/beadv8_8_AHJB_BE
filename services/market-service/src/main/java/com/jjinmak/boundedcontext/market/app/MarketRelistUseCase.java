@@ -3,8 +3,8 @@ package com.jjinmak.boundedcontext.market.app;
 import com.jjinmak.boundedcontext.auction.app.AuctionFacade;
 import com.jjinmak.boundedcontext.auction.dto.AuctionCreateResultDto;
 import com.jjinmak.boundedcontext.market.in.dto.MarketRelistResponseDto;
-import com.jjinmak.boundedcontext.product.product.app.ProductFacade;
-import com.jjinmak.boundedcontext.product.product.in.dto.ProductRelistDto;
+import com.jjinmak.boundedcontext.market.product.app.ProductFacade;
+import com.jjinmak.boundedcontext.market.product.in.dto.ProductRelistDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

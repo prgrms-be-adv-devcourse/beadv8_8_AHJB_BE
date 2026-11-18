@@ -1,7 +1,7 @@
 package com.jjinmak.boundedcontext.auction.app;
 
 import com.jjinmak.boundedcontext.auction.domain.Auction;
-import com.jjinmak.boundedcontext.product.product.app.ProductFacade;
+import com.jjinmak.boundedcontext.market.product.app.ProductFacade;
 import com.jjinmak.contracts.product.dto.ProductSummaryDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

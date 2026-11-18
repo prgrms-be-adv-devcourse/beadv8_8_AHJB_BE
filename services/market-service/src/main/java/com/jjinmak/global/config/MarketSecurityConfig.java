@@ -1,6 +1,6 @@
 package com.jjinmak.global.config;
 
-import com.jjinmak.boundedcontext.product.product.out.imageStorage.ProductImageProperties;
+import com.jjinmak.boundedcontext.market.product.out.imageStorage.ProductImageProperties;
 import com.jjinmak.common.security.CustomAccessDeniedHandler;
 import com.jjinmak.common.security.CustomAuthenticationEntryPoint;
 import com.jjinmak.common.security.HeaderAuthenticationFilter;
