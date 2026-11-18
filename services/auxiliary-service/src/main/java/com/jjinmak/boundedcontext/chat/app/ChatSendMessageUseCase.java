@@ -37,8 +37,8 @@ public class ChatSendMessageUseCase {
             throw new BusinessException(ChatErrorCode.INVALID_MESSAGE);
         }
 
-        ChatMessage message = chatMessageRepository.save(new ChatMessage(roomId, memberId, content.strip()));
-        room.touch(message.getCreatedAt());
+        ChatMessage message = chatMessageRepository.save(ChatMessage.text(roomId, memberId, content.strip()));
+        room.touch(message);
 
         return message.pushDto(room.roleOf(memberId));
     }

@@ -49,6 +49,15 @@ public class ChatRoom extends BaseIdAndTime {
 
     private LocalDateTime lastMessageAt;
 
+    /** 목록 미리보기용 마지막 메시지 스냅샷 (매번 chat_message를 조회하지 않으려고) */
+    @Column(length = 1000)
+    private String lastMessageContent;
+
+    /** 각자 마지막으로 읽은 메시지 id. null = 아직 아무것도 안 읽음 */
+    private Long winnerLastReadId;
+
+    private Long sellerLastReadId;
+
     /**
      * 낙찰 이벤트로 거래 채팅방을 연다.
      * auctionId, productId, winnerId, sellerId는 auction.won 이벤트 값이고,
@@ -73,8 +82,10 @@ public class ChatRoom extends BaseIdAndTime {
         return status == ChatRoomStatus.OPEN;
     }
 
-    public void touch(LocalDateTime messageAt) {
-        this.lastMessageAt = messageAt;
+    /** 메시지가 저장될 때 목록 정렬·미리보기 값을 갱신한다 */
+    public void touch(ChatMessage message) {
+        this.lastMessageAt = message.getCreatedAt();
+        this.lastMessageContent = message.getContent();
     }
 
     public void close() {
@@ -87,6 +98,34 @@ public class ChatRoom extends BaseIdAndTime {
 
     public Long counterpartId(Long memberId) {
         return winnerId.equals(memberId) ? sellerId : winnerId;
+    }
+
+    /** 이 회원이 마지막으로 읽은 메시지 id (없으면 null) */
+    public Long lastReadIdOf(Long memberId) {
+        return winnerId.equals(memberId) ? winnerLastReadId : sellerLastReadId;
+    }
+
+    /** 상대가 마지막으로 읽은 메시지 id. 내 메시지 id가 이 값 이하이면 "읽음" */
+    public Long counterpartLastReadId(Long memberId) {
+        return lastReadIdOf(counterpartId(memberId));
+    }
+
+    /**
+     * 읽은 위치를 앞으로만 옮긴다. 뒤로 가는 요청(늦게 도착한 옛 요청, 중복 요청)은 무시한다.
+     *
+     * @return 실제로 바뀌었으면 true (상대에게 READ push를 보낼지 결정하는 데 쓴다)
+     */
+    public boolean markRead(Long memberId, Long messageId) {
+        Long current = lastReadIdOf(memberId);
+        if (messageId == null || (current != null && messageId <= current)) {
+            return false;
+        }
+        if (winnerId.equals(memberId)) {
+            winnerLastReadId = messageId;
+        } else {
+            sellerLastReadId = messageId;
+        }
+        return true;
     }
 
     public ChatRoomItemDto itemDto(Long memberId, String counterpartNickname) {
