@@ -51,7 +51,6 @@ import static com.jjinmak.back.payment.domain.enums.ReferenceType.ORDER;
 import static com.jjinmak.back.payment.domain.enums.ReferenceType.PAYMENT;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.CHARGE;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.CHARGE_CANCEL;
-import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_EARN;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -71,6 +70,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *     주문 103  낙찰 10,000 + 배송 2,500 = 12,500  결제 → 환불                → REFUNDED
  *     주문 104  낙찰  5,000                        결제 → 구매 확정           → CONFIRMED (환불받은 돈으로 결제)
  *   다른 회원(3) : 20,000 충전 후 취소, 7,000 충전 후 전액 출금
+ *
+ *   구매 확정한 주문 102 · 104 는 예치금 결제액의 1% 가 구매자 포인트로 적립된다 → 구매자 포인트 250 (200 + 50)
  *
  *   결과  구매자 예치금 92,000 (미사용 충전 금액 34,500 + 50,000, 나머지 7,500 은 환불받은 돈) / 판매자(2) 정산금 18,000
  *         ESCROW 38,000 (= 주문 101 의 33,000 + 주문 104 의 5,000) / FEE 2,000
@@ -191,12 +192,14 @@ class ReconciliationLedgerIntegrationTest extends PaymentIntegrationTestSupport 
         walletFacade.withdrawAll(OTHER_ID);
     }
 
-    // 포인트 적립. 플랫폼이 주는 돈이라 원장에 한 줄만 남는다
-    private void earnPoint(long memberId, long orderId, long amount) {
-        transactionTemplate.executeWithoutResult(status -> {
-            Wallet wallet = walletRepository.findByHolderId(memberId).orElseThrow();
-            ledgerRecorder.depositPoint(wallet, POINT_EARN, amount, ORDER, orderId);
-        });
+    // 구매 확정으로 포인트를 적립받는다: 낙찰가만큼 충전 → 결제 → 구매 확정 → 정산. 끝나면 예치금과 ESCROW 잔액은 원래대로고 포인트만 낙찰가의 1% 늘어난다
+    private void earnPointByPurchase(long memberId, long orderId, long winningPrice) {
+        charge(memberId, winningPrice);
+        HoldDto dto = new HoldDto(9_000L + orderId, memberId, winningPrice,
+                List.of(new HoldDto.Item(orderId, SELLER_ID, winningPrice, 0)));
+        transactionTemplate.executeWithoutResult(status -> holdingCreator.hold(dto));
+        walletFacade.confirmHolding(orderId);
+        walletFacade.releaseHolding(orderId);
     }
 
     // 주문 1건을 전액 포인트로 결제했다가 그대로 환불받는다 (구매자 포인트 → ESCROW → 구매자 포인트). 끝나면 ESCROW 잔액은 원래대로다
@@ -291,12 +294,11 @@ class ReconciliationLedgerIntegrationTest extends PaymentIntegrationTestSupport 
     @Test
     @DisplayName("포인트 적립 · 포인트 결제 · 포인트 환불이 있어도 검사는 모두 일치하고, 전액 출금은 포인트를 건드리지 않는다")
     void pointFlowMatches() {
-        scenario();
-        earnPoint(BUYER_ID, 102L, 1_000);
-        payWithPointThenRefund(BUYER_ID, 201L, 600);
+        scenario();                                                      // 구매 확정 2건으로 구매자 포인트 250
+        payWithPointThenRefund(BUYER_ID, 201L, 200);
 
+        earnPointByPurchase(OTHER_ID, 202L, 50_000);                     // 포인트 500
         charge(OTHER_ID, 3_000);
-        earnPoint(OTHER_ID, 202L, 500);
         walletFacade.withdrawAll(OTHER_ID);
 
         ReconciliationRun run = reconcile(today);
@@ -305,7 +307,7 @@ class ReconciliationLedgerIntegrationTest extends PaymentIntegrationTestSupport 
         assertThat(mismatchesOf(run)).isEmpty();
 
         Wallet buyer = walletOf(BUYER_ID);
-        assertThat(buyer.getPointBalance()).isEqualTo(1_000);            // 600 을 썼다가 포인트로 돌려받았다
+        assertThat(buyer.getPointBalance()).isEqualTo(250);              // 200 을 썼다가 포인트로 돌려받았다
         assertThat(buyer.getBalance()).isEqualTo(92_000);                // 예치금은 기본 시나리오 그대로
 
         Wallet other = walletOf(OTHER_ID);
@@ -318,8 +320,7 @@ class ReconciliationLedgerIntegrationTest extends PaymentIntegrationTestSupport 
     @Test
     @DisplayName("포인트 잔액만 바뀌면 포인트 주머니가 원장 합계와 어긋난다")
     void pointBalanceChangedWithoutLedger() {
-        scenario();
-        earnPoint(BUYER_ID, 102L, 1_000);
+        scenario();                                                      // 구매 확정 2건으로 구매자 포인트 250
         tamper("update wallet set point_balance = point_balance + 300 where id = ?1", buyerWalletId);
 
         ReconciliationRun run = reconcile(today);
@@ -329,16 +330,15 @@ class ReconciliationLedgerIntegrationTest extends PaymentIntegrationTestSupport 
         ReconciliationMismatch mismatch = onlyMismatchOf(run, BALANCE_LEDGER_MISMATCH);
         assertThat(mismatch.getTargetType()).isEqualTo(MismatchTargetType.WALLET);
         assertThat(mismatch.getTargetKey()).isEqualTo(buyerWalletId + ":POINT");
-        assertThat(mismatch.getExpectedAmount()).isEqualTo(1_000L);      // 원장 합계
-        assertThat(mismatch.getActualAmount()).isEqualTo(1_300L);        // 지갑 포인트
+        assertThat(mismatch.getExpectedAmount()).isEqualTo(250L);        // 원장 합계
+        assertThat(mismatch.getActualAmount()).isEqualTo(550L);          // 지갑 포인트
     }
 
     @Test
     @DisplayName("포인트 결제의 한쪽 기록이 없으면 그룹 합이 0 이 아니고, ESCROW 원장 합계와 그 주문의 홀딩 기록도 어긋난다")
     void oneSideOfPointTransferMissing() {
-        scenario();
-        earnPoint(BUYER_ID, 102L, 1_000);
-        payWithPointThenRefund(BUYER_ID, 201L, 600);
+        scenario();                                                      // 구매 확정 2건으로 구매자 포인트 250
+        payWithPointThenRefund(BUYER_ID, 201L, 200);
         tamper("delete from wallet_transactions where type = 'POINT_HOLD_RECEIVE' and reference_type = 'ORDER' and reference_id = ?1",
                 201L);
 
@@ -353,11 +353,11 @@ class ReconciliationLedgerIntegrationTest extends PaymentIntegrationTestSupport 
 
         ReconciliationMismatch group = onlyMismatchOf(run, LEDGER_GROUP_UNBALANCED);
         assertThat(group.getExpectedAmount()).isEqualTo(0L);
-        assertThat(group.getActualAmount()).isEqualTo(-600L);            // 구매자 포인트에서 나간 기록만 남았다
+        assertThat(group.getActualAmount()).isEqualTo(-200L);            // 구매자 포인트에서 나간 기록만 남았다
 
         ReconciliationMismatch balance = onlyMismatchOf(run, BALANCE_LEDGER_MISMATCH);
         assertThat(balance.getTargetKey()).isEqualTo(escrowWalletId + ":DEPOSIT");
-        assertThat(balance.getExpectedAmount()).isEqualTo(37_400L);      // ESCROW 원장 합계 (38,000 - 600)
+        assertThat(balance.getExpectedAmount()).isEqualTo(37_800L);      // ESCROW 원장 합계 (38,000 - 200)
         assertThat(balance.getActualAmount()).isEqualTo(38_000L);
     }
 

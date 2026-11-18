@@ -3,7 +3,9 @@ package com.jjinmak.back.payment.app.facade;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.contracts.payment.dto.PaymentRequestDto;
 import com.jjinmak.contracts.payment.dto.PaymentResultDto;
+import com.jjinmak.back.payment.app.dto.HoldDto;
 import com.jjinmak.back.payment.app.dto.PaymentSummaryDto;
+import com.jjinmak.back.payment.app.support.HoldingCreator;
 import com.jjinmak.back.payment.app.support.LedgerRecorder;
 import com.jjinmak.back.payment.domain.Charge;
 import com.jjinmak.back.payment.domain.Holding;
@@ -50,10 +52,8 @@ import static com.jjinmak.back.payment.domain.enums.MismatchType.HOLDING_LEDGER_
 import static com.jjinmak.back.payment.domain.enums.ReconciliationRunStatus.MATCHED;
 import static com.jjinmak.back.payment.domain.enums.ReconciliationRunStatus.MISMATCHED;
 import static com.jjinmak.back.payment.domain.enums.ReconciliationType.LEDGER;
-import static com.jjinmak.back.payment.domain.enums.ReferenceType.ORDER;
 import static com.jjinmak.back.payment.domain.enums.ReferenceType.PAYMENT;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.CHARGE;
-import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_EARN;
 import static com.jjinmak.back.payment.exception.PaymentErrorCode.CHARGE_SUPERSEDED;
 import static com.jjinmak.back.payment.exception.PaymentErrorCode.PG_CANCEL_FAILED;
 import static com.jjinmak.back.payment.exception.WalletErrorCode.INSUFFICIENT_POINT;
@@ -85,6 +85,7 @@ class PaymentMethodIntegrationTest extends PaymentIntegrationTestSupport {
     private static final long ORDER_A = 1_001L;      // 33,000
     private static final long ORDER_B = 1_002L;      // 17,000
     private static final long TOTAL = 50_000L;
+    private static final long SEED_ORDER = 9_999L;   // 포인트를 미리 적립받기 위한 주문 (givenPoint)
     private static final String PAYMENT_KEY = "pk-direct";
 
     private static final String TABLES = "reconciliation_mismatch, reconciliation_run, wallet_transactions, holding, "
@@ -93,6 +94,7 @@ class PaymentMethodIntegrationTest extends PaymentIntegrationTestSupport {
     @Autowired PaymentFacade paymentFacade;
     @Autowired WalletFacade walletFacade;
     @Autowired LedgerRecorder ledgerRecorder;
+    @Autowired HoldingCreator holdingCreator;
     @Autowired ReconciliationScheduler reconciliationScheduler;
     @Autowired WalletMemberRepository walletMemberRepository;
     @Autowired WalletRepository walletRepository;
@@ -146,12 +148,15 @@ class PaymentMethodIntegrationTest extends PaymentIntegrationTestSupport {
         });
     }
 
-    // 구매자가 이미 갖고 있는 포인트 (적립)
+    // 구매자가 이미 갖고 있는 포인트. 적립률이 1% 이므로 포인트의 100배를 충전해 주문 9999 를 사고 구매 확정 · 정산까지 끝낸다.
+    // 끝나면 예치금과 ESCROW 잔액은 원래대로고 포인트만 amount 늘어난다
     private void givenPoint(long amount) {
-        transactionTemplate.executeWithoutResult(status -> {
-            Wallet wallet = walletRepository.findByHolderId(BUYER_ID).orElseThrow();
-            ledgerRecorder.depositPoint(wallet, POINT_EARN, amount, ORDER, 9_999L);
-        });
+        long price = amount * 100;
+        givenBalance(price);
+        HoldDto dto = new HoldDto(99_999L, BUYER_ID, price, List.of(new HoldDto.Item(SEED_ORDER, SELLER_ID, price, 0)));
+        transactionTemplate.executeWithoutResult(status -> holdingCreator.hold(dto));
+        walletFacade.confirmHolding(SEED_ORDER);
+        walletFacade.releaseHolding(SEED_ORDER);
     }
 
     // 결제창에 있는 동안 다른 곳에서 포인트를 썼다
@@ -302,7 +307,7 @@ class PaymentMethodIntegrationTest extends PaymentIntegrationTestSupport {
         assertThat(result.isPaid()).isTrue();
         assertThat(buyerWallet().getPointBalance()).isZero();
         assertThat(holdingOf(ORDER_A).getShare()).isEqualTo(new PaymentShare(33_000, 0, 0));
-        assertThat(chargeRepository.count()).isZero();
+        assertThat(chargeRepository.findByPaymentOrderByIdDesc(payment())).isEmpty();   // 결제창을 거치지 않았다
 
         walletFacade.refund(7_001L, ORDER_B, 17_000);
 
@@ -436,7 +441,7 @@ class PaymentMethodIntegrationTest extends PaymentIntegrationTestSupport {
 
         verify(tossPaymentsClient, never()).confirm(anyString(), anyString(), anyLong(), anyString());
         assertThat(payment().getStatus()).isEqualTo(PaymentStatus.CHARGING);   // 포인트를 줄여 다시 결제할 수 있다
-        assertThat(holdingRepository.count()).isZero();
+        assertThat(holdingRepository.findByOrderId(ORDER_A)).isEmpty();
         assertThat(escrowBalance()).isZero();
     }
 
