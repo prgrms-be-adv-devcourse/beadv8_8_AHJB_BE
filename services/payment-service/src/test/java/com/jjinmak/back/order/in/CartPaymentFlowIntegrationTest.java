@@ -170,15 +170,44 @@ class CartPaymentFlowIntegrationTest {
                 .containsExactlyInAnyOrder(10L, 11L);
     }
 
+    @Test
+    @DisplayName("카드 결제창을 닫고 같은 상품을 순서만 바꿔 결제수단과 포인트 사용액을 바꿔 다시 요청하면, 같은 주문 그룹과 같은 주문에 이번 요청의 결제수단과 포인트 사용액을 담아 결제를 요청하고 주문 그룹과 주문을 더 만들지 않는다")
+    void retryWithAnotherMethodAndPoints_sendsThisRequestsValues() throws Exception {
+        doReturn(PaymentResultDto.needsPayment(7L, 87_000L, "CHG-1", "찐막 주문 결제", "CARD",
+                        new PaymentResultDto.Breakdown("CARD", 0L, 0L, 87_000L)))
+                .when(paymentPort).requestPayment(any());
+
+        mockMvc.perform(payment("[20, 21]", "CARD", 0))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.isPaid").value(false));
+        mockMvc.perform(payment("[21, 20]", "DEPOSIT", 5_000))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<PaymentRequestDto> captor = ArgumentCaptor.forClass(PaymentRequestDto.class);
+        verify(paymentPort, times(2)).requestPayment(captor.capture());
+        PaymentRequestDto first = captor.getAllValues().get(0);
+        assertThat(first.payMethod()).isEqualTo("CARD");
+        assertThat(first.pointUseAmount()).isZero();
+        assertThat(captor.getAllValues().get(1)).isEqualTo(new PaymentRequestDto(
+                first.orderGroupId(), first.buyerId(), first.totalPrice(), first.items(), "DEPOSIT", 5_000L));
+        assertThat(orderGroupRepository.count()).isEqualTo(1);
+        assertThat(orderRepository.count()).isEqualTo(2);
+    }
+
     private MockHttpServletRequestBuilder payment() {
         return payment("[20, 21]");
     }
 
     private MockHttpServletRequestBuilder payment(String productIds) {
+        return payment(productIds, "DEPOSIT", 0);
+    }
+
+    private MockHttpServletRequestBuilder payment(String productIds, String paymentMethod, long pointUseAmount) {
         return post("/api/v1/cart/payment")
                 .header(AuthHeaders.MEMBER_ID, 1L)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"productIds\": " + productIds + "}");
+                .content("{\"productIds\": " + productIds + ", \"paymentMethod\": \"" + paymentMethod
+                        + "\", \"pointUseAmount\": " + pointUseAmount + "}");
     }
 
     private PaymentRequestDto sentRequest() {

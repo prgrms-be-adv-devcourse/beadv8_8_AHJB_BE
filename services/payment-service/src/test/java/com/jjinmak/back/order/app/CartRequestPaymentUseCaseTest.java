@@ -104,7 +104,7 @@ class CartRequestPaymentUseCaseTest {
         when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(50L));
         when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(100L)).thenAnswer(savedWithId(101L));
 
-        cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 21L));
+        cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 21L), "DEPOSIT", 0L);
 
         ArgumentCaptor<OrderGroup> groupCaptor = ArgumentCaptor.forClass(OrderGroup.class);
         verify(orderGroupRepository).save(groupCaptor.capture());
@@ -141,7 +141,7 @@ class CartRequestPaymentUseCaseTest {
     }
 
     @Test
-    @DisplayName("주문 생성 결과로 주문 그룹 id, 낙찰자 id, 총액과 함께 저장된 주문 id, 판매자 id, 금액을 담은 결제 요청 정보를 돌려준다")
+    @DisplayName("주문 생성 결과로 주문 그룹 id, 낙찰자 id, 총액, 저장된 주문 id·판매자 id·금액과 함께 요청받은 결제수단과 포인트 사용액을 담은 결제 요청 정보를 돌려준다")
     void createOrder_returnsPaymentRequestWithSavedOrderIds() {
         when(orderSupport.getMember(1L)).thenReturn(winner);
         when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L, 21L)))
@@ -151,11 +151,11 @@ class CartRequestPaymentUseCaseTest {
         when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(50L));
         when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(100L)).thenAnswer(savedWithId(101L));
 
-        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 21L));
+        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 21L), "CARD", 5_000L);
 
         assertThat(request).isEqualTo(new PaymentRequestDto(50L, 1L, 87_000L, List.of(
                 new PaymentRequestDto.Item(100L, 2L, 30_000L, 3_000L),
-                new PaymentRequestDto.Item(101L, 4L, 50_000L, 4_000L))));
+                new PaymentRequestDto.Item(101L, 4L, 50_000L, 4_000L)), "CARD", 5_000L));
     }
 
     @Test
@@ -167,7 +167,7 @@ class CartRequestPaymentUseCaseTest {
         when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(50L));
         when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(100L));
 
-        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 20L));
+        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 20L), "DEPOSIT", 0L);
 
         ArgumentCaptor<OrderGroup> groupCaptor = ArgumentCaptor.forClass(OrderGroup.class);
         verify(orderGroupRepository).save(groupCaptor.capture());
@@ -183,7 +183,7 @@ class CartRequestPaymentUseCaseTest {
         when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L, 99L)))
                 .thenReturn(List.of(cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now())));
 
-        assertThatThrownBy(() -> cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 99L)))
+        assertThatThrownBy(() -> cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 99L), "DEPOSIT", 0L))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(CART_ITEM_FORBIDDEN);
@@ -201,7 +201,7 @@ class CartRequestPaymentUseCaseTest {
                         cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now()),
                         cartItem(otherSeller, 11L, 21L, 50_000L, 4_000L, twoDaysAgo)));
 
-        assertThatThrownBy(() -> cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 21L)))
+        assertThatThrownBy(() -> cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 21L), "DEPOSIT", 0L))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(CART_ITEM_PAYMENT_EXPIRED);
@@ -219,7 +219,7 @@ class CartRequestPaymentUseCaseTest {
         when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(50L));
         when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(100L));
 
-        cartRequestPaymentUseCase.createOrder(1L, List.of(20L));
+        cartRequestPaymentUseCase.createOrder(1L, List.of(20L), "DEPOSIT", 0L);
 
         verify(orderGroupRepository).save(any(OrderGroup.class));
         verify(orderRepository).save(any(Order.class));
@@ -230,7 +230,7 @@ class CartRequestPaymentUseCaseTest {
     void createOrder_memberNotFound() {
         when(orderSupport.getMember(1L)).thenThrow(new BusinessException(USER_NOT_FOUND));
 
-        assertThatThrownBy(() -> cartRequestPaymentUseCase.createOrder(1L, List.of(20L)))
+        assertThatThrownBy(() -> cartRequestPaymentUseCase.createOrder(1L, List.of(20L), "DEPOSIT", 0L))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(USER_NOT_FOUND);
@@ -248,7 +248,7 @@ class CartRequestPaymentUseCaseTest {
         when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(100L));
 
         LocalDateTime before = LocalDateTime.now();
-        cartRequestPaymentUseCase.createOrder(1L, List.of(20L));
+        cartRequestPaymentUseCase.createOrder(1L, List.of(20L), "DEPOSIT", 0L);
         LocalDateTime after = LocalDateTime.now();
 
         ArgumentCaptor<LocalDateTime> captor = ArgumentCaptor.forClass(LocalDateTime.class);
@@ -257,7 +257,7 @@ class CartRequestPaymentUseCaseTest {
     }
 
     @Test
-    @DisplayName("lifeTime이 남은 WAITING 그룹이 요청 상품과 같은 조합이면(요청 순서는 달라도) 주문 그룹과 주문을 새로 저장하지 않고, 그 그룹 id와 기존 주문으로 결제 요청 정보를 돌려준다")
+    @DisplayName("lifeTime이 남은 WAITING 그룹이 요청 상품과 같은 조합이면(요청 순서는 달라도) 주문 그룹과 주문을 새로 저장하지 않고, 그 그룹 id와 기존 주문에 이번 요청의 결제수단과 포인트 사용액을 담아 결제 요청 정보를 돌려준다")
     void createOrder_reusesWaitingGroupWithSameProducts() {
         OrderGroup existing = group(50L, 87_000L);
         order(existing, 100L, seller, 10L, 20L, 30_000L, 3_000L);
@@ -265,11 +265,11 @@ class CartRequestPaymentUseCaseTest {
         stubCartWithTwoItems();
         when(orderGroupRepository.findAllByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(existing));
 
-        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(21L, 20L));
+        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(21L, 20L), "TRANSFER", 3_000L);
 
         assertThat(request).isEqualTo(new PaymentRequestDto(50L, 1L, 87_000L, List.of(
                 new PaymentRequestDto.Item(100L, 2L, 30_000L, 3_000L),
-                new PaymentRequestDto.Item(101L, 4L, 50_000L, 4_000L))));
+                new PaymentRequestDto.Item(101L, 4L, 50_000L, 4_000L)), "TRANSFER", 3_000L));
         verify(orderGroupRepository, never()).save(any(OrderGroup.class));
         verifyNoInteractions(orderRepository);
     }
@@ -286,7 +286,7 @@ class CartRequestPaymentUseCaseTest {
         when(orderGroupRepository.findAllByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(existing));
 
         LocalDateTime before = LocalDateTime.now();
-        cartRequestPaymentUseCase.createOrder(1L, List.of(20L));
+        cartRequestPaymentUseCase.createOrder(1L, List.of(20L), "DEPOSIT", 0L);
         LocalDateTime after = LocalDateTime.now();
 
         assertThat(existing.getLifeTime()).isBetween(before.plusHours(1), after.plusHours(1));
@@ -304,7 +304,7 @@ class CartRequestPaymentUseCaseTest {
                 .thenReturn(List.of(cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now())));
         when(orderGroupRepository.findAllByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(paidGroup, waitingGroup));
 
-        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(20L));
+        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(20L), "DEPOSIT", 0L);
 
         assertThat(request.orderGroupId()).isEqualTo(50L);
         assertThat(request.items()).extracting(PaymentRequestDto.Item::orderId).containsExactly(100L);
@@ -324,10 +324,10 @@ class CartRequestPaymentUseCaseTest {
         when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(51L));
         when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(102L));
 
-        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(20L));
+        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(20L), "DEPOSIT", 0L);
 
         assertThat(request).isEqualTo(new PaymentRequestDto(51L, 1L, 33_000L, List.of(
-                new PaymentRequestDto.Item(102L, 2L, 30_000L, 3_000L))));
+                new PaymentRequestDto.Item(102L, 2L, 30_000L, 3_000L)), "DEPOSIT", 0L));
     }
 
     @Test
@@ -340,11 +340,11 @@ class CartRequestPaymentUseCaseTest {
         when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(51L));
         when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(102L)).thenAnswer(savedWithId(103L));
 
-        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 21L));
+        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 21L), "DEPOSIT", 0L);
 
         assertThat(request).isEqualTo(new PaymentRequestDto(51L, 1L, 87_000L, List.of(
                 new PaymentRequestDto.Item(102L, 2L, 30_000L, 3_000L),
-                new PaymentRequestDto.Item(103L, 4L, 50_000L, 4_000L))));
+                new PaymentRequestDto.Item(103L, 4L, 50_000L, 4_000L)), "DEPOSIT", 0L));
     }
 
     @Test
@@ -358,7 +358,7 @@ class CartRequestPaymentUseCaseTest {
         when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(51L));
         when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(102L)).thenAnswer(savedWithId(103L));
 
-        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 21L));
+        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 21L), "DEPOSIT", 0L);
 
         assertThat(request.orderGroupId()).isEqualTo(51L);
         verify(orderRepository, times(2)).save(any(Order.class));
@@ -550,14 +550,30 @@ class CartRequestPaymentUseCaseTest {
     }
 
     @Test
-    @DisplayName("결제 결과가 NEEDS_CHARGE면 주문과 장바구니를 그대로 두고, isPaid=false와 충전에 필요한 결제 정보를 돌려준다")
+    @DisplayName("결제 결과가 NEEDS_CHARGE면 주문과 장바구니를 그대로 두고, isPaid=false와 충전에 필요한 결제 정보, 결제창을 열 결제수단, 적용된 결제수단, 포인트·예치금·직접 결제 금액을 돌려준다")
     void handlePaymentResult_needsCharge() {
-        PaymentResultDto result = PaymentResultDto.needsCharge(7L, 87_000L, 37_000L, "CHG-1", "찐막 주문 결제 (부족분 충전)");
+        PaymentResultDto result = PaymentResultDto.needsCharge(7L, 87_000L, 32_000L, 32_000L, "CHG-1", "찐막 주문 결제 (부족분 충전)", "TRANSFER",
+                new PaymentResultDto.Breakdown("DEPOSIT", 5_000L, 82_000L, 0L));
 
         PaymentResponseDto response = cartRequestPaymentUseCase.handlePaymentResult(50L, result);
 
         assertThat(response).isEqualTo(new PaymentResponseDto(50L, false,
-                new PaymentResponseDto.Data(7L, 87_000L, 37_000L, "CHG-1", "찐막 주문 결제 (부족분 충전)")));
+                new PaymentResponseDto.Data(7L, 87_000L, 32_000L, "CHG-1", "찐막 주문 결제 (부족분 충전)",
+                        "TRANSFER", "DEPOSIT", 5_000L, 82_000L, 0L)));
+        verifyNoInteractions(orderGroupRepository, cartItemRepository, eventPublisher);
+    }
+
+    @Test
+    @DisplayName("결제 결과가 NEEDS_PAYMENT(직접 결제)면 주문과 장바구니를 그대로 두고, isPaid=false와 결제창 금액, 결제창을 열 결제수단, 적용된 결제수단, 포인트·예치금·직접 결제 금액을 돌려준다")
+    void handlePaymentResult_needsPayment() {
+        PaymentResultDto result = PaymentResultDto.needsPayment(7L, 87_000L, "CHG-2", "찐막 주문 결제", "CARD",
+                new PaymentResultDto.Breakdown("CARD", 5_000L, 0L, 82_000L));
+
+        PaymentResponseDto response = cartRequestPaymentUseCase.handlePaymentResult(50L, result);
+
+        assertThat(response).isEqualTo(new PaymentResponseDto(50L, false,
+                new PaymentResponseDto.Data(7L, 87_000L, 82_000L, "CHG-2", "찐막 주문 결제",
+                        "CARD", "CARD", 5_000L, 0L, 82_000L)));
         verifyNoInteractions(orderGroupRepository, cartItemRepository, eventPublisher);
     }
 
