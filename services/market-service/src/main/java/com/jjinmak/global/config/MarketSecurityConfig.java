@@ -32,8 +32,11 @@ public class MarketSecurityConfig {
             "/actuator/prometheus"
     };
 
+    // 상품 상세는 id가 숫자일 때만 연다. (/api/v1/products/me 같은 로그인 전용 경로가 같이 열리지 않도록)
     private static final String[] PUBLIC_GET_URLS = {
             "/api/v1/products/upcoming",
+            "/api/v1/products/{productId:\\d+}",
+            "/api/v1/products/{productId:\\d+}/qnas",
             ProductImageProperties.LOCAL_URL_PATH,
             "/api/v1/auctions",
             "/api/v1/auctions/dutch"
