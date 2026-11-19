@@ -97,12 +97,18 @@ public class OrderScheduler {
     }
 
     // TODO: 결제에 1시간이 넘게 걸려 주문이 제거되는 경우, 지갑도 이 사실을 알 필요가 있음.
-    @Scheduled(fixedDelay = 3_600_000)
+    @Scheduled(fixedDelay = 1_800_000)
     public void deleteOverWaitingOrder(){
-        try {
-            orderFacade.deleteOverWaitingOrders();
-        } catch (Exception e){
-            log.error("1시간 초과 대기 주문서 삭제에 실패했습니다.", e);
+        List<Long> groupIds = orderFacade.findOverWaitingGroupIds();
+
+        for (Long id : groupIds){
+            try {
+                orderFacade.deleteOverWaitingGroup(id);
+            } catch (BusinessException e){
+                log.error("오류가 발생해 만료된 주문서를 삭제하지 못했습니다.\norderGroupId: {}\nerrorCode: {}", id, e.getErrorCode());
+            } catch (Exception e){
+                log.error("만료된 주문서 삭제 실패.\norderGroupId: {}", id, e);
+            }
         }
     }
 

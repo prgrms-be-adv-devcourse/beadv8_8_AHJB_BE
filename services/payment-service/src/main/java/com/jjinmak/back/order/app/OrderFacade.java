@@ -134,9 +134,14 @@ public class OrderFacade {
         orderSchedulerUseCase.confirmPurchaseAuto(orderId);
     }
 
+    @Transactional(readOnly = true)
+    public List<Long> findOverWaitingGroupIds(){
+        return orderSchedulerUseCase.findOverWaitingGroupIds();
+    }
+
     @Transactional
-    public void deleteOverWaitingOrders(){
-        orderSchedulerUseCase.deleteOverWaitingOrders();
+    public void deleteOverWaitingGroup(Long orderGroupId){
+        orderSchedulerUseCase.deleteOverWaitingGroup(orderGroupId);
     }
 
     @Transactional

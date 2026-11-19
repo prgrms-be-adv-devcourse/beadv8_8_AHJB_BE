@@ -1,25 +1,25 @@
 package com.jjinmak.back.order.app;
 
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
+import com.jjinmak.back.order.out.payment.PaymentRequest;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.contracts.order.event.*;
-import com.jjinmak.back.order.app.OrderSupport;
 import com.jjinmak.back.order.domain.CartItem;
 import com.jjinmak.back.order.domain.Order;
 import com.jjinmak.back.order.domain.OrderGroup;
 import com.jjinmak.back.order.out.repository.CartItemRepository;
 import com.jjinmak.back.order.out.repository.OrderGroupRepository;
 import com.jjinmak.back.order.out.repository.OrderRepository;
+import com.jjinmak.contracts.payment.dto.PaymentCloseResultDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static com.jjinmak.back.order.domain.OrderState.*;
 import static com.jjinmak.back.order.exception.OrderErrorCode.CART_ITEM_NOT_FOUND;
+import static com.jjinmak.back.order.exception.OrderErrorCode.ORDER_STATE_BAD_REQUEST;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +27,7 @@ public class OrderSchedulerUseCase {
 
     private final EventPublisher eventPublisher;
 
+    private final PaymentRequest paymentRequest;
     private final OrderRepository orderRepository;
     private final OrderGroupRepository orderGroupRepository;
     private final OrderSupport orderSupport;
@@ -51,15 +52,24 @@ public class OrderSchedulerUseCase {
         eventPublisher.publish(event);
     }
 
-    public void deleteOverWaitingOrders(){
-        List<Order> orders = orderRepository.findOverWaitedAll(LocalDateTime.now());
-        Set<OrderGroup> groups = orders.stream().map(Order::getGroup).collect(Collectors.toSet());
+    public List<Long> findOverWaitingGroupIds(){
+        return orderRepository.findOverWaitedAll(LocalDateTime.now()).stream()
+                .map(order -> order.getGroup().getId())
+                .distinct()
+                .toList();
+    }
 
-        groups.forEach(
-                g -> eventPublisher.publish(new OrderGroupDeletedEvent(g.getId(), g.getTotalPrice()))
-        );
+    public void deleteOverWaitingGroup(Long orderGroupId){
+        OrderGroup group = orderSupport.getOrderGroup(orderGroupId);
 
-        orderGroupRepository.deleteAll(groups);
+        PaymentCloseResultDto result = paymentRequest.closePayment(orderGroupId, group.getWinner().getId());
+
+        if (!result.canDiscardOrderGroup())
+            throw new BusinessException(ORDER_STATE_BAD_REQUEST);
+
+        eventPublisher.publish(new OrderGroupDeletedEvent(group.getId(), group.getTotalPrice()));
+
+        orderGroupRepository.delete(group);
     }
 
     public List<Long> getNonShippedOrderIds(){
