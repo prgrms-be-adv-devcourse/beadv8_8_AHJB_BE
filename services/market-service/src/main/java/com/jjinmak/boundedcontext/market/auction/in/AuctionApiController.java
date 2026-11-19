@@ -78,7 +78,9 @@ public class AuctionApiController {
     @GetMapping("/{auctionId}/bids")
     public ResponseEntity<RsData<AuctionBidHistoryResponseDto>> bidHistory(
             @PathVariable Long auctionId,@AuthenticationPrincipal AuthPrincipal principal, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size){
-        AuctionBidHistoryResponseDto response = auctionFacade.bidHistory(auctionId,principal.memberId(),page,size);
+        // 공개 조회라 비로그인(principal == null)도 들어온다. 이때 내 입찰 여부는 모두 false
+        Long memberId = principal == null ? null : principal.memberId();
+        AuctionBidHistoryResponseDto response = auctionFacade.bidHistory(auctionId,memberId,page,size);
         return  ResponseEntity.ok(new RsData<>(true,"입찰 내역 조회에 성공했습니다.",response));
 
     }
@@ -89,7 +91,9 @@ public class AuctionApiController {
     )
     @GetMapping("/{auctionId}")
     public ResponseEntity<RsData<AuctionDetailResponseDto>> detail(@PathVariable Long auctionId,@AuthenticationPrincipal AuthPrincipal principal){
-        AuctionDetailResponseDto response = auctionFacade.detail(auctionId,principal.memberId());
+        // 공개 조회라 비로그인(principal == null)도 들어온다. 이때 판매자·최고 입찰자 여부는 false
+        Long memberId = principal == null ? null : principal.memberId();
+        AuctionDetailResponseDto response = auctionFacade.detail(auctionId,memberId);
         return ResponseEntity.ok(new RsData<>(true,"경매 상세 조회에 성공했습니다.",response));
     }
 
