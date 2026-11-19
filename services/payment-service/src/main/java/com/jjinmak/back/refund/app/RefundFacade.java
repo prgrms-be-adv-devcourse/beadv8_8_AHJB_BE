@@ -1,5 +1,6 @@
 package com.jjinmak.back.refund.app;
 
+import com.jjinmak.back.refund.domain.RefundOutbox;
 import com.jjinmak.contracts.order.event.OrderRefundRequestedEvent;
 import com.jjinmak.contracts.payment.event.WalletRefundedEvent;
 import com.jjinmak.contracts.refund.dto.RefundDto;
@@ -26,6 +27,7 @@ public class RefundFacade {
     private final RefundGetRefundByOrderUseCase refundGetRefundByOrderUseCase;
     private final RefundCompleteRefundUseCase refundCompleteRefundUseCase;
     private final RefundRetryRefundUseCase refundRetryRefundUseCase;
+    private final RefundOutboxUseCase refundOutboxUseCase;
 
     @Transactional
     public void createRefund(OrderRefundRequestedEvent event) {
@@ -65,5 +67,20 @@ public class RefundFacade {
     @Transactional
     public RefundRetryResult retryRefund(Long refundId) {
         return refundRetryRefundUseCase.retryRefund(refundId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RefundOutbox> findUnpublishedOutboxes() {
+        return refundOutboxUseCase.findUnpublished();
+    }
+
+    // 트랜잭션 없음: Kafka 응답을 기다리는 동안 DB 커넥션을 잡고 있지 않으려고
+    public void sendOutbox(RefundOutbox outbox) {
+        refundOutboxUseCase.send(outbox);
+    }
+
+    @Transactional
+    public void markOutboxPublished(Long outboxId) {
+        refundOutboxUseCase.markPublished(outboxId);
     }
 }
