@@ -86,6 +86,29 @@ class KakaoOAuthClientTest {
     }
 
     @Test
+    void 카카오_닉네임을_함께_반환한다() {
+        expectToken();
+        expectUser("""
+                {"id":1,
+                 "properties":{"nickname":"예전필드"},
+                 "kakao_account":{"profile_nickname_needs_agreement":false,
+                                  "profile":{"nickname":"카카오닉네임","is_default_nickname":false}}}
+                """);
+
+        assertThat(client.fetchUserProfile("auth-code").nickname()).isEqualTo("카카오닉네임");
+    }
+
+    @Test
+    void 닉네임이_없거나_비어_있으면_null을_반환한다() {
+        expectToken();
+        expectUser("""
+                {"id":1,"kakao_account":{"profile":{"nickname":" "}}}
+                """);
+
+        assertThat(client.fetchUserProfile("auth-code").nickname()).isNull();
+    }
+
+    @Test
     void 인증되지_않은_이메일은_사용하지_않는다() {
         expectToken();
         expectUser("""
@@ -116,6 +139,7 @@ class KakaoOAuthClientTest {
 
         assertThat(profile.providerUserId()).isEqualTo("1");
         assertThat(profile.verifiedEmail()).isNull();
+        assertThat(profile.nickname()).isNull();
     }
 
     @Test

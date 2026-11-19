@@ -16,17 +16,20 @@ public record SocialLoginResponseDto(
         String signupToken,
 
         @Schema(description = "카카오가 인증한 이메일 (SIGNUP_REQUIRED 일 때만). 있으면 이 이메일로 가입되므로 화면에서 수정할 수 없게 한다. 없으면 null 이며 직접 입력받는다")
-        String email
+        String email,
+
+        @Schema(description = "카카오 닉네임 (SIGNUP_REQUIRED 일 때만). 가입 화면을 미리 채우는 제안값으로 사용자가 수정할 수 있다. 중복·길이 검증은 가입 API 에서 한다. 없으면 null")
+        String nickname
 ) {
     public enum Status {
         LOGIN, SIGNUP_REQUIRED
     }
 
     public static SocialLoginResponseDto loggedIn(String accessToken, boolean suspended) {
-        return new SocialLoginResponseDto(Status.LOGIN, accessToken, suspended, null, null);
+        return new SocialLoginResponseDto(Status.LOGIN, accessToken, suspended, null, null, null);
     }
 
-    public static SocialLoginResponseDto signupRequired(String signupToken, String email) {
-        return new SocialLoginResponseDto(Status.SIGNUP_REQUIRED, null, null, signupToken, email);
+    public static SocialLoginResponseDto signupRequired(String signupToken, String email, String nickname) {
+        return new SocialLoginResponseDto(Status.SIGNUP_REQUIRED, null, null, signupToken, email, nickname);
     }
 }

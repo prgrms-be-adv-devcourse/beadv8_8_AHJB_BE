@@ -38,7 +38,7 @@ class AuthFacadeKakaoLoginTest {
     @Test
     void 연결된_회원이면_로그인_결과를_반환하고_이메일_중복은_검사하지_않는다() {
         given(oAuthProviderClient.fetchUserProfile("code"))
-                .willReturn(new OAuthUserProfile("12345", "user@kakao.com"));
+                .willReturn(new OAuthUserProfile("12345", "user@kakao.com", "카카오닉네임"));
         AuthResult auth = new AuthResult("access", "refresh", false);
         given(memberSocialLoginUseCase.login(OAuthProvider.KAKAO, "12345")).willReturn(Optional.of(auth));
 
@@ -52,7 +52,7 @@ class AuthFacadeKakaoLoginTest {
     @Test
     void 처음_로그인하면_인증된_이메일을_담은_가입_대기_토큰을_발급한다() {
         given(oAuthProviderClient.fetchUserProfile("code"))
-                .willReturn(new OAuthUserProfile("12345", "user@kakao.com"));
+                .willReturn(new OAuthUserProfile("12345", "user@kakao.com", "카카오닉네임"));
         given(memberSocialLoginUseCase.login(OAuthProvider.KAKAO, "12345")).willReturn(Optional.empty());
         given(memberReadUseCase.isEmailAvailable("user@kakao.com")).willReturn(true);
         given(signupTokenProvider.create(any())).willReturn("signup-token");
@@ -62,6 +62,7 @@ class AuthFacadeKakaoLoginTest {
         assertThat(result.isSignupRequired()).isTrue();
         assertThat(result.signupToken()).isEqualTo("signup-token");
         assertThat(result.email()).isEqualTo("user@kakao.com");
+        assertThat(result.nickname()).isEqualTo("카카오닉네임");
 
         ArgumentCaptor<SignupTicket> captor = ArgumentCaptor.forClass(SignupTicket.class);
         verify(signupTokenProvider).create(captor.capture());
@@ -71,7 +72,7 @@ class AuthFacadeKakaoLoginTest {
     @Test
     void 인증된_이메일이_이미_가입되어_있으면_가입_대기_토큰_없이_거부한다() {
         given(oAuthProviderClient.fetchUserProfile("code"))
-                .willReturn(new OAuthUserProfile("12345", "user@kakao.com"));
+                .willReturn(new OAuthUserProfile("12345", "user@kakao.com", "카카오닉네임"));
         given(memberSocialLoginUseCase.login(OAuthProvider.KAKAO, "12345")).willReturn(Optional.empty());
         given(memberReadUseCase.isEmailAvailable("user@kakao.com")).willReturn(false);
 
@@ -86,7 +87,7 @@ class AuthFacadeKakaoLoginTest {
     @Test
     void 인증된_이메일이_없으면_이메일_없이_가입_대기_토큰을_발급한다() {
         given(oAuthProviderClient.fetchUserProfile("code"))
-                .willReturn(new OAuthUserProfile("12345", null));
+                .willReturn(new OAuthUserProfile("12345", null, null));
         given(memberSocialLoginUseCase.login(OAuthProvider.KAKAO, "12345")).willReturn(Optional.empty());
         given(signupTokenProvider.create(any())).willReturn("signup-token");
 
@@ -94,6 +95,7 @@ class AuthFacadeKakaoLoginTest {
 
         assertThat(result.isSignupRequired()).isTrue();
         assertThat(result.email()).isNull();
+        assertThat(result.nickname()).isNull();
         verify(memberReadUseCase, never()).isEmailAvailable(any());
     }
 }

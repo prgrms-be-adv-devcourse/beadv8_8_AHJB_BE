@@ -79,7 +79,9 @@ public class AuthFacade {
         String signupToken = signupTokenProvider.create(
                 new SignupTicket(OAuthProvider.KAKAO, profile.providerUserId(), verifiedEmail));
 
-        return SocialLoginResult.signupRequired(signupToken, verifiedEmail);
+        // 닉네임은 사용자가 가입 화면에서 수정할 수 있는 제안값이라 토큰에 담지 않는다.
+        // 가입 API 는 요청 바디의 nickname 을 쓰고, 중복·길이 검증도 그쪽에서 한다.
+        return SocialLoginResult.signupRequired(signupToken, verifiedEmail, profile.nickname());
     }
 
     @Transactional

@@ -44,7 +44,7 @@ public class KakaoOAuthClient implements OAuthProviderClient {
     public OAuthUserProfile fetchUserProfile(String authorizationCode) {
         String kakaoAccessToken = exchangeToken(authorizationCode);
         KakaoUserResponse user = fetchUser(kakaoAccessToken);
-        return new OAuthUserProfile(String.valueOf(user.id()), user.verifiedEmail());
+        return new OAuthUserProfile(String.valueOf(user.id()), user.verifiedEmail(), user.nickname());
     }
 
     private String exchangeToken(String authorizationCode) {
@@ -129,13 +129,33 @@ public class KakaoOAuthClient implements OAuthProviderClient {
             }
             return email;
         }
+
+        /**
+         * kakao_account.profile.nickname (동의항목: 닉네임). properties.nickname 은 Deprecated 라 쓰지 않는다.
+         * 가입 화면을 미리 채우는 용도라 비어 있으면 null 로 돌려준다.
+         */
+        String nickname() {
+            if (kakaoAccount == null || kakaoAccount.profile() == null) {
+                return null;
+            }
+            String nickname = kakaoAccount.profile().nickname();
+            if (nickname == null || nickname.isBlank()) {
+                return null;
+            }
+            return nickname;
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     record KakaoAccount(
             String email,
             @JsonProperty("is_email_valid") Boolean isEmailValid,
-            @JsonProperty("is_email_verified") Boolean isEmailVerified
+            @JsonProperty("is_email_verified") Boolean isEmailVerified,
+            KakaoProfile profile
     ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record KakaoProfile(String nickname) {
     }
 }
