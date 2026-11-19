@@ -35,7 +35,7 @@ import static com.jjinmak.back.payment.exception.WalletErrorCode.INSUFFICIENT_PO
  *     부족분 충전 : 지갑 입금(충전 금액) → 포인트 · 예치금 차감 + Holding → Charge USED → Payment PAID
  *     직접 결제   : Charge USED (예치금을 거치지 않음) → 포인트 차감 + 토스 입금분을 ESCROW 에 기록 + Holding
  *                  → Payment PAID (토스가 알려준 실제 결제수단 저장)
- *   → PaymentPaidEvent 발행 (주문이 AFTER_COMMIT 으로 받아 그룹을 결제 완료로)
+ *   → PaymentPaidEvent 발행 (같은 트랜잭션에서 아웃박스에 저장되고, 커밋 뒤 Kafka 로 전달되어 주문이 그룹을 결제 완료로)
  *
  * 한 트랜잭션이므로 "돈은 들어왔는데 홀딩이 안 된" 상태는 DB 에 남지 않는다.
  * 토스 승인 뒤 DB 반영이 실패하면 토스 결제를 취소(보상)하고 예외를 올린다. Payment 는 CHARGING 에 남아 다시 주문하기가 가능하다.
