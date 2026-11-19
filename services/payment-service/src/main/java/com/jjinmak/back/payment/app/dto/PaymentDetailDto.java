@@ -12,6 +12,8 @@ import java.util.List;
 
 // 결제 상세. 주문별 내역과 이 결제에 연결된 토스 결제 건(부족분 충전 또는 직접 결제)을 함께 돌려준다.
 // 금액 구성 필드의 뜻은 PaymentSummaryDto 와 같다 (pointAmount + walletUsedAmount + pgAmount == totalPrice).
+// expectedEarnPoint 는 이 결제의 주문 중 아직 구매 확정하지 않은 주문을 확정하면 적립될 예상 포인트의 합이다.
+// 결제 완료 전이거나, 모든 주문이 확정 · 환불됐으면 0 이다 (이미 적립된 포인트는 주문별 결제 정보의 earnedPoint 로 본다).
 public record PaymentDetailDto(
         Long paymentId,
         Long orderGroupId,
@@ -26,6 +28,7 @@ public record PaymentDetailDto(
         LocalDateTime requestedAt,
         LocalDateTime paidAt,
         String failureReason,
+        long expectedEarnPoint,
         List<Item> items,
         List<ChargeSummaryDto> charges
 ) {
@@ -44,7 +47,7 @@ public record PaymentDetailDto(
         }
     }
 
-    public static PaymentDetailDto of(Payment payment, List<Charge> charges) {
+    public static PaymentDetailDto of(Payment payment, List<Charge> charges, long expectedEarnPoint) {
         return new PaymentDetailDto(
                 payment.getId(),
                 payment.getOrderGroupId(),
@@ -59,6 +62,7 @@ public record PaymentDetailDto(
                 payment.getCreatedAt(),
                 payment.getPaidAt(),
                 payment.getFailureReason(),
+                expectedEarnPoint,
                 payment.getItems().stream().map(Item::from).toList(),
                 charges.stream().map(ChargeSummaryDto::from).toList()
         );

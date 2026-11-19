@@ -27,6 +27,8 @@ public class PaymentFacade {
     private final PaymentGetHistoryUseCase paymentGetHistoryUseCase;
     private final ChargeGetHistoryUseCase chargeGetHistoryUseCase;
     private final PaymentQuoteUseCase paymentQuoteUseCase;
+    private final PaymentGetOrderPaymentUseCase paymentGetOrderPaymentUseCase;
+    private final PaymentGetPolicyUseCase paymentGetPolicyUseCase;
 
     // 수동 충전
 
@@ -72,6 +74,20 @@ public class PaymentFacade {
     @Transactional(readOnly = true)
     public com.jjinmak.back.payment.app.dto.PaymentDetailDto getPayment(Long holderId, Long paymentId) {
         return paymentGetHistoryUseCase.detail(holderId, paymentId);
+    }
+
+    @Transactional(readOnly = true)
+    public com.jjinmak.back.payment.app.dto.PaymentDetailDto getPaymentByOrderGroup(Long holderId, Long orderGroupId) {
+        return paymentGetHistoryUseCase.detailByOrderGroup(holderId, orderGroupId);
+    }
+
+    @Transactional(readOnly = true)
+    public com.jjinmak.back.payment.app.dto.OrderPaymentDto getOrderPayment(Long holderId, Long orderId) {
+        return paymentGetOrderPaymentUseCase.get(holderId, orderId);
+    }
+
+    public com.jjinmak.back.payment.app.dto.PaymentPolicyDto getPolicy() {
+        return paymentGetPolicyUseCase.get();
     }
 
     @Transactional(readOnly = true)

@@ -117,7 +117,8 @@ public class PaymentApiController {
     @Operation(
             summary = "내 결제 상세 조회",
             description = "결제 금액 구성(포인트·예치금·직접 결제), 결제에 포함된 주문별 금액·환불 여부와, 결제창을 거쳤다면 그 토스 결제 건(부족분 충전 또는 직접 결제, 영수증 링크 포함)을 함께 돌려줍니다. "
-                    + "직접 결제 건의 canceledAmount 는 주문 환불로 토스에 취소된 금액의 합입니다."
+                    + "직접 결제 건의 canceledAmount 는 주문 환불로 토스에 취소된 금액의 합입니다. "
+                    + "expectedEarnPoint 는 아직 구매 확정하지 않은 주문을 확정하면 적립될 예상 포인트의 합입니다."
     )
     @GetMapping("/me/{paymentId}")
     public ResponseEntity<RsData<com.jjinmak.back.payment.app.dto.PaymentDetailDto>> getPayment(
@@ -125,6 +126,50 @@ public class PaymentApiController {
             @AuthenticationPrincipal AuthPrincipal principal
     ) {
         com.jjinmak.back.payment.app.dto.PaymentDetailDto response = paymentFacade.getPayment(principal.memberId(), paymentId);
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
+
+    @Operation(
+            summary = "주문 그룹으로 내 결제 상세 조회",
+            description = "orderGroupId 로 결제 상세를 찾습니다. 응답은 내 결제 상세 조회와 같습니다. "
+                    + "포인트 · 예치금만으로 바로 끝난 결제는 결제 요청 응답에 paymentId 가 없으므로, 결제 완료 화면에서는 이 API 로 조회하세요. "
+                    + "expectedEarnPoint 는 아직 구매 확정하지 않은 주문을 확정하면 적립될 예상 포인트의 합입니다. "
+                    + "내 결제가 아니거나 없는 주문 그룹이면 PAYMENT001."
+    )
+    @GetMapping("/me/order-groups/{orderGroupId}")
+    public ResponseEntity<RsData<PaymentDetailDto>> getPaymentByOrderGroup(
+            @PathVariable Long orderGroupId,
+            @AuthenticationPrincipal AuthPrincipal principal
+    ) {
+        PaymentDetailDto response = paymentFacade.getPaymentByOrderGroup(principal.memberId(), orderGroupId);
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
+
+    @Operation(
+            summary = "주문 1건의 결제 정보 조회",
+            description = "주문 상세 화면용입니다. 이 주문 대금을 포인트 · 예치금 · 직접 결제로 각각 얼마씩 냈는지(pointAmount + depositAmount + pgAmount == amount)와 "
+                    + "적립 포인트를 돌려줍니다. 환불하면 이 구성 그대로 돌아갑니다. "
+                    + "expectedEarnPoint 는 구매 확정하면 적립될 예상 포인트로 확정 전(status 가 HELD)에만 값이 있고, "
+                    + "earnedPoint 는 구매 확정으로 실제 적립된 포인트입니다. paymentId 로 결제 상세를 이어서 조회할 수 있습니다. "
+                    + "구매자 본인만 조회할 수 있고 판매자를 포함한 다른 회원은 PAYMENT008, 아직 결제가 끝나지 않은 주문은 WALLET301."
+    )
+    @GetMapping("/me/orders/{orderId}")
+    public ResponseEntity<RsData<OrderPaymentDto>> getOrderPayment(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal AuthPrincipal principal
+    ) {
+        OrderPaymentDto response = paymentFacade.getOrderPayment(principal.memberId(), orderId);
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
+
+    @Operation(
+            summary = "결제 정책 조회",
+            description = "화면의 안내 문구와 입력 검증에 쓰는 설정값입니다. chargeMinAmount ~ chargeMaxAmount 는 예치금 1회 충전 금액 범위(벗어나면 CHARGE010), "
+                    + "pointEarnRatePercent 는 포인트 적립률(%), feeRatePercent 는 판매 수수료율(%)입니다."
+    )
+    @GetMapping("/policy")
+    public ResponseEntity<RsData<PaymentPolicyDto>> getPolicy() {
+        PaymentPolicyDto response = paymentFacade.getPolicy();
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }
 
