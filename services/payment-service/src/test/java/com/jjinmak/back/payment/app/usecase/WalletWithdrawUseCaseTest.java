@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
 /**
  * 예치금 전액 출금과 포인트. 포인트는 출금 대상이 아니다.
  */
-class 가WalletWithdrawUseCaseTest {
+class WalletWithdrawUseCaseTest {
 
     private static final long HOLDER_ID = 1L;
 
