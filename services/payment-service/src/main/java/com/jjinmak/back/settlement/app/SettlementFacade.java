@@ -1,5 +1,6 @@
 package com.jjinmak.back.settlement.app;
 
+import com.jjinmak.back.settlement.domain.SettlementOutbox;
 import com.jjinmak.contracts.order.event.OrderConfirmPurchaseEvent;
 import com.jjinmak.contracts.payment.event.WalletReleasedEvent;
 import com.jjinmak.contracts.product.event.ProductRegisteredEvent;
@@ -26,6 +27,7 @@ public class SettlementFacade {
     private final SettlementGetSettlementsUseCase settlementGetSettlementsUseCase;
     private final SettlementGetSettlementUseCase settlementGetSettlementUseCase;
     private final SettlementSaveProductUseCase settlementSaveProductUseCase;
+    private final SettlementOutboxUseCase settlementOutboxUseCase;
 
     @Transactional
     public void saveProduct(ProductRegisteredEvent event) {
@@ -63,5 +65,20 @@ public class SettlementFacade {
     @Transactional(readOnly = true)
     public SettlementDetailDto getSettlement(Long memberId, Long settlementId) {
         return settlementGetSettlementUseCase.getSettlement(memberId, settlementId).detailDto();
+    }
+
+    @Transactional(readOnly = true)
+    public List<SettlementOutbox> findUnpublishedOutboxes() {
+        return settlementOutboxUseCase.findUnpublished();
+    }
+
+    // 트랜잭션 없음: Kafka 응답을 기다리는 동안 DB 커넥션을 잡고 있지 않으려고
+    public void sendOutbox(SettlementOutbox outbox) {
+        settlementOutboxUseCase.send(outbox);
+    }
+
+    @Transactional
+    public void markOutboxPublished(Long outboxId) {
+        settlementOutboxUseCase.markPublished(outboxId);
     }
 }
