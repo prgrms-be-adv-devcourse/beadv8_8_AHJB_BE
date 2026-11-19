@@ -18,7 +18,6 @@ import static com.jjinmak.back.order.exception.OrderErrorCode.CART_ITEM_NOT_FOUN
 import static com.jjinmak.back.order.exception.OrderErrorCode.ORDER_STATE_BAD_REQUEST;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -215,21 +214,51 @@ class OrderSchedulerTest {
     }
 
     @Test
-    @DisplayName("결제 대기 시간이 지난 주문 삭제를 요청한다")
-    void deleteOverWaitingOrder_deletesOverWaitingOrders() {
+    @DisplayName("결제 대기 시간이 지난 주문 그룹을 하나씩 삭제한다")
+    void deleteOverWaitingOrder_deletesEachGroup() {
+        when(orderFacade.findOverWaitingGroupIds()).thenReturn(List.of(1L, 2L, 3L));
+
         orderScheduler.deleteOverWaitingOrder();
 
-        verify(orderFacade).deleteOverWaitingOrders();
+        verify(orderFacade).deleteOverWaitingGroup(1L);
+        verify(orderFacade).deleteOverWaitingGroup(2L);
+        verify(orderFacade).deleteOverWaitingGroup(3L);
     }
 
     @Test
-    @DisplayName("결제 대기 시간이 지난 주문 삭제가 실패해도 예외를 밖으로 던지지 않는다")
-    void deleteOverWaitingOrder_swallowsException() {
-        doThrow(new IllegalStateException("예상하지 못한 오류")).when(orderFacade).deleteOverWaitingOrders();
+    @DisplayName("한 주문 그룹이 업무 예외로 실패해도 나머지 결제 대기 시간이 지난 주문 그룹을 계속 삭제한다")
+    void deleteOverWaitingOrder_continuesAfterBusinessException() {
+        when(orderFacade.findOverWaitingGroupIds()).thenReturn(List.of(1L, 2L, 3L));
+        lenient().doThrow(new BusinessException(ORDER_STATE_BAD_REQUEST)).when(orderFacade).deleteOverWaitingGroup(2L);
 
         orderScheduler.deleteOverWaitingOrder();
 
-        verify(orderFacade).deleteOverWaitingOrders();
+        verify(orderFacade).deleteOverWaitingGroup(1L);
+        verify(orderFacade).deleteOverWaitingGroup(2L);
+        verify(orderFacade).deleteOverWaitingGroup(3L);
+    }
+
+    @Test
+    @DisplayName("한 주문 그룹이 예상하지 못한 예외로 실패해도 나머지 결제 대기 시간이 지난 주문 그룹을 계속 삭제한다")
+    void deleteOverWaitingOrder_continuesAfterUnexpectedException() {
+        when(orderFacade.findOverWaitingGroupIds()).thenReturn(List.of(1L, 2L, 3L));
+        lenient().doThrow(new IllegalStateException("예상하지 못한 오류")).when(orderFacade).deleteOverWaitingGroup(2L);
+
+        orderScheduler.deleteOverWaitingOrder();
+
+        verify(orderFacade).deleteOverWaitingGroup(1L);
+        verify(orderFacade).deleteOverWaitingGroup(2L);
+        verify(orderFacade).deleteOverWaitingGroup(3L);
+    }
+
+    @Test
+    @DisplayName("결제 대기 시간이 지난 주문 그룹이 없으면 아무것도 삭제하지 않는다")
+    void deleteOverWaitingOrder_noTargets() {
+        when(orderFacade.findOverWaitingGroupIds()).thenReturn(List.of());
+
+        orderScheduler.deleteOverWaitingOrder();
+
+        verify(orderFacade, never()).deleteOverWaitingGroup(anyLong());
     }
 
     @Test

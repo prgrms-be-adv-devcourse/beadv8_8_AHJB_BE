@@ -4,6 +4,7 @@ import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.security.AuthHeaders;
 import com.jjinmak.common.security.HeaderAuthenticationFilter;
 import com.jjinmak.contracts.order.event.OrderPaymentSucceedEvent;
+import com.jjinmak.contracts.payment.dto.PaymentCloseResultDto;
 import com.jjinmak.contracts.payment.dto.PaymentRequestDto;
 import com.jjinmak.contracts.payment.dto.PaymentResultDto;
 import com.jjinmak.back.order.domain.CartItem;
@@ -29,6 +30,7 @@ import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
@@ -346,6 +348,84 @@ class CartApiControllerTest {
         assertThat(orderRepository.findAll()).extracting(Order::getState).containsExactly(WAITING);
         assertThat(cartItemRepository.findAll()).extracting(CartItem::getAuctionId).containsExactlyInAnyOrder(10L, 11L);
         assertThat(events.stream(OrderPaymentSucceedEvent.class)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("결제 취소: 결제를 닫았으면(CLOSED) 204, 주문 그룹 id와 로그인한 회원 id로 결제를 닫고 주문 그룹과 주문을 삭제하며 장바구니 항목은 그대로 둔다")
+    void cancel_closed() throws Exception {
+        Long groupId = waitingGroup().getId();
+        when(paymentPort.closePayment(groupId, 1L)).thenReturn(PaymentCloseResultDto.closed(groupId, 7L));
+
+        mockMvc.perform(cancel(1L, "{\"orderGroupId\": " + groupId + "}"))
+                .andExpect(status().isNoContent());
+
+        verify(paymentPort).closePayment(groupId, 1L);
+        assertThat(orderGroupRepository.findById(groupId)).isEmpty();
+        assertThat(orderRepository.findAll()).isEmpty();
+        assertThat(cartItemRepository.findAll()).extracting(CartItem::getAuctionId).containsExactlyInAnyOrder(10L, 11L);
+    }
+
+    @Test
+    @DisplayName("결제 취소: 이미 결제가 끝났으면(ALREADY_PAID) 400 ORDER_STATE_BAD_REQUEST(ORDER003), 주문 그룹과 주문을 삭제하지 않는다")
+    void cancel_alreadyPaid() throws Exception {
+        Long groupId = waitingGroup().getId();
+        when(paymentPort.closePayment(groupId, 1L)).thenReturn(PaymentCloseResultDto.alreadyPaid(groupId, 7L));
+
+        mockMvc.perform(cancel(1L, "{\"orderGroupId\": " + groupId + "}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("ORDER003"));
+
+        assertThat(orderGroupRepository.findById(groupId)).isPresent();
+        assertThat(orderRepository.findAll()).extracting(Order::getState).containsExactly(WAITING);
+    }
+
+    @Test
+    @DisplayName("결제 취소: 다른 회원의 주문 그룹이면 403 ORDER_GROUP_FORBIDDEN(ORDER009), 결제를 닫지 않고 주문 그룹을 삭제하지 않는다")
+    void cancel_othersGroup() throws Exception {
+        Long groupId = waitingGroup().getId();
+
+        mockMvc.perform(cancel(3L, "{\"orderGroupId\": " + groupId + "}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorCode").value("ORDER009"));
+
+        verifyNoInteractions(paymentPort);
+        assertThat(orderGroupRepository.findById(groupId)).isPresent();
+    }
+
+    @Test
+    @DisplayName("결제 취소: 주문 그룹 id를 보내지 않으면 400, 결제를 닫지 않고 주문 그룹을 삭제하지 않는다")
+    void cancel_withoutOrderGroupId() throws Exception {
+        Long groupId = waitingGroup().getId();
+
+        mockMvc.perform(cancel(1L, "{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("COMMON001"));
+
+        verifyNoInteractions(paymentPort);
+        assertThat(orderGroupRepository.findById(groupId)).isPresent();
+    }
+
+    @Test
+    @DisplayName("결제 취소: 없는 주문 그룹이면 404 ORDER_GROUP_NOT_FOUND(ORDER004), 결제를 닫지 않는다")
+    void cancel_groupNotFound() throws Exception {
+        mockMvc.perform(cancel(1L, "{\"orderGroupId\": 999}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorCode").value("ORDER004"));
+
+        verifyNoInteractions(paymentPort);
+    }
+
+    private MockHttpServletRequestBuilder cancel(Long memberId, String body) {
+        return post("/api/v1/cart")
+                .header(AuthHeaders.MEMBER_ID, memberId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body);
+    }
+
+    private OrderGroup waitingGroup() {
+        OrderGroup group = orderGroupRepository.save(new OrderGroup(winner, 33_000L));
+        group.add(orderRepository.save(new Order(group, winner, seller, 10L, 20L, 30_000L, 3_000L)));
+        return group;
     }
 
     private OrderGroup onlyGroup() {

@@ -4,6 +4,7 @@ import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.back.order.domain.Order;
 import com.jjinmak.back.order.domain.OrderGroup;
 import com.jjinmak.back.order.domain.OrderMember;
+import com.jjinmak.back.order.out.repository.OrderGroupRepository;
 import com.jjinmak.back.order.out.repository.OrderMemberRepository;
 import com.jjinmak.back.order.out.repository.OrderRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -17,6 +18,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.jjinmak.common.exception.CommonErrorCode.USER_NOT_FOUND;
+import static com.jjinmak.back.order.exception.OrderErrorCode.ORDER_GROUP_NOT_FOUND;
 import static com.jjinmak.back.order.exception.OrderErrorCode.ORDER_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -33,6 +35,9 @@ class OrderSupportTest {
 
     @Mock
     OrderMemberRepository orderMemberRepository;
+
+    @Mock
+    OrderGroupRepository orderGroupRepository;
 
     @InjectMocks
     OrderSupport orderSupport;
@@ -129,6 +134,28 @@ class OrderSupportTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ORDER_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("주문 그룹 id로 주문 그룹을 찾는다")
+    void getOrderGroup_found() {
+        OrderGroup group = new OrderGroup(new OrderMember(1L, UUID.randomUUID(), "낙찰자"), 33_000L);
+        when(orderGroupRepository.findById(50L)).thenReturn(Optional.of(group));
+
+        OrderGroup found = orderSupport.getOrderGroup(50L);
+
+        assertThat(found).isSameAs(group);
+    }
+
+    @Test
+    @DisplayName("주문 그룹 id에 해당하는 주문 그룹이 없으면 ORDER_GROUP_NOT_FOUND")
+    void getOrderGroup_notFound() {
+        when(orderGroupRepository.findById(50L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderSupport.getOrderGroup(50L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ORDER_GROUP_NOT_FOUND);
     }
 
     private Order order() {

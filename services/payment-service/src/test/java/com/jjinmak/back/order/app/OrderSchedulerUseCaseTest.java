@@ -2,15 +2,18 @@ package com.jjinmak.back.order.app;
 
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.contracts.order.event.OrderConfirmPurchaseEvent;
+import com.jjinmak.contracts.order.event.OrderGroupDeletedEvent;
 import com.jjinmak.contracts.order.event.OrderRefundRequestedEvent;
 import com.jjinmak.contracts.order.event.OrderRemindAutoConfirmEvent;
 import com.jjinmak.contracts.order.event.OrderRemindPaymentEvent;
+import com.jjinmak.contracts.payment.dto.PaymentCloseResultDto;
 import com.jjinmak.back.order.domain.CartItem;
 import com.jjinmak.back.order.domain.Order;
 import com.jjinmak.back.order.domain.OrderGroup;
 import com.jjinmak.back.order.domain.OrderMember;
 import com.jjinmak.back.order.domain.OrderState;
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
+import com.jjinmak.back.order.out.payment.PaymentRequest;
 import com.jjinmak.back.order.out.repository.CartItemRepository;
 import com.jjinmak.back.order.out.repository.OrderGroupRepository;
 import com.jjinmak.back.order.out.repository.OrderRepository;
@@ -21,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -29,7 +33,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import static com.jjinmak.contracts.order.event.OrderRefundRequestedEvent.RefundType.SYSTEM_REQUEST;
@@ -41,10 +44,13 @@ import static com.jjinmak.back.order.domain.OrderState.SHIPPING;
 import static com.jjinmak.back.order.domain.OrderState.WAITING;
 import static com.jjinmak.back.order.exception.OrderErrorCode.CART_ITEM_NOT_FOUND;
 import static com.jjinmak.back.order.exception.OrderErrorCode.ORDER_STATE_BAD_REQUEST;
+import static com.jjinmak.back.payment.exception.PaymentErrorCode.PAYMENT_IN_PROGRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -54,6 +60,9 @@ class OrderSchedulerUseCaseTest {
 
     @Mock
     EventPublisher eventPublisher;
+
+    @Mock
+    PaymentRequest paymentRequest;
 
     @Mock
     OrderRepository orderRepository;
@@ -137,11 +146,11 @@ class OrderSchedulerUseCaseTest {
 
     @Test
     @DisplayName("결제 대기 주문 중 주문 그룹의 lifeTime이 지금보다 앞선 것을 찾는다")
-    void deleteOverWaitingOrders_usesNow() {
+    void findOverWaitingGroupIds_usesNow() {
         when(orderRepository.findOverWaitedAll(any(LocalDateTime.class))).thenReturn(List.of());
 
         LocalDateTime before = LocalDateTime.now();
-        orderSchedulerUseCase.deleteOverWaitingOrders();
+        orderSchedulerUseCase.findOverWaitingGroupIds();
         LocalDateTime after = LocalDateTime.now();
 
         ArgumentCaptor<LocalDateTime> captor = ArgumentCaptor.forClass(LocalDateTime.class);
@@ -151,18 +160,77 @@ class OrderSchedulerUseCaseTest {
     }
 
     @Test
-    @DisplayName("결제 대기가 오래된 주문들의 주문 그룹을 중복 없이 삭제한다")
-    void deleteOverWaitingOrders_deletesDistinctGroups() {
-        OrderGroup groupA = new OrderGroup(winner, 66_000L);
-        OrderGroup groupB = new OrderGroup(winner, 33_000L);
+    @DisplayName("결제 대기가 오래된 주문들의 주문 그룹 id를 중복 없이 돌려준다")
+    void findOverWaitingGroupIds_distinctGroupIds() {
+        OrderGroup groupA = group(50L, 66_000L);
+        OrderGroup groupB = group(51L, 33_000L);
         Order a1 = order(groupA, 100L, WAITING);
         Order a2 = order(groupA, 101L, WAITING);
         Order b1 = order(groupB, 102L, WAITING);
         when(orderRepository.findOverWaitedAll(any(LocalDateTime.class))).thenReturn(List.of(a1, a2, b1));
 
-        orderSchedulerUseCase.deleteOverWaitingOrders();
+        List<Long> ids = orderSchedulerUseCase.findOverWaitingGroupIds();
 
-        verify(orderGroupRepository).deleteAll(Set.of(groupA, groupB));
+        assertThat(ids).containsExactly(50L, 51L);
+    }
+
+    @Test
+    @DisplayName("결제를 닫았으면(CLOSED) 주문 그룹 id와 낙찰자 id로 결제를 닫은 뒤 주문 그룹 삭제 이벤트를 발행하고 주문 그룹을 삭제한다")
+    void deleteOverWaitingGroup_closed() {
+        OrderGroup group = group(50L, 66_000L);
+        when(orderSupport.getOrderGroup(50L)).thenReturn(group);
+        when(paymentRequest.closePayment(50L, 1L)).thenReturn(PaymentCloseResultDto.closed(50L, 7L));
+
+        orderSchedulerUseCase.deleteOverWaitingGroup(50L);
+
+        InOrder inOrder = inOrder(paymentRequest, orderGroupRepository);
+        inOrder.verify(paymentRequest).closePayment(50L, 1L);
+        inOrder.verify(orderGroupRepository).delete(group);
+        verify(eventPublisher).publish(new OrderGroupDeletedEvent(50L, 66_000L));
+    }
+
+    @Test
+    @DisplayName("결제 요청 전이라 결제가 없으면(NOT_FOUND) 주문 그룹 삭제 이벤트를 발행하고 주문 그룹을 삭제한다")
+    void deleteOverWaitingGroup_noPayment() {
+        OrderGroup group = group(50L, 66_000L);
+        when(orderSupport.getOrderGroup(50L)).thenReturn(group);
+        when(paymentRequest.closePayment(50L, 1L)).thenReturn(PaymentCloseResultDto.notFound(50L));
+
+        orderSchedulerUseCase.deleteOverWaitingGroup(50L);
+
+        verify(eventPublisher).publish(new OrderGroupDeletedEvent(50L, 66_000L));
+        verify(orderGroupRepository).delete(group);
+    }
+
+    @Test
+    @DisplayName("이미 결제가 끝났으면(ALREADY_PAID) ORDER_STATE_BAD_REQUEST, 주문 그룹 삭제 이벤트를 발행하지 않고 주문 그룹을 삭제하지 않는다")
+    void deleteOverWaitingGroup_alreadyPaid() {
+        OrderGroup group = group(50L, 66_000L);
+        when(orderSupport.getOrderGroup(50L)).thenReturn(group);
+        when(paymentRequest.closePayment(50L, 1L)).thenReturn(PaymentCloseResultDto.alreadyPaid(50L, 7L));
+
+        assertThatThrownBy(() -> orderSchedulerUseCase.deleteOverWaitingGroup(50L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ORDER_STATE_BAD_REQUEST);
+
+        verifyNoInteractions(eventPublisher);
+        verify(orderGroupRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("결제를 닫다가 결제 쪽 예외(PAYMENT_IN_PROGRESS)가 나면 그대로 올리고, 주문 그룹 삭제 이벤트를 발행하지 않고 주문 그룹을 삭제하지 않는다")
+    void deleteOverWaitingGroup_paymentInProgress() {
+        OrderGroup group = group(50L, 66_000L);
+        BusinessException inProgress = new BusinessException(PAYMENT_IN_PROGRESS);
+        when(orderSupport.getOrderGroup(50L)).thenReturn(group);
+        when(paymentRequest.closePayment(50L, 1L)).thenThrow(inProgress);
+
+        assertThatThrownBy(() -> orderSchedulerUseCase.deleteOverWaitingGroup(50L))
+                .isSameAs(inProgress);
+
+        verifyNoInteractions(eventPublisher);
+        verify(orderGroupRepository, never()).delete(any());
     }
 
     @Test
@@ -280,6 +348,12 @@ class OrderSchedulerUseCaseTest {
         assertThat(order.getAutoConfirmAlarmed()).isTrue();
         assertThat(order.getState()).isEqualTo(SHIPPED);
         verify(eventPublisher).publish(new OrderRemindAutoConfirmEvent(100L, 1L, LocalDateTime.of(2026, 11, 8, 12, 0)));
+    }
+
+    private OrderGroup group(Long id, long totalPrice) {
+        OrderGroup group = new OrderGroup(winner, totalPrice);
+        ReflectionTestUtils.setField(group, "id", id);
+        return group;
     }
 
     private Order order(OrderGroup group, Long id, OrderState state) {
