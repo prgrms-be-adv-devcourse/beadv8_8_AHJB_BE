@@ -1,5 +1,7 @@
 package com.jjinmak.global.config;
 
+import com.jjinmak.boundedcontext.market.auction.app.AuctionFacade;
+import com.jjinmak.boundedcontext.market.auction.in.AuctionApiController;
 import com.jjinmak.boundedcontext.market.product.app.ProductFacade;
 import com.jjinmak.boundedcontext.market.product.app.ProductQnaFacade;
 import com.jjinmak.boundedcontext.market.product.in.ProductApiController;
@@ -30,7 +32,7 @@ class MarketSecurityConfigTest {
     @SpringBootConfiguration
     @EnableWebSecurity
     @Import({MarketSecurityConfig.class, CustomAuthenticationEntryPoint.class, CustomAccessDeniedHandler.class,
-            ProductApiController.class, ProductQnaApiController.class})
+            ProductApiController.class, ProductQnaApiController.class, AuctionApiController.class})
     static class TestConfig {
     }
 
@@ -38,6 +40,7 @@ class MarketSecurityConfigTest {
 
     @MockitoBean ProductFacade productFacade;
     @MockitoBean ProductQnaFacade productQnaFacade;
+    @MockitoBean AuctionFacade auctionFacade;
 
     @Test
     void 비로그인도_상품_상세를_조회할_수_있다() throws Exception {
@@ -76,6 +79,42 @@ class MarketSecurityConfigTest {
     @Test
     void QnA_작성은_비로그인이면_401이다() throws Exception {
         mockMvc.perform(post("/api/v1/products/1/qnas").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void 비로그인도_경매_상세를_조회할_수_있다() throws Exception {
+        mockMvc.perform(get("/api/v1/auctions/1"))
+                .andExpect(status().isOk());
+
+        then(auctionFacade).should().detail(1L, null);
+    }
+
+    @Test
+    void 비로그인도_경매_입찰_내역을_조회할_수_있다() throws Exception {
+        mockMvc.perform(get("/api/v1/auctions/1/bids"))
+                .andExpect(status().isOk());
+
+        then(auctionFacade).should().bidHistory(1L, null, 0, 10);
+    }
+
+    @Test
+    void 로그인하면_회원_id로_경매_상세를_조회한다() throws Exception {
+        mockMvc.perform(get("/api/v1/auctions/1").header(AuthHeaders.MEMBER_ID, "7"))
+                .andExpect(status().isOk());
+
+        then(auctionFacade).should().detail(1L, 7L);
+    }
+
+    @Test
+    void 내_입찰_목록은_비로그인이면_401이다() throws Exception {
+        mockMvc.perform(get("/api/v1/auctions/me/bids"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void 입찰은_비로그인이면_401이다() throws Exception {
+        mockMvc.perform(post("/api/v1/auctions/1/bids").contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isUnauthorized());
     }
 }

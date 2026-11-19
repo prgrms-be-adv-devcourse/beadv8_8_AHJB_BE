@@ -246,6 +246,15 @@ class AuctionTest {
         void 입찰이_없으면_누구도_최고입찰자가_아니다() {
             assertThat(진행중_경매().isHighestBidder(BIDDER_ID)).isFalse();
         }
+
+        @Test
+        void 비로그인은_판매자도_최고입찰자도_아니다() {
+            // 입찰이 없으면 최고입찰자 id가 null이라, null끼리 같다고 나오면 안 된다.
+            EnglishAuction auction = 진행중_경매();
+
+            assertThat(auction.isSeller(null)).isFalse();
+            assertThat(auction.isHighestBidder(null)).isFalse();
+        }
     }
 
     @Nested
