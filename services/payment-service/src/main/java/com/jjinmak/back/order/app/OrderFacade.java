@@ -34,6 +34,7 @@ public class OrderFacade {
     private final CartRequestPaymentUseCase cartRequestPaymentUseCase;
     private final CartDefaultPaymentUseCase cartDefaultPaymentUseCase;
     private final OrderOutboxUseCase orderOutboxUseCase;
+    private final CartCancelPaymentUseCase cartCancelPaymentUseCase;
 
     @Transactional
     public OrderMember syncMember(MemberDto memberDto){
@@ -57,6 +58,11 @@ public class OrderFacade {
 
     public PaymentResultDto requestPayment(PaymentRequestDto request){
         return cartRequestPaymentUseCase.requestPayment(request);
+    }
+
+    @Transactional
+    public void cancelPayment(Long winnerId, Long orderGroupId){
+        cartCancelPaymentUseCase.cancelPayment(winnerId, orderGroupId);
     }
 
     public PaymentResponseDto handlePaymentResult(Long orderGroupId, PaymentResultDto dto){
