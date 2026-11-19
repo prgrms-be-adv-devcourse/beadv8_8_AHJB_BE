@@ -50,7 +50,7 @@ public class CartApiController {
             @AuthenticationPrincipal AuthPrincipal principal,
             @Valid @RequestBody CartPaymentRequestDto request
     ){
-        PaymentRequestDto req = orderFacade.createOrder(principal.memberId(), request.productIds());
+        PaymentRequestDto req = orderFacade.createOrder(principal.memberId(), request.productIds(), request.paymentMethod(), request.pointUseAmount());
 
         PaymentResultDto res = orderFacade.requestPayment(req);
 

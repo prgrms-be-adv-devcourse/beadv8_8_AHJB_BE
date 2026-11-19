@@ -51,8 +51,8 @@ public class OrderFacade {
     }
 
     @Transactional
-    public PaymentRequestDto createOrder(Long winnerId, List<Long> productIds){
-        return cartRequestPaymentUseCase.createOrder(winnerId, productIds);
+    public PaymentRequestDto createOrder(Long winnerId, List<Long> productIds, String payMethod, long pointUseAmount){
+        return cartRequestPaymentUseCase.createOrder(winnerId, productIds, payMethod, pointUseAmount);
     }
 
     public PaymentResultDto requestPayment(PaymentRequestDto request){

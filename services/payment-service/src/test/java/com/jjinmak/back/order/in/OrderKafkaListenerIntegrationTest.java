@@ -126,14 +126,14 @@ class OrderKafkaListenerIntegrationTest {
     void auctionWon_redeliveredAfterPayment_doesNotRecreateItem() {
         syncMembers();
         orderKafkaListener.handle(wonEvent(10L));
-        PaymentRequestDto request = orderFacade.createOrder(1L, List.of(20L));
+        PaymentRequestDto request = orderFacade.createOrder(1L, List.of(20L), "DEPOSIT", 0L);
         orderKafkaListener.handle(PaymentPaidEvent.of(request.orderGroupId(), 7L, 1L, 33_000L, paidAt));
 
         orderKafkaListener.handle(wonEvent(10L));
 
         assertThat(cartItemRepository.count()).isZero();
         assertThat(orderFacade.readWinnerItem(1L)).isEmpty();
-        assertThatThrownBy(() -> orderFacade.createOrder(1L, List.of(20L)))
+        assertThatThrownBy(() -> orderFacade.createOrder(1L, List.of(20L), "DEPOSIT", 0L))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(CART_ITEM_FORBIDDEN);
