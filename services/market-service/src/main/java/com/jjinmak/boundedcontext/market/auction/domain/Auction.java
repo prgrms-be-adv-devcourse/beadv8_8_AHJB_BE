@@ -136,8 +136,9 @@ public abstract class Auction extends BaseIdAndTime {
     public boolean isInProgress(){
         return status == IN_PROGRESS;
     }
+    // 비로그인(memberId == null)은 판매자가 아니다.
     public boolean isSeller(Long memberId){
-        return Objects.equals(sellerId, memberId);
+        return memberId != null && Objects.equals(sellerId, memberId);
     }
     public boolean isStatus(AuctionStatus status){return this.status==status;}
 }

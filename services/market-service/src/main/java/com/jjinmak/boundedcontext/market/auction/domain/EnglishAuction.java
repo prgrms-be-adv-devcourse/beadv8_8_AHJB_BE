@@ -95,8 +95,9 @@ public class EnglishAuction extends Auction{
         return bidCount > 0;
     }
 
+    // 입찰이 없으면 highestBidderId가 null이라, 비로그인(memberId == null)과 같다고 나오지 않게 막는다.
     public boolean isHighestBidder(Long memberId) {
-        return Objects.equals(highestBidderId, memberId);
+        return memberId != null && Objects.equals(highestBidderId, memberId);
     }
 
 }
