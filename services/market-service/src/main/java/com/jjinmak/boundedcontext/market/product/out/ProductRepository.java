@@ -17,6 +17,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // 삭제되지 않은 상품만 조회
     Optional<Product> findByIdAndDeletedAtIsNull(Long id);
 
+    // 판매자가 특정 정책 버전으로 등록한 상품 수 (시드 상품 개수 제한용)
+    long countBySeller_IdAndPolicyVersion(Long sellerId, String policyVersion);
+
     // 시작 예정 시각이 되었지만 아직 경매를 요청하지 않은 상품
     @Query("""
             select p.id from Product p
