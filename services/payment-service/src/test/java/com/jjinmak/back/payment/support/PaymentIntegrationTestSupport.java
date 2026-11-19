@@ -1,5 +1,6 @@
 package com.jjinmak.back.payment.support;
 
+import com.jjinmak.back.payment.in.scheduler.PaymentOutboxScheduler;
 import com.jjinmak.back.payment.out.toss.TossPaymentsClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -39,4 +40,8 @@ public abstract class PaymentIntegrationTestSupport {
     // 테스트에서 토스로 실제 요청이 나가지 않게 한다
     @MockitoBean
     protected TossPaymentsClient tossPaymentsClient;
+
+    // 1초마다 도는 아웃박스 전송이 테스트 중인 행을 건드리지 않게 한다. 전송은 필요한 테스트가 직접 호출한다
+    @MockitoBean
+    protected PaymentOutboxScheduler scheduledPaymentOutboxScheduler;
 }

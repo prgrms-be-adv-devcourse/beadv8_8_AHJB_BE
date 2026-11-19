@@ -6,8 +6,9 @@ import java.util.UUID;
 /**
  * 주문 결제가 완료되었다는 사실. 결제 컨텍스트가 발행하고 주문 컨텍스트가 받는다.
  *
- * 발행 시점 : 결제 트랜잭션 안에서 publish 되며, 수신 측은 @TransactionalEventListener(AFTER_COMMIT) 로 받아
- *            결제가 커밋된 뒤에만 처리한다. 수신 측 실패는 결제를 롤백하지 않는다.
+ * 발행 시점 : 결제 트랜잭션 안에서 publish 되어 같은 트랜잭션에서 아웃박스(payment_outbox)에 저장되고,
+ *            결제가 커밋된 뒤 스케줄러가 Kafka 로 보낸다. 수신 측 실패는 결제를 롤백하지 않는다.
+ *            같은 이벤트가 두 번 전달될 수 있다.
  * 발행 경로 : 전액 예치금 결제(requestPayment 에서 바로 PAID) / 결제창 승인(confirm) 두 경우 모두 같은 이벤트.
  * 수신 측  : 별도 트랜잭션(REQUIRES_NEW) + 멱등 (같은 orderGroupId 가 이미 결제 완료면 무시).
  *            주문 그룹이 결제 대기 상태가 아니면(취소됨 등) 환불 흐름으로.

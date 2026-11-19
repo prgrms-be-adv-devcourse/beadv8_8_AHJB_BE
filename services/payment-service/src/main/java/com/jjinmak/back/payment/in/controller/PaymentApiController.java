@@ -4,6 +4,7 @@ import com.jjinmak.back.payment.app.dto.*;
 import com.jjinmak.common.rsData.RsData;
 import com.jjinmak.common.security.AuthPrincipal;
 import com.jjinmak.back.payment.app.facade.PaymentFacade;
+import com.jjinmak.back.payment.app.support.PaymentLockWaitSupport;
 import com.jjinmak.back.payment.app.support.WalletRetrySupport;
 import com.jjinmak.back.payment.app.dto.*;
 import com.jjinmak.back.payment.in.dto.ChargeConfirmRequestDto;
@@ -26,6 +27,7 @@ public class PaymentApiController {
 
     private final PaymentFacade paymentFacade;
     private final WalletRetrySupport retry;   // 지갑 낙관적 락 충돌 재시도. 트랜잭션(파사드) 바깥에서 감싸야 한다
+    private final PaymentLockWaitSupport lockWait;   // 결제 락 대기 시간 초과를 PAYMENT014 로 바꾼다. 마찬가지로 트랜잭션 바깥에서 감싼다
 
 
     @Operation(
@@ -45,9 +47,14 @@ public class PaymentApiController {
 
     @Operation(
             summary = "주문 결제 승인",
-            description = "주문 결제 중 예치금이 부족해 토스 결제창을 거친 뒤, successUrl 로 돌아오면 호출합니다. "
-                    + "paymentKey, orderId(pgOrderId), amount 를 그대로 넘기세요. 토스 승인 → 예치금 충전 → 주문 대금 홀딩까지 한 번에 끝나고, "
-                    + "계좌이체가 아닌 수단으로 결제했으면 자동 취소됩니다(CHARGE009). "
+            description = "주문 결제 중 토스 결제창을 거친 뒤(예치금 부족분 충전 또는 직접 결제), successUrl 로 돌아오면 호출합니다. "
+                    + "paymentKey, orderId(pgOrderId), amount 를 그대로 넘기세요. "
+                    + "부족분 충전이면 토스 승인 → 예치금 충전 → 주문 대금 홀딩까지 한 번에 끝나고, 계좌이체가 아닌 수단으로 결제했으면 자동 취소됩니다(CHARGE009). "
+                    + "직접 결제면 결제한 돈이 예치금을 거치지 않고 바로 주문 대금이 되며, 실제로 승인된 결제수단이 pgMethod 로 기록됩니다. "
+                    + "결제창을 띄운 뒤 결제수단이나 포인트 사용액을 바꿔 다시 결제 요청을 했다면 예전 결제창의 승인은 거절됩니다(CHARGE012). "
+                    + "결제창에 있는 동안 포인트나 예치금이 줄어 결제할 수 없게 됐으면 토스 승인 전에 거절됩니다(WALLET204 / WALLET201). "
+                    + "주문이 이미 버린 주문 그룹의 결제창이면 토스 승인 전에 거절됩니다(PAYMENT013). 장바구니에서 다시 결제해야 합니다. "
+                    + "같은 결제를 처리하는 중이면 잠시 기다렸다가 PAYMENT014 를 돌려줍니다. 잠시 후 같은 요청을 다시 보내면 됩니다. "
                     + "응답의 orderGroupId 로 주문 완료 화면으로 이동하면 됩니다. 주문 상태는 결제 완료 이벤트로 바뀝니다. "
                     + "같은 요청을 다시 보내면 이미 끝난 결제를 그대로 돌려줍니다(멱등). "
                     + "실패 응답의 retryable 이 true 면 '다시 결제하기'(주문 결제 요청부터)로 해결할 수 있습니다."
@@ -57,8 +64,8 @@ public class PaymentApiController {
             @Valid @RequestBody PaymentConfirmRequestDto request,
             @AuthenticationPrincipal AuthPrincipal principal
     ) {
-        com.jjinmak.back.payment.app.dto.PaymentSummaryDto response = retry.withRetry(() -> paymentFacade.confirmPayment(
-                principal.memberId(), request.pgOrderId(), request.paymentKey(), request.amount()));
+        com.jjinmak.back.payment.app.dto.PaymentSummaryDto response = lockWait.orInProgress(() -> retry.withRetry(() -> paymentFacade.confirmPayment(
+                principal.memberId(), request.pgOrderId(), request.paymentKey(), request.amount())));
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }
 
@@ -94,7 +101,8 @@ public class PaymentApiController {
 
     @Operation(
             summary = "내 결제 내역 조회",
-            description = "주문 묶음 단위의 결제 내역을 최신순으로 조회합니다. walletUsedAmount 는 예치금에서 나간 금액, chargeAmount 는 카드 등으로 결제한 부족분입니다. size 최대 50."
+            description = "주문 묶음 단위의 결제 내역을 최신순으로 조회합니다. 총액을 무엇으로 냈는지는 pointAmount(포인트) + walletUsedAmount(예치금) + pgAmount(직접 결제)로 나뉩니다. "
+                    + "payMethod 는 고른 결제수단, pgMethod 는 직접 결제가 실제로 승인된 수단, chargeAmount 는 결제창에서 결제한 금액(부족분 충전 또는 직접 결제)입니다. size 최대 50."
     )
     @GetMapping("/me")
     public ResponseEntity<RsData<com.jjinmak.back.payment.app.dto.PageDto<com.jjinmak.back.payment.app.dto.PaymentSummaryDto>>> listPayments(
@@ -108,7 +116,9 @@ public class PaymentApiController {
 
     @Operation(
             summary = "내 결제 상세 조회",
-            description = "결제에 포함된 주문별 금액·환불 여부와, 부족분 충전이 있었다면 그 충전 건(영수증 링크 포함)을 함께 돌려줍니다."
+            description = "결제 금액 구성(포인트·예치금·직접 결제), 결제에 포함된 주문별 금액·환불 여부와, 결제창을 거쳤다면 그 토스 결제 건(부족분 충전 또는 직접 결제, 영수증 링크 포함)을 함께 돌려줍니다. "
+                    + "직접 결제 건의 canceledAmount 는 주문 환불로 토스에 취소된 금액의 합입니다. "
+                    + "expectedEarnPoint 는 아직 구매 확정하지 않은 주문을 확정하면 적립될 예상 포인트의 합입니다."
     )
     @GetMapping("/me/{paymentId}")
     public ResponseEntity<RsData<com.jjinmak.back.payment.app.dto.PaymentDetailDto>> getPayment(
@@ -116,6 +126,50 @@ public class PaymentApiController {
             @AuthenticationPrincipal AuthPrincipal principal
     ) {
         com.jjinmak.back.payment.app.dto.PaymentDetailDto response = paymentFacade.getPayment(principal.memberId(), paymentId);
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
+
+    @Operation(
+            summary = "주문 그룹으로 내 결제 상세 조회",
+            description = "orderGroupId 로 결제 상세를 찾습니다. 응답은 내 결제 상세 조회와 같습니다. "
+                    + "포인트 · 예치금만으로 바로 끝난 결제는 결제 요청 응답에 paymentId 가 없으므로, 결제 완료 화면에서는 이 API 로 조회하세요. "
+                    + "expectedEarnPoint 는 아직 구매 확정하지 않은 주문을 확정하면 적립될 예상 포인트의 합입니다. "
+                    + "내 결제가 아니거나 없는 주문 그룹이면 PAYMENT001."
+    )
+    @GetMapping("/me/order-groups/{orderGroupId}")
+    public ResponseEntity<RsData<PaymentDetailDto>> getPaymentByOrderGroup(
+            @PathVariable Long orderGroupId,
+            @AuthenticationPrincipal AuthPrincipal principal
+    ) {
+        PaymentDetailDto response = paymentFacade.getPaymentByOrderGroup(principal.memberId(), orderGroupId);
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
+
+    @Operation(
+            summary = "주문 1건의 결제 정보 조회",
+            description = "주문 상세 화면용입니다. 이 주문 대금을 포인트 · 예치금 · 직접 결제로 각각 얼마씩 냈는지(pointAmount + depositAmount + pgAmount == amount)와 "
+                    + "적립 포인트를 돌려줍니다. 환불하면 이 구성 그대로 돌아갑니다. "
+                    + "expectedEarnPoint 는 구매 확정하면 적립될 예상 포인트로 확정 전(status 가 HELD)에만 값이 있고, "
+                    + "earnedPoint 는 구매 확정으로 실제 적립된 포인트입니다. paymentId 로 결제 상세를 이어서 조회할 수 있습니다. "
+                    + "구매자 본인만 조회할 수 있고 판매자를 포함한 다른 회원은 PAYMENT008, 아직 결제가 끝나지 않은 주문은 WALLET301."
+    )
+    @GetMapping("/me/orders/{orderId}")
+    public ResponseEntity<RsData<OrderPaymentDto>> getOrderPayment(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal AuthPrincipal principal
+    ) {
+        OrderPaymentDto response = paymentFacade.getOrderPayment(principal.memberId(), orderId);
+        return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
+    }
+
+    @Operation(
+            summary = "결제 정책 조회",
+            description = "화면의 안내 문구와 입력 검증에 쓰는 설정값입니다. chargeMinAmount ~ chargeMaxAmount 는 예치금 1회 충전 금액 범위(벗어나면 CHARGE010), "
+                    + "pointEarnRatePercent 는 포인트 적립률(%), feeRatePercent 는 판매 수수료율(%)입니다."
+    )
+    @GetMapping("/policy")
+    public ResponseEntity<RsData<PaymentPolicyDto>> getPolicy() {
+        PaymentPolicyDto response = paymentFacade.getPolicy();
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }
 
@@ -148,16 +202,24 @@ public class PaymentApiController {
 
     @Operation(
             summary = "결제 전 견적",
-            description = "지금 잔액으로 amount 를 결제하면 예치금에서 얼마가 나가고, 모자라면 얼마를 충전해야 하는지 미리 계산합니다. "
-                    + "부족분(shortage)이 최소 충전 금액보다 작으면 chargeAmount 는 최소 충전 금액으로 올라가고, 차액은 결제 후 예치금에 남습니다(balanceAfterPayment). "
-                    + "chargeLimitExceeded 가 true 면 1회 충전 한도를 넘어 결제 요청이 거절되므로 예치금을 먼저 충전해야 합니다. 저장하지 않으며 실제 결제 시점에 다시 계산됩니다."
+            description = "amount 를 payMethod(DEPOSIT 예치금 / TRANSFER 계좌이체 직접 결제 / CARD 카드·간편결제 직접 결제, 생략하면 DEPOSIT)와 "
+                    + "pointUseAmount(포인트 사용액, 생략하면 0)로 결제하면 무엇으로 얼마씩 나가고 결제창에서 얼마를 결제해야 하는지(pgAmount, pgMethod) 미리 계산합니다. "
+                    + "예치금 결제에서 부족분(shortage)이 최소 충전 금액보다 작으면 chargeAmount 는 최소 충전 금액으로 올라가고, 차액은 결제 후 예치금에 남습니다(balanceAfterPayment). "
+                    + "chargeLimitExceeded 가 true 면 계좌이체 1회 한도를 넘어 결제 요청이 거절됩니다(예치금 결제면 예치금을 먼저 충전, 계좌이체 직접 결제면 다른 수단 선택). "
+                    + "expectedEarnPoint 는 이 조건으로 결제하고 구매 확정했을 때 적립될 것으로 예상되는 포인트입니다. 예치금과 계좌이체 직접 결제 금액에만 적립되고 "
+                    + "카드·간편결제, 포인트 사용액, 배송비에는 적립되지 않습니다. 배송비를 빼고 계산하려면 deliveryFee(amount 에 포함된 배송비 합, 생략하면 0)를 함께 보내세요. "
+                    + "포인트 사용액이 결제 금액을 넘으면 PAYMENT010, 포인트 잔액보다 많으면 WALLET204. 저장하지 않으며 실제 결제 시점에 다시 계산됩니다."
     )
     @GetMapping("/quote")
     public ResponseEntity<RsData<com.jjinmak.back.payment.app.dto.PaymentQuoteDto>> quote(
             @AuthenticationPrincipal AuthPrincipal principal,
-            @RequestParam long amount
+            @RequestParam long amount,
+            @RequestParam(required = false) String payMethod,
+            @RequestParam(defaultValue = "0") long pointUseAmount,
+            @RequestParam(defaultValue = "0") long deliveryFee
     ) {
-        com.jjinmak.back.payment.app.dto.PaymentQuoteDto response = paymentFacade.quote(principal.memberId(), amount);
+        com.jjinmak.back.payment.app.dto.PaymentQuoteDto response = paymentFacade.quote(
+                principal.memberId(), amount, payMethod, pointUseAmount, deliveryFee);
         return ResponseEntity.status(HttpStatus.OK).body(new RsData<>(response));
     }
 }

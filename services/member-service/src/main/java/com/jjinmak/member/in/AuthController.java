@@ -116,7 +116,8 @@ public class AuthController {
             description = """
                     프론트가 카카오에서 받은 인가 코드로 로그인합니다.
                     - 이미 가입된 카카오 계정: status=LOGIN, 액세스 토큰 반환, 리프레시 토큰은 HttpOnly 쿠키로 전달
-                    - 처음 로그인한 카카오 계정: status=SIGNUP_REQUIRED, 가입 대기 토큰(10분) 반환 → 추가 정보 입력 후 가입 API 호출
+                    - 처음 로그인한 카카오 계정: status=SIGNUP_REQUIRED, 가입 대기 토큰(10분), 인증된 카카오 이메일, 카카오 닉네임(없으면 각각 null) 반환 → 추가 정보 입력 후 가입 API 호출
+                    - 인증된 카카오 이메일이 이미 이메일 회원으로 가입되어 있으면 AUTH113(409)
                     """
     )
     @PostMapping("/oauth/kakao")
@@ -124,7 +125,7 @@ public class AuthController {
         SocialLoginResult result = authFacade.loginWithKakao(request.code());
 
         if (result.isSignupRequired()) {
-            return ResponseEntity.ok(new RsData<>(SocialLoginResponseDto.signupRequired(result.signupToken())));
+            return ResponseEntity.ok(new RsData<>(SocialLoginResponseDto.signupRequired(result.signupToken(), result.email(), result.nickname())));
         }
 
         AuthResult auth = result.authResult();
@@ -135,7 +136,7 @@ public class AuthController {
 
     @Operation(
             summary = "카카오 회원가입",
-            description = "가입 대기 토큰과 추가 정보로 가입을 완료하고 바로 로그인합니다. 이미 사용 중인 이메일이면 가입이 거부됩니다(계정 자동 연동 없음)."
+            description = "가입 대기 토큰과 추가 정보로 가입을 완료하고 바로 로그인합니다. 토큰에 인증된 카카오 이메일이 있으면 요청의 email 은 무시하고 그 이메일로 가입합니다. 이미 사용 중인 이메일이면 가입이 거부됩니다(계정 자동 연동 없음)."
     )
     @PostMapping("/oauth/kakao/signup")
     public ResponseEntity<RsData<TokenResponseDto>> kakaoSignUp(@Valid @RequestBody KakaoSignUpRequestDto request) {

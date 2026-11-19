@@ -1,0 +1,23 @@
+package com.jjinmak.boundedcontext.market.product.app;
+
+import com.jjinmak.boundedcontext.market.product.domain.ProductErrorCode;
+import com.jjinmak.boundedcontext.market.product.domain.ProductQna;
+import com.jjinmak.boundedcontext.market.product.in.dto.ProductQnaUpdateRequestDto;
+import com.jjinmak.boundedcontext.market.product.out.ProductQnaRepository;
+import com.jjinmak.common.exception.BusinessException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class ProductQnaUpdateUseCase {
+
+    private final ProductQnaRepository productQnaRepository;
+
+    public void updateQna(Long writerId, Long qnaId, ProductQnaUpdateRequestDto request){
+        ProductQna qna = productQnaRepository.findByIdAndDeletedAtIsNull(qnaId)
+                .orElseThrow(() -> new BusinessException(ProductErrorCode.QNA_NOT_FOUND));
+
+        qna.update(writerId, request.content());
+    }
+}

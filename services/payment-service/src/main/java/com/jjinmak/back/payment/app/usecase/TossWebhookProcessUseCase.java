@@ -37,7 +37,9 @@ import static com.jjinmak.back.payment.out.toss.TossPaymentsClient.NOT_FOUND_PAY
  *      · 토스 READY / IN_PROGRESS 등 진행 중 → IGNORED (아직 결제 중일 수 있어 건드리지 않고, 복구 스케줄러가 정리)
  *  - CHARGED / USED
  *      · 토스 DONE → IGNORED (이미 반영됨)
- *      · 토스 CANCELED / PARTIAL_CANCELED → FAILED + 에러 로그 (외부 취소. 자동 반영은 별도 이슈)
+ *      · 토스 CANCELED / PARTIAL_CANCELED
+ *          토스에 남은 금액 == 우리가 아는 남은 금액(결제 금액 − 취소 누계) → IGNORED (직접 결제 건의 주문 환불로 우리가 부분 취소한 것)
+ *          그 외 → FAILED + 에러 로그 (외부 취소. 자동 반영은 별도 이슈)
  *  - CANCELED / ABORTED
  *      · 토스 DONE → FAILED + 에러 로그 (토스는 결제 완료인데 우리는 닫힘)
  *      · 그 외 → IGNORED (이미 반영됨)
@@ -155,6 +157,10 @@ public class TossWebhookProcessUseCase {
     }
 
     private void handleCharged(TossWebhookEvent event, Charge charge, TossPaymentResponse remote, LocalDateTime now) {
+        if (remote.isCanceled() && remote.balanceAmount() == charge.getPgBalanceAmount()) {
+            event.markIgnored(now, "이미 반영된 부분 취소: tossStatus=" + remote.status());
+            return;
+        }
         if (remote.isCanceled()) {
             log.error("[토스 웹훅] 외부 취소 감지, 수동 확인 필요. eventId={}, chargeId={}, chargeStatus={}, tossStatus={}",
                     event.getId(), charge.getId(), charge.getStatus(), remote.status());

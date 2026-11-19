@@ -23,6 +23,12 @@ public enum PaymentErrorCode implements com.jjinmak.common.exception.ErrorCode {
     PAYMENT_ITEM_NOT_FOUND("PAYMENT006", "결제에 포함되지 않은 주문입니다.", HttpStatus.NOT_FOUND),
     INVALID_PAYMENT_AMOUNT("PAYMENT007", "결제 금액은 0보다 커야 합니다.", HttpStatus.BAD_REQUEST),
     PAYMENT_FORBIDDEN("PAYMENT008", "결제에 대한 권한이 없습니다.", HttpStatus.FORBIDDEN),
+    PAYMENT_METHOD_NOT_SUPPORTED("PAYMENT009", "지원하지 않는 결제수단입니다.", HttpStatus.BAD_REQUEST),
+    POINT_USE_OUT_OF_RANGE("PAYMENT010", "포인트 사용액은 0 이상, 결제 금액 이하여야 합니다.", HttpStatus.BAD_REQUEST),
+    PAYMENT_TRANSFER_LIMIT_EXCEEDED("PAYMENT011", "계좌이체로 결제할 수 있는 1회 한도를 넘습니다. 다른 결제수단을 선택해 주세요.", HttpStatus.BAD_REQUEST),
+    PAYMENT_PLAN_MISMATCH("PAYMENT012", "결제 금액 구성이 결제 총액과 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
+    PAYMENT_CLOSED("PAYMENT013", "이미 닫힌 결제입니다. 새 주문으로 다시 결제해 주세요.", HttpStatus.CONFLICT, true),
+    PAYMENT_IN_PROGRESS("PAYMENT014", "이 결제를 처리하는 중입니다. 잠시 후 다시 시도해 주세요.", HttpStatus.CONFLICT, true),
 
     // ===== 충전 (Charge) =====
     CHARGE_NOT_FOUND("CHARGE001", "존재하지 않는 충전 건입니다.", HttpStatus.NOT_FOUND),
@@ -36,6 +42,8 @@ public enum PaymentErrorCode implements com.jjinmak.common.exception.ErrorCode {
     CHARGE_METHOD_NOT_ALLOWED("CHARGE009", "예치금 충전은 계좌이체로만 할 수 있습니다. 결제는 취소되었습니다.", HttpStatus.BAD_REQUEST, true),
     CHARGE_AMOUNT_OUT_OF_RANGE("CHARGE010", "충전 금액이 허용 범위(최소·최대 충전 금액)를 벗어났습니다.", HttpStatus.BAD_REQUEST),
     CHARGE_LIMIT_EXCEEDED("CHARGE011", "부족한 금액이 1회 충전 한도를 넘습니다. 예치금을 먼저 충전한 뒤 다시 결제해 주세요.", HttpStatus.BAD_REQUEST),
+    CHARGE_SUPERSEDED("CHARGE012", "결제 조건이 바뀌어 이 결제 요청은 더 이상 유효하지 않습니다. 다시 결제해 주세요.", HttpStatus.BAD_REQUEST, true),
+    INVALID_CANCEL_AMOUNT("CHARGE013", "취소 금액이 취소할 수 있는 금액을 벗어났습니다.", HttpStatus.BAD_REQUEST),
 
     // ===== PG (토스페이먼츠) =====
     PG_APPROVE_FAILED("PG001", "PG 결제 승인에 실패했습니다.", HttpStatus.BAD_GATEWAY, true),

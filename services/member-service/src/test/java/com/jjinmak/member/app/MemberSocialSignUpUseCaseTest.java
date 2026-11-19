@@ -1,6 +1,7 @@
 package com.jjinmak.member.app;
 
 import com.jjinmak.common.exception.BusinessException;
+import com.jjinmak.common.exception.CommonErrorCode;
 import com.jjinmak.contracts.member.event.MemberCreatedEvent;
 import com.jjinmak.member.domain.Member;
 import com.jjinmak.member.domain.OAuthProvider;
@@ -37,10 +38,14 @@ class MemberSocialSignUpUseCaseTest {
 
     @InjectMocks MemberSocialSignUpUseCase useCase;
 
-    private final SignupTicket ticket = new SignupTicket(OAuthProvider.KAKAO, "12345");
+    private final SignupTicket ticket = new SignupTicket(OAuthProvider.KAKAO, "12345", null);
 
     private KakaoSignUpRequestDto request() {
-        return new KakaoSignUpRequestDto("signup-token", "kakao@example.com", "카카오유저", "홍길동",
+        return request("kakao@example.com");
+    }
+
+    private KakaoSignUpRequestDto request(String email) {
+        return new KakaoSignUpRequestDto("signup-token", email, "카카오유저", "홍길동",
                 "01012345678", null,
                 new AddressRequestDto("집", "홍길동", "01012345678", "06236", "서울시 강남구", "101호"));
     }
@@ -101,5 +106,54 @@ class MemberSocialSignUpUseCaseTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(MemberErrorCode.DUPLICATE_NICKNAME);
+    }
+
+    @Test
+    void 토큰에_인증된_이메일이_있으면_요청_이메일을_무시하고_그_이메일로_가입한다() {
+        SignupTicket verified = new SignupTicket(OAuthProvider.KAKAO, "12345", "verified@kakao.com");
+        given(socialAccountRepository.existsByProviderAndProviderUserId(OAuthProvider.KAKAO, "12345")).willReturn(false);
+        given(memberRepository.existsByEmail("verified@kakao.com")).willReturn(false);
+        given(memberRepository.existsByNickname("카카오유저")).willReturn(false);
+
+        Member member = useCase.signUp(verified, request("tampered@example.com"));
+
+        assertThat(member.getEmail()).isEqualTo("verified@kakao.com");
+        verify(memberRepository, never()).existsByEmail("tampered@example.com");
+    }
+
+    @Test
+    void 토큰에_인증된_이메일이_있으면_요청_이메일이_없어도_가입된다() {
+        SignupTicket verified = new SignupTicket(OAuthProvider.KAKAO, "12345", "verified@kakao.com");
+        given(socialAccountRepository.existsByProviderAndProviderUserId(OAuthProvider.KAKAO, "12345")).willReturn(false);
+        given(memberRepository.existsByEmail("verified@kakao.com")).willReturn(false);
+        given(memberRepository.existsByNickname("카카오유저")).willReturn(false);
+
+        Member member = useCase.signUp(verified, request(null));
+
+        assertThat(member.getEmail()).isEqualTo("verified@kakao.com");
+    }
+
+    @Test
+    void 인증된_이메일이_가입된_이메일과_같으면_거부한다() {
+        SignupTicket verified = new SignupTicket(OAuthProvider.KAKAO, "12345", "verified@kakao.com");
+        given(socialAccountRepository.existsByProviderAndProviderUserId(OAuthProvider.KAKAO, "12345")).willReturn(false);
+        given(memberRepository.existsByEmail("verified@kakao.com")).willReturn(true);
+
+        assertThatThrownBy(() -> useCase.signUp(verified, request(null)))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(MemberErrorCode.DUPLICATE_EMAIL);
+    }
+
+    @Test
+    void 토큰에_이메일이_없는데_요청_이메일도_없으면_거부한다() {
+        given(socialAccountRepository.existsByProviderAndProviderUserId(OAuthProvider.KAKAO, "12345")).willReturn(false);
+
+        assertThatThrownBy(() -> useCase.signUp(ticket, request(" ")))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(CommonErrorCode.BAD_REQUEST);
+
+        verify(memberRepository, never()).save(any());
     }
 }

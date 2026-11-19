@@ -2,7 +2,9 @@ package com.jjinmak.back.payment.domain;
 
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.jpa.entity.BaseIdAndTime;
+import com.jjinmak.back.payment.domain.enums.PayMethod;
 import com.jjinmak.back.payment.domain.enums.PaymentStatus;
+import com.jjinmak.back.payment.domain.enums.PgMethod;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -46,8 +48,30 @@ public class Payment extends BaseIdAndTime {
     @Column(nullable = false)
     private long totalPrice;
 
+    // 결제창에서 결제할 금액. 예치금 결제면 부족분 충전 금액, 직접 결제면 pgAmount. 0 이면 결제창 없이 결제된다
     @Column(nullable = false)
     private long chargeAmount;
+
+    // 사용자가 고른 결제수단 (포인트로 내고 남은 금액을 낼 수단)
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 20)
+    private PayMethod payMethod;
+
+    // 결제 금액 구성. 세 값의 합 == totalPrice
+    @Column(nullable = false)
+    private long pointAmount;
+
+    @Column(nullable = false)
+    private long depositAmount;     // 예치금으로 낸 금액. 부족분을 충전해서 낸 금액도 포함한다
+
+    @Column(nullable = false)
+    private long pgAmount;          // 결제창에서 직접 결제한 금액. 예치금을 거치지 않는다
+
+    // 직접 결제가 실제로 승인된 결제수단 (토스 승인 응답의 method. 예: 계좌이체, 카드, 간편결제). 직접 결제가 아니면 null
+    // 사용자가 고른 수단(payMethod)과 다를 수 있다. 적립처럼 수단에 따라 달라지는 계산은 이 값을 기준으로 한다
+    @Column(length = 30)
+    private String pgMethod;
 
     @Column(nullable = false, length = 100)
     private String idempotencyKey;
@@ -77,6 +101,10 @@ public class Payment extends BaseIdAndTime {
         this.buyerWallet = buyerWallet;
         this.totalPrice = totalPrice;
         this.chargeAmount = 0L;
+        this.payMethod = PayMethod.DEPOSIT;
+        this.pointAmount = 0L;
+        this.depositAmount = totalPrice;
+        this.pgAmount = 0L;
         this.idempotencyKey = idempotencyKeyOf(orderGroupId);
         this.status = PENDING;
     }
@@ -113,25 +141,46 @@ public class Payment extends BaseIdAndTime {
     }
 
 
-    // 결제 요청 시점에 PG 로 충전할 금액을 정한다. 금액은 부족분에 충전 정책(최소 충전 금액)을 적용해 호출하는 쪽이 계산한다.
-    // 충전할 금액이 있으면 CHARGING, 없으면 PENDING 에 머문 채 바로 홀딩으로 간다.
-    // 사용자가 결제창을 닫고 다시 주문하기를 누르면(CHARGING 상태) 잔액이 달라졌을 수 있으므로 다시 정한다.
-    public void decideCharge(long chargeAmount) {
+    // 결제 요청 시점에 결제 금액 구성(결제수단 · 포인트 · 예치금 · 직접 결제 · 결제창 금액)을 정한다. 계산은 PaymentPlanner 가 한다.
+    // 결제창을 거쳐야 하면 CHARGING, 아니면 PENDING 에 머문 채 바로 홀딩으로 간다.
+    // 사용자가 결제창을 닫고 다시 주문하기를 누르면(CHARGING 상태) 잔액이나 고른 수단이 달라졌을 수 있으므로 다시 정한다.
+    public void decide(PaymentPlan plan) {
         requireStatus(PENDING, CHARGING);
-        if (chargeAmount < 0) {
+        if (plan.pointAmount() < 0 || plan.depositAmount() < 0 || plan.pgAmount() < 0 || plan.chargeAmount() < 0) {
             throw new BusinessException(INVALID_PAYMENT_AMOUNT);
         }
-        this.chargeAmount = chargeAmount;
-        this.status = chargeAmount > 0 ? CHARGING : PENDING;
+        if (plan.totalPrice() != totalPrice || (plan.depositAmount() > 0 && plan.pgAmount() > 0)) {
+            throw new BusinessException(PAYMENT_PLAN_MISMATCH);
+        }
+        this.payMethod = plan.payMethod();
+        this.pointAmount = plan.pointAmount();
+        this.depositAmount = plan.depositAmount();
+        this.pgAmount = plan.pgAmount();
+        this.chargeAmount = plan.chargeAmount();
+        this.status = plan.needsPgWindow() ? CHARGING : PENDING;
     }
 
-    // 충전하기 전부터 있던 예치금에서 나간 금액. 충전액이 총액 이상이면(최소 충전 금액으로 올려 충전) 0
-    public long getWalletUsedAmount() {
-        return Math.max(0L, totalPrice - chargeAmount);
+    // 전액 예치금 결제에서 충전할 금액만 정한다 (포인트 · 직접 결제 없음)
+    public void decideCharge(long chargeAmount) {
+        decide(new PaymentPlan(PayMethod.DEPOSIT, 0L, totalPrice, 0L, chargeAmount, Math.min(chargeAmount, totalPrice), false));
+    }
+
+    public PaymentShare getShare() {
+        return new PaymentShare(pointAmount, depositAmount, pgAmount);
     }
 
     public boolean needsCharge() {
         return chargeAmount > 0;
+    }
+
+    // 결제창에서 낸 돈이 예치금을 거치지 않고 주문 대금이 되는 결제인지
+    public boolean isDirectPayment() {
+        return pgAmount > 0;
+    }
+
+    // 직접 결제가 실제로 계좌이체로 승인됐는지. 고른 수단이 아니라 토스가 알려준 실제 수단으로 판단한다 (포인트 적립 대상 판별)
+    public boolean isPaidByTransfer() {
+        return PgMethod.TRANSFER.matches(pgMethod);
     }
 
     // 지갑 차감 + 주문별 Holding 생성이 끝난 뒤 호출. 이미 PAID 면 아무 것도 하지 않는다 (멱등)
@@ -140,6 +189,13 @@ public class Payment extends BaseIdAndTime {
         requireStatus(PENDING, CHARGING);
         this.status = PAID;
         this.paidAt = paidAt;
+    }
+
+    // 직접 결제 승인 완료. 토스가 알려준 실제 결제수단을 함께 남긴다
+    public void markPaid(LocalDateTime paidAt, String pgMethod) {
+        if (isPaid()) return;
+        markPaid(paidAt);
+        this.pgMethod = pgMethod;
     }
 
     // PG 승인 실패 등으로 결제를 끝내지 못했을 때. 이미 FAILED 면 아무 것도 하지 않는다 (멱등)

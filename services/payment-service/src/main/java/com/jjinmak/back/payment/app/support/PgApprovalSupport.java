@@ -25,6 +25,7 @@ public class PgApprovalSupport {
 
     private static final String CONFIRM_KEY_PREFIX = "charge-confirm-";
     private static final String CANCEL_KEY_PREFIX = "charge-cancel-";
+    private static final String REFUND_KEY_PREFIX = "order-refund-";
 
     // 허용되지 않은 결제수단으로 닫힌 충전의 실패 코드 · 사유 (Charge.failureCode / failureMessage)
     public static final String METHOD_NOT_ALLOWED = "METHOD_NOT_ALLOWED";
@@ -42,7 +43,8 @@ public class PgApprovalSupport {
      *  - 응답이 Charge 와 다르면 예외. 토스가 DONE 이면 자동 취소하되, 승인 요청한 바로 그 결제일 때만 한다
      *    (주문번호나 결제 키가 다른 결제를 돌려받았으면 취소하지 않고 로그만 남긴다)
      *  - 결제수단이 이 충전에 허용된 수단(예치금 충전은 계좌이체)이 아니면 자동 취소하고 예외.
-     *    결제창을 어떤 수단으로 열지는 클라이언트가 정하므로, 실제 수단은 승인 응답으로만 확인할 수 있다
+     *    결제창을 어떤 수단으로 열지는 클라이언트가 정하므로, 실제 수단은 승인 응답으로만 확인할 수 있다.
+     *    직접 결제는 수단을 가리지 않고 받는다 (실제 수단은 호출하는 쪽이 승인 응답에서 읽어 기록한다)
      */
     public TossPaymentResponse approve(Charge charge, String paymentKey) {
         TossPaymentResponse response;
@@ -131,5 +133,14 @@ public class PgApprovalSupport {
     // 사용자 요청 충전 취소 (전액). 실패하면 예외를 그대로 올린다
     public void cancel(Charge charge, String reason) {
         toss.cancel(charge.getPaymentKey(), reason, CANCEL_KEY_PREFIX + charge.getPgOrderId());
+    }
+
+    /**
+     * 직접 결제 건에서 주문 1건 몫만 토스로 취소한다 (주문 환불). 실패하면 예외를 그대로 올린다.
+     * Idempotency-Key 를 주문 단위로 두어, 토스 취소는 됐는데 우리 트랜잭션이 롤백되어 같은 환불이 다시 와도 토스 취소는 한 번만 된다.
+     */
+    public void cancelPartially(Charge charge, Long orderId, long cancelAmount, String reason) {
+        toss.cancel(charge.getPaymentKey(), reason, cancelAmount,
+                REFUND_KEY_PREFIX + charge.getPgOrderId() + "-" + orderId);
     }
 }

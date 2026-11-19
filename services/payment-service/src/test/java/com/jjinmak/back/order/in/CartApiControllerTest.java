@@ -4,6 +4,7 @@ import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.common.security.AuthHeaders;
 import com.jjinmak.common.security.HeaderAuthenticationFilter;
 import com.jjinmak.contracts.order.event.OrderPaymentSucceedEvent;
+import com.jjinmak.contracts.payment.dto.PaymentCloseResultDto;
 import com.jjinmak.contracts.payment.dto.PaymentRequestDto;
 import com.jjinmak.contracts.payment.dto.PaymentResultDto;
 import com.jjinmak.back.order.domain.CartItem;
@@ -29,6 +30,7 @@ import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
@@ -128,10 +130,40 @@ class CartApiControllerTest {
         mockMvc.perform(post("/api/v1/cart/payment")
                         .header(AuthHeaders.MEMBER_ID, 1L)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productIds\": []}"))
+                        .content("{\"productIds\": [], \"pointUseAmount\": 0}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorCode").value("COMMON001"));
 
+        verifyNoInteractions(paymentPort);
+    }
+
+    @Test
+    @DisplayName("결제 요청: 포인트 사용액을 보내지 않으면 400, 주문 그룹과 주문을 만들지 않고 결제를 요청하지 않는다")
+    void payment_withoutPointUseAmount() throws Exception {
+        mockMvc.perform(post("/api/v1/cart/payment")
+                        .header(AuthHeaders.MEMBER_ID, 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productIds\": [20], \"paymentMethod\": \"CARD\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("COMMON001"));
+
+        assertThat(orderGroupRepository.count()).isZero();
+        assertThat(orderRepository.count()).isZero();
+        verifyNoInteractions(paymentPort);
+    }
+
+    @Test
+    @DisplayName("결제 요청: 포인트 사용액이 음수면 400, 주문 그룹과 주문을 만들지 않고 결제를 요청하지 않는다")
+    void payment_negativePointUseAmount() throws Exception {
+        mockMvc.perform(post("/api/v1/cart/payment")
+                        .header(AuthHeaders.MEMBER_ID, 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productIds\": [20], \"pointUseAmount\": -1}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("COMMON001"));
+
+        assertThat(orderGroupRepository.count()).isZero();
+        assertThat(orderRepository.count()).isZero();
         verifyNoInteractions(paymentPort);
     }
 
@@ -141,7 +173,7 @@ class CartApiControllerTest {
         mockMvc.perform(post("/api/v1/cart/payment")
                         .header(AuthHeaders.MEMBER_ID, 1L)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productIds\": [20, 21]}"))
+                        .content("{\"productIds\": [20, 21], \"pointUseAmount\": 0}"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.errorCode").value("ORDER007"));
 
@@ -158,7 +190,7 @@ class CartApiControllerTest {
         mockMvc.perform(post("/api/v1/cart/payment")
                         .header(AuthHeaders.MEMBER_ID, 1L)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productIds\": [20, 22]}"))
+                        .content("{\"productIds\": [20, 22], \"pointUseAmount\": 0}"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.errorCode").value("ORDER008"));
 
@@ -168,14 +200,14 @@ class CartApiControllerTest {
     }
 
     @Test
-    @DisplayName("결제 요청: 만든 주문 그룹 id, 낙찰자 id, 총액과 저장된 주문 id, 판매자 id, 금액을 결제 서비스에 넘긴다")
+    @DisplayName("결제 요청: 만든 주문 그룹 id, 낙찰자 id, 총액과 저장된 주문 id, 판매자 id, 금액에 요청받은 결제수단과 포인트 사용액을 담아 결제 서비스에 넘긴다")
     void payment_sendsPaymentRequest() throws Exception {
         when(paymentPort.requestPayment(any())).thenReturn(PaymentResultDto.paid(7L, 33_000L));
 
         mockMvc.perform(post("/api/v1/cart/payment")
                         .header(AuthHeaders.MEMBER_ID, 1L)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productIds\": [20]}"))
+                        .content("{\"productIds\": [20], \"paymentMethod\": \"CARD\", \"pointUseAmount\": 5000}"))
                 .andExpect(status().isOk());
 
         OrderGroup group = onlyGroup();
@@ -185,7 +217,24 @@ class CartApiControllerTest {
         ArgumentCaptor<PaymentRequestDto> captor = ArgumentCaptor.forClass(PaymentRequestDto.class);
         verify(paymentPort).requestPayment(captor.capture());
         assertThat(captor.getValue()).isEqualTo(new PaymentRequestDto(group.getId(), 1L, 33_000L,
-                List.of(new PaymentRequestDto.Item(orderId, 2L, 30_000L, 3_000L))));
+                List.of(new PaymentRequestDto.Item(orderId, 2L, 30_000L, 3_000L)), "CARD", 5_000L));
+    }
+
+    @Test
+    @DisplayName("결제 요청: 결제수단을 보내지 않으면 200, 결제수단을 비운(null) 채 포인트 사용액과 함께 결제 서비스에 넘긴다")
+    void payment_withoutPaymentMethod() throws Exception {
+        when(paymentPort.requestPayment(any())).thenReturn(PaymentResultDto.paid(7L, 33_000L));
+
+        mockMvc.perform(post("/api/v1/cart/payment")
+                        .header(AuthHeaders.MEMBER_ID, 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productIds\": [20], \"pointUseAmount\": 0}"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<PaymentRequestDto> captor = ArgumentCaptor.forClass(PaymentRequestDto.class);
+        verify(paymentPort).requestPayment(captor.capture());
+        assertThat(captor.getValue().payMethod()).isNull();
+        assertThat(captor.getValue().pointUseAmount()).isZero();
     }
 
     @Test
@@ -196,7 +245,7 @@ class CartApiControllerTest {
         MvcResult result = mockMvc.perform(post("/api/v1/cart/payment")
                         .header(AuthHeaders.MEMBER_ID, 1L)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productIds\": [20]}"))
+                        .content("{\"productIds\": [20], \"pointUseAmount\": 0}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.isPaid").value(true))
                 .andExpect(jsonPath("$.data.data").isEmpty())
@@ -220,15 +269,16 @@ class CartApiControllerTest {
     }
 
     @Test
-    @DisplayName("결제 요청: 예치금이 부족하면(NEEDS_CHARGE) 200, 주문 그룹 id와 isPaid=false, 충전에 필요한 결제 정보를 응답하고, 주문은 WAITING, 장바구니 항목은 그대로이며 이벤트를 발행하지 않는다")
+    @DisplayName("결제 요청: 예치금이 부족하면(NEEDS_CHARGE) 200, 주문 그룹 id와 isPaid=false, 충전에 필요한 결제 정보, 결제창을 열 결제수단, 적용된 결제수단, 포인트·예치금·직접 결제 금액을 응답하고, 주문은 WAITING, 장바구니 항목은 그대로이며 이벤트를 발행하지 않는다")
     void payment_needsCharge() throws Exception {
         when(paymentPort.requestPayment(any()))
-                .thenReturn(PaymentResultDto.needsCharge(7L, 33_000L, 13_000L, "CHG-1", "찐막 주문 결제 (부족분 충전)"));
+                .thenReturn(PaymentResultDto.needsCharge(7L, 33_000L, 13_000L, 13_000L, "CHG-1", "찐막 주문 결제 (부족분 충전)", "TRANSFER",
+                        new PaymentResultDto.Breakdown("DEPOSIT", 3_000L, 30_000L, 0L)));
 
         MvcResult result = mockMvc.perform(post("/api/v1/cart/payment")
                         .header(AuthHeaders.MEMBER_ID, 1L)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productIds\": [20]}"))
+                        .content("{\"productIds\": [20], \"paymentMethod\": \"DEPOSIT\", \"pointUseAmount\": 3000}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.isPaid").value(false))
                 .andExpect(jsonPath("$.data.data.paymentId").value(7))
@@ -236,6 +286,43 @@ class CartApiControllerTest {
                 .andExpect(jsonPath("$.data.data.chargeAmount").value(13_000))
                 .andExpect(jsonPath("$.data.data.pgOrderId").value("CHG-1"))
                 .andExpect(jsonPath("$.data.data.orderName").value("찐막 주문 결제 (부족분 충전)"))
+                .andExpect(jsonPath("$.data.data.pgMethod").value("TRANSFER"))
+                .andExpect(jsonPath("$.data.data.payMethod").value("DEPOSIT"))
+                .andExpect(jsonPath("$.data.data.pointAmount").value(3_000))
+                .andExpect(jsonPath("$.data.data.depositAmount").value(30_000))
+                .andExpect(jsonPath("$.data.data.pgAmount").value(0))
+                .andReturn();
+
+        Long groupId = onlyGroup().getId();
+        jsonPath("$.data.orderGroupId").value(groupId).match(result);
+        assertThat(orderRepository.findAll()).extracting(Order::getState).containsExactly(WAITING);
+        assertThat(cartItemRepository.findAll()).extracting(CartItem::getAuctionId).containsExactlyInAnyOrder(10L, 11L);
+        assertThat(events.stream(OrderPaymentSucceedEvent.class)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("결제 요청: 직접 결제면(NEEDS_PAYMENT) 200, 주문 그룹 id와 isPaid=false, 결제창 금액, 결제창을 열 결제수단, 적용된 결제수단, 포인트·예치금·직접 결제 금액을 응답하고, 주문은 WAITING, 장바구니 항목은 그대로이며 이벤트를 발행하지 않는다")
+    void payment_needsPayment() throws Exception {
+        when(paymentPort.requestPayment(any()))
+                .thenReturn(PaymentResultDto.needsPayment(7L, 33_000L, "CHG-2", "찐막 주문 결제", "CARD",
+                        new PaymentResultDto.Breakdown("CARD", 3_000L, 0L, 30_000L)));
+
+        MvcResult result = mockMvc.perform(post("/api/v1/cart/payment")
+                        .header(AuthHeaders.MEMBER_ID, 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productIds\": [20], \"paymentMethod\": \"CARD\", \"pointUseAmount\": 3000}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.isPaid").value(false))
+                .andExpect(jsonPath("$.data.data.paymentId").value(7))
+                .andExpect(jsonPath("$.data.data.totalPrice").value(33_000))
+                .andExpect(jsonPath("$.data.data.chargeAmount").value(30_000))
+                .andExpect(jsonPath("$.data.data.pgOrderId").value("CHG-2"))
+                .andExpect(jsonPath("$.data.data.orderName").value("찐막 주문 결제"))
+                .andExpect(jsonPath("$.data.data.pgMethod").value("CARD"))
+                .andExpect(jsonPath("$.data.data.payMethod").value("CARD"))
+                .andExpect(jsonPath("$.data.data.pointAmount").value(3_000))
+                .andExpect(jsonPath("$.data.data.depositAmount").value(0))
+                .andExpect(jsonPath("$.data.data.pgAmount").value(30_000))
                 .andReturn();
 
         Long groupId = onlyGroup().getId();
@@ -253,7 +340,7 @@ class CartApiControllerTest {
         mockMvc.perform(post("/api/v1/cart/payment")
                         .header(AuthHeaders.MEMBER_ID, 1L)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"productIds\": [20]}"))
+                        .content("{\"productIds\": [20], \"pointUseAmount\": 0}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.errorCode").value("WALLET501"));
 
@@ -261,6 +348,84 @@ class CartApiControllerTest {
         assertThat(orderRepository.findAll()).extracting(Order::getState).containsExactly(WAITING);
         assertThat(cartItemRepository.findAll()).extracting(CartItem::getAuctionId).containsExactlyInAnyOrder(10L, 11L);
         assertThat(events.stream(OrderPaymentSucceedEvent.class)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("결제 취소: 결제를 닫았으면(CLOSED) 204, 주문 그룹 id와 로그인한 회원 id로 결제를 닫고 주문 그룹과 주문을 삭제하며 장바구니 항목은 그대로 둔다")
+    void cancel_closed() throws Exception {
+        Long groupId = waitingGroup().getId();
+        when(paymentPort.closePayment(groupId, 1L)).thenReturn(PaymentCloseResultDto.closed(groupId, 7L));
+
+        mockMvc.perform(cancel(1L, "{\"orderGroupId\": " + groupId + "}"))
+                .andExpect(status().isNoContent());
+
+        verify(paymentPort).closePayment(groupId, 1L);
+        assertThat(orderGroupRepository.findById(groupId)).isEmpty();
+        assertThat(orderRepository.findAll()).isEmpty();
+        assertThat(cartItemRepository.findAll()).extracting(CartItem::getAuctionId).containsExactlyInAnyOrder(10L, 11L);
+    }
+
+    @Test
+    @DisplayName("결제 취소: 이미 결제가 끝났으면(ALREADY_PAID) 400 ORDER_STATE_BAD_REQUEST(ORDER003), 주문 그룹과 주문을 삭제하지 않는다")
+    void cancel_alreadyPaid() throws Exception {
+        Long groupId = waitingGroup().getId();
+        when(paymentPort.closePayment(groupId, 1L)).thenReturn(PaymentCloseResultDto.alreadyPaid(groupId, 7L));
+
+        mockMvc.perform(cancel(1L, "{\"orderGroupId\": " + groupId + "}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("ORDER003"));
+
+        assertThat(orderGroupRepository.findById(groupId)).isPresent();
+        assertThat(orderRepository.findAll()).extracting(Order::getState).containsExactly(WAITING);
+    }
+
+    @Test
+    @DisplayName("결제 취소: 다른 회원의 주문 그룹이면 403 ORDER_GROUP_FORBIDDEN(ORDER009), 결제를 닫지 않고 주문 그룹을 삭제하지 않는다")
+    void cancel_othersGroup() throws Exception {
+        Long groupId = waitingGroup().getId();
+
+        mockMvc.perform(cancel(3L, "{\"orderGroupId\": " + groupId + "}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorCode").value("ORDER009"));
+
+        verifyNoInteractions(paymentPort);
+        assertThat(orderGroupRepository.findById(groupId)).isPresent();
+    }
+
+    @Test
+    @DisplayName("결제 취소: 주문 그룹 id를 보내지 않으면 400, 결제를 닫지 않고 주문 그룹을 삭제하지 않는다")
+    void cancel_withoutOrderGroupId() throws Exception {
+        Long groupId = waitingGroup().getId();
+
+        mockMvc.perform(cancel(1L, "{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("COMMON001"));
+
+        verifyNoInteractions(paymentPort);
+        assertThat(orderGroupRepository.findById(groupId)).isPresent();
+    }
+
+    @Test
+    @DisplayName("결제 취소: 없는 주문 그룹이면 404 ORDER_GROUP_NOT_FOUND(ORDER004), 결제를 닫지 않는다")
+    void cancel_groupNotFound() throws Exception {
+        mockMvc.perform(cancel(1L, "{\"orderGroupId\": 999}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorCode").value("ORDER004"));
+
+        verifyNoInteractions(paymentPort);
+    }
+
+    private MockHttpServletRequestBuilder cancel(Long memberId, String body) {
+        return post("/api/v1/cart")
+                .header(AuthHeaders.MEMBER_ID, memberId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body);
+    }
+
+    private OrderGroup waitingGroup() {
+        OrderGroup group = orderGroupRepository.save(new OrderGroup(winner, 33_000L));
+        group.add(orderRepository.save(new Order(group, winner, seller, 10L, 20L, 30_000L, 3_000L)));
+        return group;
     }
 
     private OrderGroup onlyGroup() {

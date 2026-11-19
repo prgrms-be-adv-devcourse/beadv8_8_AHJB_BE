@@ -25,6 +25,7 @@ public enum AuthErrorCode implements ErrorCode {
     INVALID_SIGNUP_TOKEN("AUTH110", "유효하지 않은 가입 요청입니다. 다시 로그인해 주세요.", HttpStatus.UNAUTHORIZED),
     EXPIRED_SIGNUP_TOKEN("AUTH111", "가입 가능 시간이 만료되었습니다. 다시 로그인해 주세요.", HttpStatus.UNAUTHORIZED),
     ALREADY_LINKED_SOCIAL_ACCOUNT("AUTH112", "이미 가입된 소셜 계정입니다.", HttpStatus.CONFLICT),
+    EMAIL_ALREADY_REGISTERED("AUTH113", "이미 이메일로 가입된 계정입니다. 이메일로 로그인해 주세요.", HttpStatus.CONFLICT),
 
 
     ;

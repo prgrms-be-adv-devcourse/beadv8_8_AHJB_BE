@@ -1,5 +1,6 @@
 package com.jjinmak.back.order.in;
 
+import com.jjinmak.back.order.in.dto.CartCancelPaymentRequestDto;
 import com.jjinmak.common.rsData.RsData;
 import com.jjinmak.common.security.AuthPrincipal;
 import com.jjinmak.contracts.cart.dto.CartItemDto;
@@ -50,7 +51,7 @@ public class CartApiController {
             @AuthenticationPrincipal AuthPrincipal principal,
             @Valid @RequestBody CartPaymentRequestDto request
     ){
-        PaymentRequestDto req = orderFacade.createOrder(principal.memberId(), request.productIds());
+        PaymentRequestDto req = orderFacade.createOrder(principal.memberId(), request.productIds(), request.paymentMethod(), request.pointUseAmount());
 
         PaymentResultDto res = orderFacade.requestPayment(req);
 
@@ -59,5 +60,15 @@ public class CartApiController {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(new RsData<>(response));
+    }
+
+    @PostMapping("")
+    public ResponseEntity<RsData<Void>> cancelPayment(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @Valid @RequestBody CartCancelPaymentRequestDto request
+    ){
+        orderFacade.cancelPayment(principal.memberId(), request.orderGroupId());
+
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(new RsData<>(null));
     }
 }

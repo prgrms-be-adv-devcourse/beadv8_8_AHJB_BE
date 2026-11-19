@@ -34,6 +34,7 @@ public class OrderFacade {
     private final CartRequestPaymentUseCase cartRequestPaymentUseCase;
     private final CartDefaultPaymentUseCase cartDefaultPaymentUseCase;
     private final OrderOutboxUseCase orderOutboxUseCase;
+    private final CartCancelPaymentUseCase cartCancelPaymentUseCase;
 
     @Transactional
     public OrderMember syncMember(MemberDto memberDto){
@@ -51,12 +52,17 @@ public class OrderFacade {
     }
 
     @Transactional
-    public PaymentRequestDto createOrder(Long winnerId, List<Long> productIds){
-        return cartRequestPaymentUseCase.createOrder(winnerId, productIds);
+    public PaymentRequestDto createOrder(Long winnerId, List<Long> productIds, String payMethod, long pointUseAmount){
+        return cartRequestPaymentUseCase.createOrder(winnerId, productIds, payMethod, pointUseAmount);
     }
 
     public PaymentResultDto requestPayment(PaymentRequestDto request){
         return cartRequestPaymentUseCase.requestPayment(request);
+    }
+
+    @Transactional
+    public void cancelPayment(Long winnerId, Long orderGroupId){
+        cartCancelPaymentUseCase.cancelPayment(winnerId, orderGroupId);
     }
 
     public PaymentResponseDto handlePaymentResult(Long orderGroupId, PaymentResultDto dto){
@@ -128,9 +134,14 @@ public class OrderFacade {
         orderSchedulerUseCase.confirmPurchaseAuto(orderId);
     }
 
+    @Transactional(readOnly = true)
+    public List<Long> findOverWaitingGroupIds(){
+        return orderSchedulerUseCase.findOverWaitingGroupIds();
+    }
+
     @Transactional
-    public void deleteOverWaitingOrders(){
-        orderSchedulerUseCase.deleteOverWaitingOrders();
+    public void deleteOverWaitingGroup(Long orderGroupId){
+        orderSchedulerUseCase.deleteOverWaitingGroup(orderGroupId);
     }
 
     @Transactional

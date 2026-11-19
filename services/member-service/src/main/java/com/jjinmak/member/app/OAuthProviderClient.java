@@ -7,8 +7,8 @@ package com.jjinmak.member.app;
 public interface OAuthProviderClient {
 
     /**
-     * 인가 코드를 제공자 토큰으로 교환한 뒤, 제공자가 발급한 회원 식별자를 반환한다.
-     * 제공자 토큰은 식별자 조회에만 쓰고 보관하지 않는다.
+     * 인가 코드를 제공자 토큰으로 교환한 뒤, 제공자가 발급한 회원 식별자와 인증된 이메일을 반환한다.
+     * 제공자 토큰은 조회에만 쓰고 보관하지 않는다.
      */
-    String fetchProviderUserId(String authorizationCode);
+    OAuthUserProfile fetchUserProfile(String authorizationCode);
 }

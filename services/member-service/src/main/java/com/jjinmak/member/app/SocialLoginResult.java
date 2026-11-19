@@ -2,18 +2,21 @@ package com.jjinmak.member.app;
 
 /**
  * 소셜 로그인 결과.
- * 연결된 회원이 있으면 authResult, 처음 로그인한 사용자면 가입 대기 토큰(signupToken)을 가진다.
+ * 연결된 회원이 있으면 authResult, 처음 로그인한 사용자면 가입 대기 토큰(signupToken)과
+ * 제공자가 인증한 이메일(email), 가입 화면을 미리 채울 제공자 닉네임(nickname)을 가진다. 없으면 각각 null.
  */
 public record SocialLoginResult(
         AuthResult authResult,
-        String signupToken
+        String signupToken,
+        String email,
+        String nickname
 ) {
     public static SocialLoginResult loggedIn(AuthResult authResult) {
-        return new SocialLoginResult(authResult, null);
+        return new SocialLoginResult(authResult, null, null, null);
     }
 
-    public static SocialLoginResult signupRequired(String signupToken) {
-        return new SocialLoginResult(null, signupToken);
+    public static SocialLoginResult signupRequired(String signupToken, String email, String nickname) {
+        return new SocialLoginResult(null, signupToken, email, nickname);
     }
 
     public boolean isSignupRequired() {

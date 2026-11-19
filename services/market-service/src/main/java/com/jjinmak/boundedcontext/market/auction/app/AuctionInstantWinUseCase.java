@@ -1,0 +1,54 @@
+package com.jjinmak.boundedcontext.market.auction.app;
+
+import com.jjinmak.boundedcontext.market.auction.domain.AuctionStatus;
+import com.jjinmak.boundedcontext.market.auction.domain.Bid;
+import com.jjinmak.boundedcontext.market.auction.domain.EnglishAuction;
+import com.jjinmak.boundedcontext.market.auction.dto.AuctionInstantWinResponseDto;
+import com.jjinmak.boundedcontext.market.auction.exception.AuctionErrorCode;
+import com.jjinmak.boundedcontext.market.auction.out.BidRepository;
+import com.jjinmak.common.exception.BusinessException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+
+@Service
+@RequiredArgsConstructor
+public class AuctionInstantWinUseCase {
+    private final BidRepository bidRepository;
+    private final AuctionReader auctionReader;
+    private final AuctionEventPublisher auctionEventPublisher;
+
+    public AuctionInstantWinResponseDto instantWin(Long auctionId,Long bidderId, LocalDateTime now){
+
+        EnglishAuction auction = auctionReader.getEnglish(auctionId);
+        // 공통검증
+        validateInstantWin(auction,bidderId,now);
+        Long previousHighestBidderId = auction.getHighestBidderId();
+        auction.winInstantly(bidderId,now);
+        Bid bid = new Bid(auction.getId(), bidderId, auction.getInstantWinPrice(), now);
+        bidRepository.save(bid);
+        auctionEventPublisher.publishBidSucceed(auction, bid, previousHighestBidderId);
+        auctionEventPublisher.publishWon(auction);
+        return new AuctionInstantWinResponseDto(
+                auctionId,
+                auction.getInstantWinPrice(),
+                now,
+                auction.getStatus()
+        );
+    }
+    private void validateInstantWin(EnglishAuction auction, Long bidderId, LocalDateTime now) {
+        if (auction.getStatus() != AuctionStatus.IN_PROGRESS) {
+            throw new BusinessException(AuctionErrorCode.AUCTION_NOT_IN_PROGRESS);
+        }
+        if (auction.isEnded(now)) {
+            throw new BusinessException(AuctionErrorCode.AUCTION_ALREADY_ENDED);
+        }
+        if (auction.getSellerId().equals(bidderId)) {
+            throw new BusinessException(AuctionErrorCode.SELLER_CANNOT_BID);
+        }
+        if (auction.getInstantWinPrice() == null) {
+            throw new BusinessException(AuctionErrorCode.INSTANT_WIN_NOT_AVAILABLE);
+        }
+    }
+}

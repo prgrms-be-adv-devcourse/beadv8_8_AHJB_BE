@@ -1,0 +1,51 @@
+package com.jjinmak.boundedcontext.market.product.in.dto;
+
+import com.jjinmak.boundedcontext.market.shared.domain.AuctionType;
+import com.jjinmak.boundedcontext.market.product.domain.Product;
+import com.jjinmak.boundedcontext.market.product.domain.ProductAuctionFailureReason;
+import com.jjinmak.boundedcontext.market.product.domain.ProductAuctionStatus;
+import com.jjinmak.boundedcontext.market.product.domain.ProductAuctionTerms;
+import com.jjinmak.contracts.product.domain.ProductCategory;
+
+import java.time.LocalDateTime;
+
+// '내 상품' 목록 한 줄. 상품 정보 + 경매 상태·결과만 담는다. (현재가·입찰 수·낙찰가 없음)
+public record ProductMyItemDto(
+        Long productId,
+        AuctionType auctionType,    // ENGLISH | DUTCH
+        Long auctionId,             // 경매 시작 전이면 null
+        String productName,
+        String thumbnailUrl,        // 대표 이미지 (없으면 null)
+        ProductCategory category,
+        Long startPrice,
+        Long instantWinPrice,       // 네덜란드식은 null
+        ProductAuctionStatus status,
+        LocalDateTime auctionScheduledAt,   // 경매 시작 예정 시각
+        LocalDateTime auctionEndAt,         // 경매 종료(예정) 시각 (연장 반영, 시작 전이거나 네덜란드식은 null)
+        ProductAuctionFailureReason failureReason,  // FAILED일 때만 값이 있음
+        boolean editable,           // 수정/삭제 가능 여부 (시작 예정 시각 전, 네덜란드식은 항상 false)
+        LocalDateTime createdAt
+) {
+    // 경매 상태는 경매 컨텍스트에서 읽은 값을 받는다. (ProductAuctionStateReader)
+    public static ProductMyItemDto of(Product product, String thumbnailUrl, ProductAuctionStateDto auction,
+                                      LocalDateTime now) {
+        ProductAuctionTerms terms = product.getAuctionTerms();
+
+        return new ProductMyItemDto(
+                product.getId(),
+                terms.getAuctionType(),
+                product.getCurrentAuctionId(),
+                product.getName(),
+                thumbnailUrl,
+                product.getCategory(),
+                terms.getStartPrice(),
+                terms.getInstantWinPrice(),
+                auction.status(),
+                product.getAuctionScheduledAt(),
+                auction.endAt(),
+                auction.failureReason(),
+                product.isSellerEditable(now),
+                product.getCreatedAt()
+        );
+    }
+}

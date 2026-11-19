@@ -1,0 +1,114 @@
+# Kafka UI (팀원 조회용, 임시 운영 — 필요 없어지면 아래 명령으로 제거)
+#   sudo kubectl delete -f k8s/infra/kafka-ui.yaml
+#   sudo kubectl -n infra delete secret kafka-ui-auth
+#
+# 전제
+# 1) DNS: kafka-ui.jjinmak.kro.kr A 레코드 → 앱 노드 Elastic IP (api/grafana와 동일)
+# 2) 로그인 계정 Secret을 먼저 생성 (Git에 커밋하지 않음)
+#   sudo kubectl -n infra create secret generic kafka-ui-auth \
+#     --from-literal=username=<아이디> --from-literal=password=<비밀번호>
+# 3) msa-cd는 k8s/app/*.yaml만 apply → 이 파일은 수동 apply
+#   sudo kubectl apply -f k8s/infra/kafka-ui.yaml
+# 접속: http://kafka-ui.jjinmak.kro.kr (HTTPS 아님)
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-ui
+  namespace: infra
+spec:
+  selector:
+    app: kafka-ui
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-ui
+  namespace: infra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-ui
+  template:
+    metadata:
+      labels:
+        app: kafka-ui
+    spec:
+      enableServiceLinks: false
+      # 앱 노드(217) 메모리 여유가 없어 infra 노드(241)에 배치
+      nodeSelector:
+        jjinmak/role: infra
+      tolerations:
+        - key: jjinmak/role
+          operator: Equal
+          value: infra
+          effect: NoSchedule
+      containers:
+        - name: kafka-ui
+          image: ghcr.io/kafbat/kafka-ui:v1.5.0
+          env:
+            - name: KAFKA_CLUSTERS_0_NAME
+              value: jjinmak
+            - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
+              value: kafka.infra.svc.cluster.local:19092
+            # 화면에서 클러스터 설정을 바꾸는 기능 비활성화 (기본값이지만 명시)
+            - name: DYNAMIC_CONFIG_ENABLED
+              value: "false"
+            # 인터넷에 노출되므로 최소한의 로그인 화면
+            - name: AUTH_TYPE
+              value: LOGIN_FORM
+            - name: SPRING_SECURITY_USER_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: kafka-ui-auth
+                  key: username
+            - name: SPRING_SECURITY_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: kafka-ui-auth
+                  key: password
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:MaxRAMPercentage=60 -XX:+ExitOnOutOfMemoryError"
+          ports:
+            - name: http
+              containerPort: 8080
+          resources:
+            requests:
+              cpu: 100m
+              memory: 384Mi
+            limits:
+              memory: 512Mi
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 20
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kafka-ui
+  namespace: infra
+spec:
+  # 인증서 발급 한도/실패로 HTTP만 사용 (로그인 비밀번호가 평문 전송됨)
+  ingressClassName: traefik
+  rules:
+    - host: kafka-ui.jjinmak.kro.kr
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kafka-ui
+                port:
+                  number: 80

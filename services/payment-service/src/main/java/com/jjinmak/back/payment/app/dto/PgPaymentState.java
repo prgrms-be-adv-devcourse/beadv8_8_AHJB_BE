@@ -29,7 +29,7 @@ public record PgPaymentState(
      * NONE             : 토스에서 돈이 움직이지 않음 (거래가 없거나, 승인되지 않고 끝난 결제)
      * APPROVED         : 승인만 됨
      * CANCELED         : 승인 후 전액 취소됨
-     * PARTIAL_CANCELED : 일부만 취소됨 (지금 정책에는 부분 취소가 없어 나오면 안 되는 상태)
+     * PARTIAL_CANCELED : 일부만 취소됨 (직접 결제 건에서 주문 묶음 중 일부 주문만 환불한 경우. 예치금 충전에서는 나오면 안 된다)
      * UNKNOWN          : 그날 거래만으로는 알 수 없음 (승인 없이 취소만 있음 = 승인이 다른 날). 단건 조회로 확정해야 한다
      */
     public enum Kind {

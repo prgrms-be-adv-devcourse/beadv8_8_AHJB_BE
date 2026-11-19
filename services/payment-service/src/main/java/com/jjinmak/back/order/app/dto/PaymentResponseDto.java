@@ -10,6 +10,11 @@ public record PaymentResponseDto(
             long totalPrice,
             long chargeAmount,
             String pgOrderId,
-            String orderName
+            String orderName,
+            String pgMethod,
+            String payMethod,
+            long pointAmount,
+            long depositAmount,
+            long pgAmount
     ){}
 }

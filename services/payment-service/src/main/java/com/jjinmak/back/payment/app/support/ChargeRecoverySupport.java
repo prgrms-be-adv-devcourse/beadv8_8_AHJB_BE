@@ -27,7 +27,7 @@ import static com.jjinmak.back.payment.out.toss.TossPaymentsClient.NOT_FOUND_PAY
  *  - 토스 DONE (승인은 됐는데 우리 승인 단계가 끝나지 못한 것)
  *      · 허용되지 않은 결제수단 (예치금 충전인데 계좌이체가 아님) → 토스 취소 후 ABORTED. 승인 단계와 같은 검증이다
  *      · MANUAL      -> 사용자가 낸 돈이므로 지갑에 반영해 CHARGED (돈을 잃지 않게)
- *      · FOR_PAYMENT -> 주문 흐름은 이미 깨졌으므로 토스 취소 후 ABORTED (카드로 환불)
+ *      · FOR_PAYMENT · DIRECT_PAYMENT -> 주문 흐름은 이미 깨졌으므로 토스 취소 후 ABORTED (결제한 수단으로 환불)
  *  - 그 외 (ABORTED / EXPIRED / CANCELED / READY / IN_PROGRESS) → ABORTED
  *
  * 주의: READY / IN_PROGRESS 도 닫으므로, 사용자가 아직 결제 중이거나 우리 승인 요청이 진행 중일 수 있는
@@ -73,7 +73,7 @@ public class ChargeRecoverySupport {
                         charge.getId(), charge.getPurpose(), remote.method());
                 return true;
             }
-            if (charge.isForPayment()) {
+            if (charge.isBoundToPayment()) {
                 toss.cancel(remote.paymentKey(), "미완료 주문 결제 자동 취소", CANCEL_KEY_PREFIX + charge.getPgOrderId());
                 charge.markAborted(now, "RECOVERED_CANCELED", "승인 후 주문 결제가 완료되지 않아 취소");
             } else {

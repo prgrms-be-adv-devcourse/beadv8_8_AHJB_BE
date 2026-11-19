@@ -39,7 +39,7 @@ public class CartRequestPaymentUseCase {
      * @param winnerId   - 조회의 주체가 되는 낙찰자
      * @param productIds - 결제를 시도하는 상품의 id 리스트
      */
-    public PaymentRequestDto createOrder(Long winnerId, List<Long> productIds){
+    public PaymentRequestDto createOrder(Long winnerId, List<Long> productIds, String payMethod, long pointUseAmount){
         OrderMember winner = orderSupport.getMember(winnerId);
 
         Set<Long> productIdSet = new HashSet<>(productIds);
@@ -79,7 +79,7 @@ public class CartRequestPaymentUseCase {
 
                 group.updateLifeTime();
 
-                return new PaymentRequestDto(orderGroup.getId(), winnerId, totalPrice, items);
+                return new PaymentRequestDto(orderGroup.getId(), winnerId, totalPrice, items, payMethod, pointUseAmount);
             }
         }
 
@@ -100,7 +100,7 @@ public class CartRequestPaymentUseCase {
             items.add(new PaymentRequestDto.Item(order.getId(), order.getSeller().getId(), order.getWinningPrice(), order.getDeliveryFee()));
         }
 
-        return new PaymentRequestDto(orderGroup.getId(), winnerId, totalPrice, items);
+        return new PaymentRequestDto(orderGroup.getId(), winnerId, totalPrice, items, payMethod, pointUseAmount);
     }
 
     public PaymentResultDto requestPayment(PaymentRequestDto request){
@@ -114,7 +114,8 @@ public class CartRequestPaymentUseCase {
         else {
             PaymentResponseDto.Data data = new PaymentResponseDto.Data(
                     dto.paymentId(), dto.totalPrice(), dto.chargeAmount(),
-                    dto.pgOrderId(), dto.orderName()
+                    dto.pgOrderId(), dto.orderName(), dto.pgMethod(),
+                    dto.payMethod(), dto.pointAmount(), dto.depositAmount(), dto.pgAmount()
             );
             return new PaymentResponseDto(orderGroupId, false, data);
         }

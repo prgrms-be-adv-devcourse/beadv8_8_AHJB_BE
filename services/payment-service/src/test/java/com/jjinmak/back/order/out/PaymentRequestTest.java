@@ -1,6 +1,7 @@
 package com.jjinmak.back.order.out;
 
 import com.jjinmak.common.exception.BusinessException;
+import com.jjinmak.contracts.payment.dto.PaymentCloseResultDto;
 import com.jjinmak.contracts.payment.dto.PaymentRequestDto;
 import com.jjinmak.contracts.payment.dto.PaymentResultDto;
 import com.jjinmak.back.order.out.payment.PaymentRequest;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static com.jjinmak.back.payment.exception.PaymentErrorCode.PAYMENT_FORBIDDEN;
 import static com.jjinmak.back.payment.exception.WalletErrorCode.WALLET_CONCURRENT_MODIFICATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -65,5 +67,27 @@ class PaymentRequestTest {
 
         assertThatThrownBy(() -> paymentRequest.requestPayment(request))
                 .isSameAs(paymentError);
+    }
+
+    @Test
+    @DisplayName("결제 닫기는 주문 그룹 id와 구매자 id를 그 순서로 결제 포트에 넘기고, 결제 포트가 돌려준 결과를 그대로 돌려준다")
+    void closePayment_passesGroupAndBuyer() {
+        PaymentCloseResultDto closed = PaymentCloseResultDto.closed(50L, 7L);
+        when(paymentPort.closePayment(50L, 1L)).thenReturn(closed);
+
+        PaymentCloseResultDto result = paymentRequest.closePayment(50L, 1L);
+
+        assertThat(result).isSameAs(closed);
+        verify(paymentPort).closePayment(50L, 1L);
+    }
+
+    @Test
+    @DisplayName("결제 닫기에서 결제 포트가 던진 결제 쪽 예외는 다른 에러 코드로 바꾸지 않고 그대로 올린다")
+    void closePayment_paymentErrorPropagates() {
+        BusinessException forbidden = new BusinessException(PAYMENT_FORBIDDEN);
+        when(paymentPort.closePayment(50L, 1L)).thenThrow(forbidden);
+
+        assertThatThrownBy(() -> paymentRequest.closePayment(50L, 1L))
+                .isSameAs(forbidden);
     }
 }

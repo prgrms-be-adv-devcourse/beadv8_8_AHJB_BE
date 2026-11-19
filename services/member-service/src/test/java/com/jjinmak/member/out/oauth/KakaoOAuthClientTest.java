@@ -1,6 +1,7 @@
 package com.jjinmak.member.out.oauth;
 
 import com.jjinmak.common.exception.BusinessException;
+import com.jjinmak.member.app.OAuthUserProfile;
 import com.jjinmak.member.config.KakaoOAuthProperties;
 import com.jjinmak.member.exception.AuthErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,10 +53,93 @@ class KakaoOAuthClientTest {
                         {"id":1234567890,"connected_at":"2026-11-18T00:00:00Z"}
                         """, MediaType.APPLICATION_JSON));
 
-        String providerUserId = client.fetchProviderUserId("auth-code");
+        OAuthUserProfile profile = client.fetchUserProfile("auth-code");
 
-        assertThat(providerUserId).isEqualTo("1234567890");
+        assertThat(profile.providerUserId()).isEqualTo("1234567890");
+        assertThat(profile.verifiedEmail()).isNull();
         server.verify();
+    }
+
+    private void expectToken() {
+        server.expect(requestTo(KakaoOAuthClient.TOKEN_URI))
+                .andRespond(withSuccess("{\"access_token\":\"kakao-at\"}", MediaType.APPLICATION_JSON));
+    }
+
+    private void expectUser(String json) {
+        server.expect(requestTo(KakaoOAuthClient.USER_INFO_URI))
+                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+    }
+
+    @Test
+    void 유효하고_인증된_이메일이면_함께_반환한다() {
+        expectToken();
+        expectUser("""
+                {"id":1234567890,
+                 "kakao_account":{"email_needs_agreement":false,"is_email_valid":true,
+                                  "is_email_verified":true,"email":"user@kakao.com"}}
+                """);
+
+        OAuthUserProfile profile = client.fetchUserProfile("auth-code");
+
+        assertThat(profile.providerUserId()).isEqualTo("1234567890");
+        assertThat(profile.verifiedEmail()).isEqualTo("user@kakao.com");
+    }
+
+    @Test
+    void 카카오_닉네임을_함께_반환한다() {
+        expectToken();
+        expectUser("""
+                {"id":1,
+                 "properties":{"nickname":"예전필드"},
+                 "kakao_account":{"profile_nickname_needs_agreement":false,
+                                  "profile":{"nickname":"카카오닉네임","is_default_nickname":false}}}
+                """);
+
+        assertThat(client.fetchUserProfile("auth-code").nickname()).isEqualTo("카카오닉네임");
+    }
+
+    @Test
+    void 닉네임이_없거나_비어_있으면_null을_반환한다() {
+        expectToken();
+        expectUser("""
+                {"id":1,"kakao_account":{"profile":{"nickname":" "}}}
+                """);
+
+        assertThat(client.fetchUserProfile("auth-code").nickname()).isNull();
+    }
+
+    @Test
+    void 인증되지_않은_이메일은_사용하지_않는다() {
+        expectToken();
+        expectUser("""
+                {"id":1,"kakao_account":{"is_email_valid":true,"is_email_verified":false,"email":"user@kakao.com"}}
+                """);
+
+        assertThat(client.fetchUserProfile("auth-code").verifiedEmail()).isNull();
+    }
+
+    @Test
+    void 만료된_이메일은_사용하지_않는다() {
+        expectToken();
+        expectUser("""
+                {"id":1,"kakao_account":{"is_email_valid":false,"is_email_verified":true,"email":"user@kakao.com"}}
+                """);
+
+        assertThat(client.fetchUserProfile("auth-code").verifiedEmail()).isNull();
+    }
+
+    @Test
+    void 이메일_제공에_동의하지_않았으면_이메일_없이_반환한다() {
+        expectToken();
+        expectUser("""
+                {"id":1,"kakao_account":{"email_needs_agreement":true}}
+                """);
+
+        OAuthUserProfile profile = client.fetchUserProfile("auth-code");
+
+        assertThat(profile.providerUserId()).isEqualTo("1");
+        assertThat(profile.verifiedEmail()).isNull();
+        assertThat(profile.nickname()).isNull();
     }
 
     @Test
@@ -67,7 +151,7 @@ class KakaoOAuthClientTest {
                                 {"error":"invalid_grant","error_description":"authorization code not found","error_code":"KOE320"}
                                 """));
 
-        assertThatThrownBy(() -> client.fetchProviderUserId("used-code"))
+        assertThatThrownBy(() -> client.fetchUserProfile("used-code"))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(AuthErrorCode.INVALID_OAUTH_CODE);
@@ -78,7 +162,7 @@ class KakaoOAuthClientTest {
         server.expect(requestTo(KakaoOAuthClient.TOKEN_URI))
                 .andRespond(withServerError());
 
-        assertThatThrownBy(() -> client.fetchProviderUserId("auth-code"))
+        assertThatThrownBy(() -> client.fetchUserProfile("auth-code"))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(AuthErrorCode.OAUTH_PROVIDER_ERROR);
@@ -91,7 +175,7 @@ class KakaoOAuthClientTest {
         server.expect(requestTo(KakaoOAuthClient.USER_INFO_URI))
                 .andRespond(withUnauthorizedRequest());
 
-        assertThatThrownBy(() -> client.fetchProviderUserId("auth-code"))
+        assertThatThrownBy(() -> client.fetchUserProfile("auth-code"))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(AuthErrorCode.OAUTH_PROVIDER_ERROR);

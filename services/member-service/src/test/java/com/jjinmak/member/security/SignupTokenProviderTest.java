@@ -26,19 +26,31 @@ class SignupTokenProviderTest {
 
     @Test
     void 발급한_토큰에서_외부_계정_정보를_꺼낸다() {
-        String token = provider.create(new SignupTicket(OAuthProvider.KAKAO, "12345"));
+        String token = provider.create(new SignupTicket(OAuthProvider.KAKAO, "12345", null));
 
         SignupTicket ticket = provider.parse(token);
 
         assertThat(ticket.provider()).isEqualTo(OAuthProvider.KAKAO);
         assertThat(ticket.providerUserId()).isEqualTo("12345");
+        assertThat(ticket.verifiedEmail()).isNull();
+        assertThat(ticket.hasVerifiedEmail()).isFalse();
+    }
+
+    @Test
+    void 인증된_이메일을_담아_발급하면_그대로_꺼낸다() {
+        String token = provider.create(new SignupTicket(OAuthProvider.KAKAO, "12345", "user@kakao.com"));
+
+        SignupTicket ticket = provider.parse(token);
+
+        assertThat(ticket.verifiedEmail()).isEqualTo("user@kakao.com");
+        assertThat(ticket.hasVerifiedEmail()).isTrue();
     }
 
     @Test
     void 만료된_토큰은_거부한다() {
         SignupTokenProvider expiredProvider =
                 new SignupTokenProvider(new SignupTokenProperties(SECRET, Duration.ofSeconds(-1)));
-        String token = expiredProvider.create(new SignupTicket(OAuthProvider.KAKAO, "12345"));
+        String token = expiredProvider.create(new SignupTicket(OAuthProvider.KAKAO, "12345", null));
 
         assertThatThrownBy(() -> provider.parse(token))
                 .isInstanceOf(BusinessException.class)
@@ -50,7 +62,7 @@ class SignupTokenProviderTest {
     void 다른_키로_서명된_토큰은_거부한다() {
         SignupTokenProvider other = new SignupTokenProvider(
                 new SignupTokenProperties("another-secret-value-for-signup-token-0123456789", Duration.ofMinutes(10)));
-        String token = other.create(new SignupTicket(OAuthProvider.KAKAO, "12345"));
+        String token = other.create(new SignupTicket(OAuthProvider.KAKAO, "12345", null));
 
         assertThatThrownBy(() -> provider.parse(token))
                 .isInstanceOf(BusinessException.class)

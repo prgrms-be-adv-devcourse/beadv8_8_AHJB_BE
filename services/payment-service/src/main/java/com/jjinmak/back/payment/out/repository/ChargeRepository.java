@@ -27,6 +27,16 @@ public interface ChargeRepository extends JpaRepository<Charge, Long> {
 
     List<Charge> findByPaymentOrderByIdDesc(Payment payment);
 
+    // 환불용: 이 결제(Payment)의 직접 결제 건 중 돈이 들어와 있는 건. 결제는 한 번만 완료되므로 1건뿐이다
+    Optional<Charge> findFirstByPayment_IdAndPurposeAndStatusOrderByIdDesc(Long paymentId, ChargePurpose purpose, ChargeStatus status);
+
+    // 대사용: 이 주문들을 결제한 Payment 에 연결된 해당 용도의 충전 건 id
+    @Query("select c.id from Charge c "
+            + "where c.purpose = :purpose "
+            + "and c.payment.id in (select i.payment.id from PaymentOrderItem i where i.orderId in :orderIds)")
+    List<Long> findIdsByPurposeAndOrderIdIn(@Param("purpose") ChargePurpose purpose,
+                                            @Param("orderIds") Collection<Long> orderIds);
+
     Page<Charge> findByHolderIdAndPurpose(Long holderId, ChargePurpose purpose, Pageable pageable);
 
     /**

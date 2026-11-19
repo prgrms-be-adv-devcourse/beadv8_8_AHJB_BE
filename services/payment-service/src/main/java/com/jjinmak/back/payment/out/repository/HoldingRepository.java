@@ -43,9 +43,10 @@ public interface HoldingRepository extends JpaRepository<Holding, Long> {
     @Query("select coalesce(sum(h.amount), 0) from Holding h where h.status in :statuses")
     long sumAmountByStatusIn(@Param("statuses") Collection<HoldingStatus> statuses);
 
-    // 기간 안에 만들어졌거나 환불 · 정산된 홀딩의 주문 id (startAt 이상, endAt 미만)
+    // 기간 안에 만들어졌거나 구매 확정 · 환불 · 정산된 홀딩의 주문 id (startAt 이상, endAt 미만)
     @Query("select h.orderId from Holding h "
             + "where (h.createdAt >= :startAt and h.createdAt < :endAt) "
+            + "or (h.confirmedAt >= :startAt and h.confirmedAt < :endAt) "
             + "or (h.refundedAt >= :startAt and h.refundedAt < :endAt) "
             + "or (h.releasedAt >= :startAt and h.releasedAt < :endAt)")
     List<Long> findOrderIdsChangedBetween(@Param("startAt") LocalDateTime startAt,

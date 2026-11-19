@@ -30,6 +30,7 @@ public class SignupTokenProvider {
     private static final String TOKEN_TYPE_CLAIM = "token_type";
     private static final String TOKEN_TYPE = "oauth_signup";
     private static final String PROVIDER_CLAIM = "provider";
+    private static final String EMAIL_CLAIM = "email";
 
     private final SecretKey key;
     private final Duration expiration;
@@ -44,9 +45,12 @@ public class SignupTokenProvider {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expiration.toMillis());
 
+        // 서명만 되고 암호화되지는 않으므로 이메일은 클라이언트가 읽을 수 있다(본인 이메일이라 문제없음).
+        // 서명 덕분에 클라이언트가 이메일을 바꾸면 검증에 실패한다. 이메일이 없으면 클레임을 넣지 않는다.
         return Jwts.builder()
                 .subject(ticket.providerUserId())
                 .claim(PROVIDER_CLAIM, ticket.provider().name())
+                .claim(EMAIL_CLAIM, ticket.verifiedEmail())
                 .claim(TOKEN_TYPE_CLAIM, TOKEN_TYPE)
                 .issuedAt(now)
                 .expiration(expiry)
@@ -68,7 +72,8 @@ public class SignupTokenProvider {
             if (provider == null || providerUserId == null || providerUserId.isBlank()) {
                 throw new BusinessException(AuthErrorCode.INVALID_SIGNUP_TOKEN);
             }
-            return new SignupTicket(OAuthProvider.valueOf(provider), providerUserId);
+            String verifiedEmail = claims.get(EMAIL_CLAIM, String.class);
+            return new SignupTicket(OAuthProvider.valueOf(provider), providerUserId, verifiedEmail);
         } catch (ExpiredJwtException e) {
             throw new BusinessException(AuthErrorCode.EXPIRED_SIGNUP_TOKEN);
         } catch (JwtException | IllegalArgumentException e) {

@@ -2,6 +2,7 @@ package com.jjinmak.back.payment.app.facade;
 
 
 import com.jjinmak.back.payment.app.usecase.*;
+import com.jjinmak.contracts.payment.dto.PaymentCloseResultDto;
 import com.jjinmak.contracts.payment.dto.PaymentRequestDto;
 import com.jjinmak.contracts.payment.dto.PaymentResultDto;
 import lombok.RequiredArgsConstructor;
@@ -10,16 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * 토스 호출이 끼는 결제 흐름의 진입점. (API 와 PaymentPort 가 호출)
- * 수동 충전 : requestCharge → [결제창] → confirmCharge, 취소는 cancelCharge
- * 주문 결제 : requestPayment → (부족분이 있으면 [결제창]) → confirmPayment
- *
- * 트랜잭션은 여기서 연다. 유스케이스 안에서 토스 HTTP 호출도 같은 트랜잭션 안에서 일어나므로
- * 토스가 승인한 뒤 DB 반영이 실패하면 유스케이스가 토스 취소로 보상하고 예외를 올려 롤백한다.
- *
- * 지갑 낙관적 락 충돌(OptimisticLockingFailureException)은 커밋 시점에 나므로, 재시도는 이 바깥(in/ 어댑터)에서 WalletRetrySupport 로 감싼다.
- */
+
 @Service
 @RequiredArgsConstructor
 public class PaymentFacade {
@@ -29,11 +21,14 @@ public class PaymentFacade {
     private final ChargeCancelUseCase chargeCancelUseCase;
     private final PaymentRequestUseCase paymentRequestUseCase;
     private final PaymentConfirmUseCase paymentConfirmUseCase;
+    private final PaymentCloseUseCase paymentCloseUseCase;
     private final ChargeRecoveryUseCase chargeRecoveryUseCase;
     private final WalletGetBalanceUseCase walletGetBalanceUseCase;
     private final PaymentGetHistoryUseCase paymentGetHistoryUseCase;
     private final ChargeGetHistoryUseCase chargeGetHistoryUseCase;
     private final PaymentQuoteUseCase paymentQuoteUseCase;
+    private final PaymentGetOrderPaymentUseCase paymentGetOrderPaymentUseCase;
+    private final PaymentGetPolicyUseCase paymentGetPolicyUseCase;
 
     // 수동 충전
 
@@ -64,6 +59,11 @@ public class PaymentFacade {
         return paymentConfirmUseCase.confirm(holderId, pgOrderId, paymentKey, amount);
     }
 
+    @Transactional
+    public PaymentCloseResultDto closePayment(Long orderGroupId, Long buyerId) {
+        return paymentCloseUseCase.closeByOrder(orderGroupId, buyerId);
+    }
+
     // 조회
 
     @Transactional(readOnly = true)
@@ -77,6 +77,20 @@ public class PaymentFacade {
     }
 
     @Transactional(readOnly = true)
+    public com.jjinmak.back.payment.app.dto.PaymentDetailDto getPaymentByOrderGroup(Long holderId, Long orderGroupId) {
+        return paymentGetHistoryUseCase.detailByOrderGroup(holderId, orderGroupId);
+    }
+
+    @Transactional(readOnly = true)
+    public com.jjinmak.back.payment.app.dto.OrderPaymentDto getOrderPayment(Long holderId, Long orderId) {
+        return paymentGetOrderPaymentUseCase.get(holderId, orderId);
+    }
+
+    public com.jjinmak.back.payment.app.dto.PaymentPolicyDto getPolicy() {
+        return paymentGetPolicyUseCase.get();
+    }
+
+    @Transactional(readOnly = true)
     public com.jjinmak.back.payment.app.dto.PageDto<com.jjinmak.back.payment.app.dto.ChargeSummaryDto> listCharges(Long holderId, int page, int size) {
         return chargeGetHistoryUseCase.listManual(holderId, page, size);
     }
@@ -87,8 +101,9 @@ public class PaymentFacade {
     }
 
     @Transactional(readOnly = true)
-    public com.jjinmak.back.payment.app.dto.PaymentQuoteDto quote(Long holderId, long amount) {
-        return paymentQuoteUseCase.quote(holderId, amount);
+    public com.jjinmak.back.payment.app.dto.PaymentQuoteDto quote(Long holderId, long amount, String payMethod,
+                                                                  long pointUseAmount, long deliveryFee) {
+        return paymentQuoteUseCase.quote(holderId, amount, payMethod, pointUseAmount, deliveryFee);
     }
 
     // 복구 (PaymentScheduler)

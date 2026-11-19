@@ -32,6 +32,13 @@ import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.FEE_PA
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.FEE_RECEIVE;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.HOLD_PAY;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.HOLD_RECEIVE;
+import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.PG_HOLD_RECEIVE;
+import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.PG_REFUND_PAY;
+import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_EARN;
+import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_HOLD_PAY;
+import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_HOLD_RECEIVE;
+import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_REFUND_PAY;
+import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.POINT_REFUND_RECEIVE;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.REFUND_PAY;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.REFUND_RECEIVE;
 import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.SETTLEMENT_PAY;
@@ -40,11 +47,19 @@ import static com.jjinmak.back.payment.domain.enums.WalletTransactionType.SETTLE
 /**
  * 원장 대사 검사: 홀딩(Holding)의 상태와 그 주문의 원장 기록이 서로 맞는가.
  *
- *   홀딩 상태          원장에 있어야 하는 기록 (금액 = 홀딩 금액, 정산액 = 금액 - 수수료)
- *   HELD · CONFIRMED   HOLD_PAY -금액, HOLD_RECEIVE +금액
- *   REFUNDED           위 + REFUND_PAY -금액, REFUND_RECEIVE +금액
- *   RELEASED           위 + SETTLEMENT_PAY -정산액, SETTLEMENT_RECEIVE +정산액
+ *   홀딩 상태          원장에 있어야 하는 기록 (정산액 = 홀딩 금액 - 수수료)
+ *   HELD · CONFIRMED   결제 기록 : 홀딩의 금액 구성 중 0 이 아닌 것마다
+ *                         예치금 몫   HOLD_PAY -예치금, HOLD_RECEIVE +예치금
+ *                         포인트 몫   POINT_HOLD_PAY -포인트, POINT_HOLD_RECEIVE +포인트
+ *                         직접 결제 몫 PG_HOLD_RECEIVE +직접 결제 (토스에서 바로 들어와 한 줄)
+ *   REFUNDED           위 + 환불 기록 : 결제한 수단 그대로
+ *                         예치금 몫   REFUND_PAY -예치금, REFUND_RECEIVE +예치금
+ *                         포인트 몫   POINT_REFUND_PAY -포인트, POINT_REFUND_RECEIVE +포인트
+ *                         직접 결제 몫 PG_REFUND_PAY -직접 결제 (토스 취소로 나가 한 줄)
+ *   RELEASED           결제 기록 + SETTLEMENT_PAY -정산액, SETTLEMENT_RECEIVE +정산액
  *                         + 수수료가 있으면 FEE_PAY -수수료, FEE_RECEIVE +수수료
+ *   CONFIRMED · RELEASED 는 여기에 더해, 홀딩에 적립 포인트가 있으면 POINT_EARN +적립 포인트 (구매 확정 때 구매자에게 지급. 한 줄)
+ *   HELD · REFUNDED 는 구매 확정 전이므로 POINT_EARN 이 있으면 안 된다
  *
  * 기록의 종류와 금액이 위 표와 하나라도 다르면 불일치다. 원장 기록이 가리키는 주문의 홀딩이 없어도 불일치다.
  * 구매 확정(CONFIRMED)은 돈이 움직이지 않아 원장 기록이 없으므로 HELD 와 같은 기록을 갖는다.
@@ -65,10 +80,19 @@ public class HoldingLedgerChecker implements LedgerInvariantChecker {
     static final String NOT_FOUND = "NOT_FOUND";
 
     private static final List<WalletTransactionType> HOLDING_TYPES = List.of(
-            HOLD_PAY, HOLD_RECEIVE, REFUND_PAY, REFUND_RECEIVE, SETTLEMENT_PAY, SETTLEMENT_RECEIVE, FEE_PAY, FEE_RECEIVE);
+            HOLD_PAY, HOLD_RECEIVE, POINT_HOLD_PAY, POINT_HOLD_RECEIVE, PG_HOLD_RECEIVE,
+            REFUND_PAY, REFUND_RECEIVE, POINT_REFUND_PAY, POINT_REFUND_RECEIVE, PG_REFUND_PAY,
+            SETTLEMENT_PAY, SETTLEMENT_RECEIVE, FEE_PAY, FEE_RECEIVE,
+            POINT_EARN);
 
     // ESCROW 지갑 쪽에 남는 기록. 이 금액들의 합이 원장상 이 주문 몫으로 ESCROW 에 남아 있는 돈이다
-    private static final List<WalletTransactionType> ESCROW_SIDE_TYPES = List.of(HOLD_RECEIVE, REFUND_PAY, SETTLEMENT_PAY, FEE_PAY);
+    private static final List<WalletTransactionType> ESCROW_SIDE_TYPES = List.of(
+            HOLD_RECEIVE, POINT_HOLD_RECEIVE, PG_HOLD_RECEIVE,
+            REFUND_PAY, POINT_REFUND_PAY, PG_REFUND_PAY,
+            SETTLEMENT_PAY, FEE_PAY);
+
+    private static final List<WalletTransactionType> REFUND_TYPES = List.of(
+            REFUND_PAY, REFUND_RECEIVE, POINT_REFUND_PAY, POINT_REFUND_RECEIVE, PG_REFUND_PAY);
 
     private final HoldingRepository holdingRepository;
     private final WalletTransactionRepository walletTransactionRepository;
@@ -103,16 +127,41 @@ public class HoldingLedgerChecker implements LedgerInvariantChecker {
 
     // 홀딩이 이 상태라면 원장에 있어야 하는 기록
     private Map<WalletTransactionType, Long> requiredRecords(Holding holding) {
-        long amount = holding.getAmount();
+        long deposit = holding.getDepositAmount();
+        long point = holding.getPointAmount();
+        long pg = holding.getPgAmount();
         Map<WalletTransactionType, Long> required = new EnumMap<>(WalletTransactionType.class);
-        required.put(HOLD_PAY, -amount);
-        required.put(HOLD_RECEIVE, amount);
+        if (deposit > 0) {
+            required.put(HOLD_PAY, -deposit);
+            required.put(HOLD_RECEIVE, deposit);
+        }
+        if (point > 0) {
+            required.put(POINT_HOLD_PAY, -point);
+            required.put(POINT_HOLD_RECEIVE, point);
+        }
+        if (pg > 0) {
+            required.put(PG_HOLD_RECEIVE, pg);
+        }
+
+        boolean purchaseConfirmed = holding.getStatus() == CONFIRMED || holding.getStatus() == RELEASED;
+        if (purchaseConfirmed && holding.hasEarnedPoint()) {
+            required.put(POINT_EARN, holding.getEarnedPoint());
+        }
 
         switch (holding.getStatus()) {
             case HELD, CONFIRMED -> { }
             case REFUNDED -> {
-                required.put(REFUND_PAY, -amount);
-                required.put(REFUND_RECEIVE, amount);
+                if (deposit > 0) {
+                    required.put(REFUND_PAY, -deposit);
+                    required.put(REFUND_RECEIVE, deposit);
+                }
+                if (point > 0) {
+                    required.put(POINT_REFUND_PAY, -point);
+                    required.put(POINT_REFUND_RECEIVE, point);
+                }
+                if (pg > 0) {
+                    required.put(PG_REFUND_PAY, -pg);
+                }
             }
             case RELEASED -> {
                 required.put(SETTLEMENT_PAY, -holding.getSettlementAmount());
@@ -140,7 +189,9 @@ public class HoldingLedgerChecker implements LedgerInvariantChecker {
         boolean inEscrow = holding.getStatus() == HELD || holding.getStatus() == CONFIRMED;
         long heldAmount = inEscrow ? holding.getAmount() : 0L;
         String detail = HOLDING_LEDGER_MISMATCH.getDescription()
-                + ". 홀딩 " + holding.getStatus() + " " + holding.getAmount() + "원(수수료 " + holding.getFeeAmount() + "원)"
+                + ". 홀딩 " + holding.getStatus() + " " + holding.getAmount() + "원(예치금 " + holding.getDepositAmount()
+                + "원, 포인트 " + holding.getPointAmount() + "원, 직접 결제 " + holding.getPgAmount()
+                + "원, 수수료 " + holding.getFeeAmount() + "원, 적립 포인트 " + holding.getEarnedPoint() + ")"
                 + ", 원장 기록: " + LedgerRecords.describe(records);
         return new DetectedMismatchDto(
                 HOLDING_LEDGER_MISMATCH, MismatchTargetType.HOLDING, String.valueOf(orderId), null,
@@ -152,7 +203,7 @@ public class HoldingLedgerChecker implements LedgerInvariantChecker {
         if (records.isEmpty()) {
             return NO_RECORD;
         }
-        boolean refunded = records.containsKey(REFUND_PAY) || records.containsKey(REFUND_RECEIVE);
+        boolean refunded = REFUND_TYPES.stream().anyMatch(records::containsKey);
         boolean released = records.containsKey(SETTLEMENT_PAY) || records.containsKey(SETTLEMENT_RECEIVE)
                 || records.containsKey(FEE_PAY) || records.containsKey(FEE_RECEIVE);
         if (refunded && released) {

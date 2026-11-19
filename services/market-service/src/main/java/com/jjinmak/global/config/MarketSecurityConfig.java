@@ -1,6 +1,6 @@
 package com.jjinmak.global.config;
 
-import com.jjinmak.boundedcontext.product.product.out.imageStorage.ProductImageProperties;
+import com.jjinmak.boundedcontext.market.product.out.imageStorage.ProductImageProperties;
 import com.jjinmak.common.security.CustomAccessDeniedHandler;
 import com.jjinmak.common.security.CustomAuthenticationEntryPoint;
 import com.jjinmak.common.security.HeaderAuthenticationFilter;
@@ -32,11 +32,16 @@ public class MarketSecurityConfig {
             "/actuator/prometheus"
     };
 
+    // 상품·경매 상세는 id가 숫자일 때만 연다. (/products/me, /auctions/me/bids 같은 로그인 전용 경로가 같이 열리지 않도록)
     private static final String[] PUBLIC_GET_URLS = {
             "/api/v1/products/upcoming",
+            "/api/v1/products/{productId:\\d+}",
+            "/api/v1/products/{productId:\\d+}/qnas",
             ProductImageProperties.LOCAL_URL_PATH,
             "/api/v1/auctions",
-            "/api/v1/auctions/dutch"
+            "/api/v1/auctions/dutch",
+            "/api/v1/auctions/{auctionId:\\d+}",
+            "/api/v1/auctions/{auctionId:\\d+}/bids"
     };
 
     @Bean

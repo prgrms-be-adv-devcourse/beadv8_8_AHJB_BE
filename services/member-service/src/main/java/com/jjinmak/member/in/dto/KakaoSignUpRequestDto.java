@@ -13,9 +13,11 @@ public record KakaoSignUpRequestDto(
         @Schema(description = "카카오 로그인 응답(SIGNUP_REQUIRED)으로 받은 가입 대기 토큰. 10분간 유효")
         String signupToken,
 
+        // 카카오 로그인 응답에 email 이 있었으면(인증된 카카오 이메일) 서버는 이 값을 무시하고 그 이메일로 가입시킨다.
+        // email 이 null 이었을 때만 필수다(서비스 계층에서 검사).
         @Email
-        @NotBlank
-        @Schema(description = "이메일", example = "user@example.com")
+        @Size(max = 255)
+        @Schema(description = "이메일. 카카오 로그인 응답의 email 이 null 이었을 때만 필수이며, 값이 있었다면 무시된다", example = "user@example.com")
         String email,
 
         @NotBlank
