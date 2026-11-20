@@ -28,6 +28,7 @@ public enum WalletErrorCode implements ErrorCode {
     INVALID_AMOUNT("WALLET202", "홀딩 금액은 0보다 커야 합니다.", HttpStatus.BAD_REQUEST),
     INVALID_FEE_AMOUNT("WALLET203", "수수료는 0 이상, 홀딩 금액 이하여야 합니다.", HttpStatus.BAD_REQUEST),
     INSUFFICIENT_POINT("WALLET204", "포인트가 부족합니다.", HttpStatus.BAD_REQUEST),
+    INSUFFICIENT_SETTLEMENT("WALLET205", "정산금이 부족합니다.", HttpStatus.BAD_REQUEST),
 
     // ===== 홀딩 (Holding) =====
     HOLDING_NOT_FOUND("WALLET301", "존재하지 않는 홀딩입니다.", HttpStatus.NOT_FOUND),
@@ -52,7 +53,8 @@ public enum WalletErrorCode implements ErrorCode {
 
     // ===== 출금 =====
     NOTHING_TO_WITHDRAW("WALLET601", "출금할 예치금이 없습니다.", HttpStatus.BAD_REQUEST),
-    INVALID_WITHDRAWAL_STATUS("WALLET602", "현재 상태에서는 처리할 수 없는 출금 건입니다.", HttpStatus.BAD_REQUEST)
+    INVALID_WITHDRAWAL_STATUS("WALLET602", "현재 상태에서는 처리할 수 없는 출금 건입니다.", HttpStatus.BAD_REQUEST),
+    NOTHING_SETTLEMENT_TO_WITHDRAW("WALLET603", "출금할 정산금이 없습니다.", HttpStatus.BAD_REQUEST)
     ;
 
     private final String code;

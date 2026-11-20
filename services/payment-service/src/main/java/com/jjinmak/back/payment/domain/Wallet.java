@@ -88,6 +88,15 @@ public class Wallet extends BaseIdAndTime {
         this.settlementBalance += amount;
     }
 
+    public void withdrawSettlement(long amount) {
+        validatePositive(amount);
+
+        if (this.settlementBalance < amount) {
+            throw new BusinessException(INSUFFICIENT_SETTLEMENT);
+        }
+        this.settlementBalance -= amount;
+    }
+
     public void depositPoint(long amount) {
         validatePositive(amount);
         this.pointBalance += amount;

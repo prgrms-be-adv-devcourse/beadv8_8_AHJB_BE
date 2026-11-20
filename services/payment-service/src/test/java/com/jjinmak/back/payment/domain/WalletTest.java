@@ -8,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static com.jjinmak.back.payment.exception.WalletErrorCode.INSUFFICIENT_POINT;
+import static com.jjinmak.back.payment.exception.WalletErrorCode.INSUFFICIENT_SETTLEMENT;
 import static com.jjinmak.back.payment.exception.WalletErrorCode.INVALID_AMOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -53,6 +54,35 @@ class WalletTest {
 
         assertThat(wallet.getPointBalance()).isEqualTo(1_500);
         assertThat(wallet.getBalance()).isZero();
+    }
+
+    @Test
+    @DisplayName("정산금 차감은 정산금만 바꾸고 예치금 · 포인트는 그대로 둔다")
+    void settlementWithdrawChangesOnlySettlementPocket() {
+        wallet.deposit(10_000);
+        wallet.depositSettlement(7_000);
+        wallet.depositPoint(1_500);
+
+        wallet.withdrawSettlement(7_000);
+
+        assertThat(wallet.getSettlementBalance()).isZero();
+        assertThat(wallet.getBalance()).isEqualTo(10_000);
+        assertThat(wallet.getPointBalance()).isEqualTo(1_500);
+    }
+
+    @Test
+    @DisplayName("가진 정산금보다 많이 차감하면 INSUFFICIENT_SETTLEMENT. 예치금이 충분해도 대신 쓰지 않는다")
+    void withdrawMoreThanSettlement() {
+        wallet.deposit(10_000);
+        wallet.depositSettlement(300);
+
+        assertThatThrownBy(() -> wallet.withdrawSettlement(301))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(INSUFFICIENT_SETTLEMENT);
+
+        assertThat(wallet.getSettlementBalance()).isEqualTo(300);
+        assertThat(wallet.getBalance()).isEqualTo(10_000);
     }
 
     @Test
