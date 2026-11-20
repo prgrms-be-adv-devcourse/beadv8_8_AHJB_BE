@@ -35,8 +35,7 @@ public enum CarrierType {
     LTL("LTL", "kr.ltl"),
     HPL("HPL (한의사랑택배)", "kr.hanips"),
 
-    // TODO: 테스트용. 특정 프로필에서만 켜지거나 시연 중에만 켜지도록 수정하기
-    // TEST("테스트", "dev.track.dummy")
+    TEST("테스트", "dev.track.dummy")
     ;
 
     private final String korean;
