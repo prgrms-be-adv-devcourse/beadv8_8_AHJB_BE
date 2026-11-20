@@ -38,11 +38,14 @@ public final class ChatMessagePolicy {
     /** 정규화: 공백·구두점·기호 제거 + 소문자 */
     private static final Pattern NOISE = Pattern.compile("[\\s.\\-_*~·,!?/()\\[\\]{}:;'\"]+");
 
+    /** 정규화 후 이 길이 이하면 "쪼개 보낸 조각"으로 보고 앞뒤를 이어 붙여 검사한다 */
+    private static final int FRAGMENT_MAX_LENGTH = 3;
+
     private ChatMessagePolicy() {
     }
 
     /**
-     * 메시지를 검사한다.
+     * 메시지 한 건을 검사한다.
      *
      * @param content - 보내려는 메시지 원문
      * @return 차단 이유. 보내도 되면 empty
@@ -51,7 +54,7 @@ public final class ChatMessagePolicy {
         if (content == null || content.isBlank()) {
             return Optional.empty();
         }
-        String normalized = NOISE.matcher(content).replaceAll("").toLowerCase();
+        String normalized = normalize(content);
 
         if (PHONE.matcher(normalized).find()) {
             return Optional.of(ChatBlockReason.PHONE_NUMBER);
@@ -66,6 +69,39 @@ public final class ChatMessagePolicy {
             return Optional.of(ChatBlockReason.CASH_TRADE);
         }
         return Optional.empty();
+    }
+
+    /**
+     * 새 메시지 + 같은 사람이 직전에 연속으로 보낸 짧은 조각들을 이어 붙여 검사한다.
+     * "국" "민" "은" "행" "1" "3" "4" 처럼 한 글자씩 나눠 보내는 수법을 잡는다.
+     * 긴 일반 메시지가 나오면 거기서 끊으므로 정상 대화는 영향이 없다.
+     *
+     * @param content - 새 메시지 원문
+     * @param recentOwnMessages - 같은 방에서 보낸 사람의 최근 메시지, 최신순
+     * @return 차단 이유. 보내도 되면 empty
+     */
+    public static Optional<ChatBlockReason> checkWithRecent(String content, List<String> recentOwnMessages) {
+        Optional<ChatBlockReason> single = check(content);
+        if (single.isPresent()) {
+            return single;
+        }
+
+        StringBuilder joined = new StringBuilder();
+        for (String previous : recentOwnMessages) {          // 최신 → 과거 순
+            String normalized = previous == null ? "" : normalize(previous);
+            if (normalized.isEmpty() || normalized.length() > FRAGMENT_MAX_LENGTH) {
+                break;                                        // 긴 메시지를 만나면 조각 묶음 끝
+            }
+            joined.insert(0, normalized);                     // 과거 조각을 앞에 붙여 원래 순서로
+        }
+        if (joined.isEmpty()) {
+            return Optional.empty();
+        }
+        return check(joined + content);
+    }
+
+    private static String normalize(String content) {
+        return NOISE.matcher(content).replaceAll("").toLowerCase();
     }
 
     private static boolean containsAny(String normalized, List<String> keywords) {
