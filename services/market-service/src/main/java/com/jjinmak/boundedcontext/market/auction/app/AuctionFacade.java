@@ -51,6 +51,9 @@ public class AuctionFacade {
 
     @Transactional
     public AuctionCloseResult closeAuction(Long auctionId,LocalDateTime now){return auctionCloseUseCase.closeAuction(auctionId,now);}
+    // 입찰 없는 경매 일괄 유찰 (한 트랜잭션)
+    @Transactional
+    public int failNoBidAuctions(LocalDateTime now,int batchSize){return auctionCloseUseCase.failNoBidAuctions(now,batchSize);}
 
     @Transactional
     public AuctionDetailResponseDto detail(Long auctionId,Long memberId){return auctionDetailUseCase.detail(auctionId,memberId,LocalDateTime.now());}

@@ -6,6 +6,8 @@ import com.jjinmak.boundedcontext.market.auction.out.AuctionRepository;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.jjinmak.boundedcontext.market.auction.out.AuctionBulkCloseRepository;
+import com.jjinmak.boundedcontext.market.auction.out.AuctionBulkCloseRepository.FailedAuction;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -34,6 +36,7 @@ class AuctionCloseUseCaseTest {
 
     @Mock AuctionRepository auctionRepository;
     @Mock AuctionEventPublisher auctionEventPublisher;
+    @Mock AuctionBulkCloseRepository auctionBulkCloseRepository;
 
     @InjectMocks AuctionCloseUseCase auctionCloseUseCase;
 
@@ -151,5 +154,27 @@ class AuctionCloseUseCaseTest {
             assertThat(second).isEqualTo(AuctionCloseResult.SKIPPED);
             then(auctionEventPublisher).should(times(1)).publishWon(auction);
         }
+    }
+
+    @Test
+    void 일괄_유찰된_경매마다_유찰_이벤트를_발행한다() {
+        LocalDateTime now = END_AT.plusSeconds(1);
+        given(auctionBulkCloseRepository.failNoBidAuctions(org.mockito.ArgumentMatchers.eq(now), any(), org.mockito.ArgumentMatchers.eq(1000)))
+                .willReturn(java.util.List.of(new FailedAuction(1L, 11L, SELLER_ID), new FailedAuction(2L, 12L, SELLER_ID)));
+
+        int failed = auctionCloseUseCase.failNoBidAuctions(now, 1000);
+
+        assertThat(failed).isEqualTo(2);
+        then(auctionEventPublisher).should().publishFailed(1L, 11L, SELLER_ID, NO_BID, now);
+        then(auctionEventPublisher).should().publishFailed(2L, 12L, SELLER_ID, NO_BID, now);
+    }
+
+    @Test
+    void 일괄_유찰_대상이_없으면_이벤트를_발행하지_않는다() {
+        given(auctionBulkCloseRepository.failNoBidAuctions(any(), any(), org.mockito.ArgumentMatchers.anyInt()))
+                .willReturn(java.util.List.of());
+
+        assertThat(auctionCloseUseCase.failNoBidAuctions(END_AT, 1000)).isZero();
+        then(auctionEventPublisher).shouldHaveNoInteractions();
     }
 }
