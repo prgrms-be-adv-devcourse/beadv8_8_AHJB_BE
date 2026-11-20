@@ -2,51 +2,50 @@ package com.jjinmak.boundedcontext.chat.domain;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 외부 거래 유도 메시지 차단 규칙. Spring 의존 없는 순수 규칙이라 단위 테스트로 오탐을 관리한다.
+ * 외부 거래 유도 메시지 차단 규칙. Spring 의존 없는 순수 규칙.
  * 전송 시점에 동기로 돌아야 하므로 정규식·키워드만 쓴다 (LLM·임베딩은 지연·비용·설명 불가로 제외).
  *
- * 숫자 검사는 원문으로, 키워드 검사는 공백·구두점을 뺀 정규화본으로 한다 ("카 톡", "계.좌" 같은 우회 대응).
- * 하이픈 없는 긴 숫자(운송장 12~13자리)는 막지 않는다.
+ * 검사는 공백·구두점·기호를 뺀 정규화본으로 한다 ("카 톡", "1364 3562", "010-3675-3148" 모두 같은 모양이 된다).
+ * 운송장 번호도 8자리가 넘어 막히지만, 운송장은 채팅이 아니라 주문의 송장 등록으로 넣는다.
  */
 public final class ChatMessagePolicy {
 
-    /** 010-1234-5678, 01012345678, 010.1234.5678, +82-10-1234-5678 */
-    private static final Pattern PHONE = Pattern.compile(
-            "(?<!\\d)(?:\\+82[-\\s]?0?|0)1[016789][-.\\s]?\\d{3,4}[-.\\s]?\\d{4}(?!\\d)");
+    /** 010-3675-3148, 01036753148, +82-10-3675-3148 (정규화 후라 구분자 없음) */
+    private static final Pattern PHONE = Pattern.compile("(?<!\\d)(?:\\+?82)?0?1[016789]\\d{7,8}(?!\\d)");
 
-    /** 110-123-456789 처럼 하이픈으로 나뉜 숫자 묶음 (총 10자리 이상일 때만 계좌로 본다) */
-    private static final Pattern HYPHENATED_DIGITS = Pattern.compile("(?<!\\d)\\d{2,6}(?:-\\d{2,8}){1,3}(?!\\d)");
-    private static final int ACCOUNT_MIN_DIGITS = 10;
+    /** 연속 8자리 이상 숫자 = 계좌·전화로 본다. 금액(150000)은 6자리라 통과 */
+    private static final Pattern LONG_DIGITS = Pattern.compile("\\d{8,}");
 
-    /** 은행 이름 + 6자리 이상 숫자. "하나", "우리", "우체국"처럼 일상어·택배사와 겹치는 이름은 "은행"을 붙인 형태만 */
-    private static final Pattern BANK_NAME = Pattern.compile(
-            "은행|국민은행|KB국민|신한|농협|NH|기업은행|IBK|하나은행|우리은행|카카오뱅크|카뱅|토스뱅크|토뱅|케이뱅크|K뱅크|새마을|신협|수협|"
-                    + "대구은행|iM뱅크|부산은행|경남은행|광주은행|전북은행|제주은행|SC제일|씨티",
-            Pattern.CASE_INSENSITIVE);
-    private static final Pattern LONG_DIGITS = Pattern.compile("\\d{6,}");
+    /** 은행·송금 앱 이름. 숫자가 없어도 막는다 ("국민" → 다음 메시지에 번호 보내는 수법) */
+    private static final List<String> BANK_KEYWORDS = List.of(
+            "은행", "국민", "kb", "신한", "농협", "nh", "기업", "ibk", "하나", "우리은행", "우리계좌", "카카오뱅크", "카뱅",
+            "토스", "케이뱅크", "k뱅크", "새마을", "신협", "수협", "우체국계좌", "대구은행", "im뱅크", "부산은행", "경남은행",
+            "광주은행", "전북은행", "제주은행", "sc제일", "씨티", "카카오페이", "네이버페이", "페이로", "페이머니");
 
     private static final List<String> EXTERNAL_CHANNEL_KEYWORDS = List.of(
-            "카톡", "카카오톡", "카카오아이디", "카카오id", "오픈채팅", "오픈톡", "open.kakao", "openkakao",
-            "인스타", "instagram", "텔레그램", "telegram", "t.me/", "디스코드", "디코",
-            "라인아이디", "라인으로", "문자로", "문자주", "문자줘", "전화주", "전화줘", "전화로",
-            "번호주", "번호줘", "번호알려", "연락처", "핸드폰번호", "휴대폰번호", "폰번");
+            "카톡", "카카오톡", "카카오아이디", "카카오id", "카카오로", "오픈채팅", "오픈톡", "open.kakao", "openkakao",
+            "인스타", "instagram", "insta", "디엠", "dm주", "텔레그램", "telegram", "t.me", "텔레", "디스코드", "디코",
+            "라인아이디", "라인으로", "라인주", "문자로", "문자주", "문자줘", "전화주", "전화줘", "전화로", "전화번호",
+            "번호주", "번호줘", "번호알려", "연락처", "핸드폰", "휴대폰", "폰번");
 
     private static final List<String> CASH_TRADE_KEYWORDS = List.of(
             "계좌", "송금", "이체", "현금", "직거래", "입금", "안전결제말고", "안전결제빼고", "안전결제없이", "안전결제안하",
-            "수수료아끼", "수수료빼", "수수료없이");
+            "수수료아끼", "수수료빼", "수수료없이", "따로거래", "밖에서거래", "직접거래");
 
-    /** 키워드 비교용 정규화: 공백·구두점·기호 제거 + 소문자 */
-    private static final Pattern NOISE = Pattern.compile("[\\s.\\-_*~·,!?]+");
+    /** 정규화: 공백·구두점·기호 제거 + 소문자 */
+    private static final Pattern NOISE = Pattern.compile("[\\s.\\-_*~·,!?/()\\[\\]{}:;'\"]+");
+
+    /** 정규화 후 이 길이 이하면 "쪼개 보낸 조각"으로 보고 앞뒤를 이어 붙여 검사한다 */
+    private static final int FRAGMENT_MAX_LENGTH = 3;
 
     private ChatMessagePolicy() {
     }
 
     /**
-     * 메시지를 검사한다.
+     * 메시지 한 건을 검사한다.
      *
      * @param content - 보내려는 메시지 원문
      * @return 차단 이유. 보내도 되면 empty
@@ -55,15 +54,14 @@ public final class ChatMessagePolicy {
         if (content == null || content.isBlank()) {
             return Optional.empty();
         }
+        String normalized = normalize(content);
 
-        if (PHONE.matcher(content).find()) {
+        if (PHONE.matcher(normalized).find()) {
             return Optional.of(ChatBlockReason.PHONE_NUMBER);
         }
-        if (looksLikeAccount(content)) {
+        if (LONG_DIGITS.matcher(normalized).find() || containsAny(normalized, BANK_KEYWORDS)) {
             return Optional.of(ChatBlockReason.BANK_ACCOUNT);
         }
-
-        String normalized = NOISE.matcher(content).replaceAll("").toLowerCase();
         if (containsAny(normalized, EXTERNAL_CHANNEL_KEYWORDS)) {
             return Optional.of(ChatBlockReason.EXTERNAL_CHANNEL);
         }
@@ -73,15 +71,37 @@ public final class ChatMessagePolicy {
         return Optional.empty();
     }
 
-    private static boolean looksLikeAccount(String content) {
-        Matcher hyphenated = HYPHENATED_DIGITS.matcher(content);
-        while (hyphenated.find()) {
-            long digits = hyphenated.group().chars().filter(Character::isDigit).count();
-            if (digits >= ACCOUNT_MIN_DIGITS) {
-                return true;
-            }
+    /**
+     * 새 메시지 + 같은 사람이 직전에 연속으로 보낸 짧은 조각들을 이어 붙여 검사한다.
+     * "국" "민" "은" "행" "1" "3" "4" 처럼 한 글자씩 나눠 보내는 수법을 잡는다.
+     * 긴 일반 메시지가 나오면 거기서 끊으므로 정상 대화는 영향이 없다.
+     *
+     * @param content - 새 메시지 원문
+     * @param recentOwnMessages - 같은 방에서 보낸 사람의 최근 메시지, 최신순
+     * @return 차단 이유. 보내도 되면 empty
+     */
+    public static Optional<ChatBlockReason> checkWithRecent(String content, List<String> recentOwnMessages) {
+        Optional<ChatBlockReason> single = check(content);
+        if (single.isPresent()) {
+            return single;
         }
-        return BANK_NAME.matcher(content).find() && LONG_DIGITS.matcher(content).find();
+
+        StringBuilder joined = new StringBuilder();
+        for (String previous : recentOwnMessages) {          // 최신 → 과거 순
+            String normalized = previous == null ? "" : normalize(previous);
+            if (normalized.isEmpty() || normalized.length() > FRAGMENT_MAX_LENGTH) {
+                break;                                        // 긴 메시지를 만나면 조각 묶음 끝
+            }
+            joined.insert(0, normalized);                     // 과거 조각을 앞에 붙여 원래 순서로
+        }
+        if (joined.isEmpty()) {
+            return Optional.empty();
+        }
+        return check(joined + content);
+    }
+
+    private static String normalize(String content) {
+        return NOISE.matcher(content).replaceAll("").toLowerCase();
     }
 
     private static boolean containsAny(String normalized, List<String> keywords) {

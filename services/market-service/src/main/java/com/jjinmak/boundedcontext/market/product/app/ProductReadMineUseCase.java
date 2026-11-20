@@ -22,6 +22,10 @@ public class ProductReadMineUseCase {
 
     // 내가 등록한 상품(삭제 제외)을 최신 등록순으로 조회한다.
     // 탭(시작 전/진행 중/종료)별 개수는 프론트가 status로 센다. 상품이 많아지면 페이지·상태 필터를 추가한다.
+    public long countByPolicyVersion(Long sellerId, String policyVersion){
+        return productRepository.countBySeller_IdAndPolicyVersion(sellerId, policyVersion);
+    }
+
     public ProductMyListResponseDto readMine(Long sellerId){
         LocalDateTime now = LocalDateTime.now();
         List<Product> products = productRepository.findMine(sellerId);

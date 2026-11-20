@@ -6,6 +6,7 @@ import com.jjinmak.contracts.auction.event.AuctionStartedEvent;
 import com.jjinmak.contracts.auction.event.AuctionWonEvent;
 import com.jjinmak.contracts.product.event.ProductChangeType;
 import com.jjinmak.contracts.product.event.ProductChangedEvent;
+import com.jjinmak.contracts.product.event.ProductWishChangedEvent;
 import com.jjinmak.ai.recommend.app.dto.AuctionResponseDto;
 import com.jjinmak.ai.recommend.domain.RecommendMember;
 import com.jjinmak.ai.recommend.in.RecommendKafkaListener;
@@ -34,6 +35,7 @@ import java.util.stream.Stream;
 
 import static com.jjinmak.contracts.product.event.ProductChangeType.CREATED;
 import static com.jjinmak.contracts.product.event.ProductChangeType.DELETED;
+import static com.jjinmak.contracts.product.event.ProductWishChangeType.WISHED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class RecommendPersonalAuctionTest extends RecommendIntegrationTestSupport {
@@ -174,26 +176,42 @@ class RecommendPersonalAuctionTest extends RecommendIntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("찜한 상품은 취향 기록으로 쓰이고, 찜한 경매 자신은 결과에서 빠진다")
-    void personal_activeWish_isRecordAndExclusion() {
+    @DisplayName("찜한 상품은 취향 기록으로 쓰이고, 찜한 경매 자신도 결과에 남는다")
+    void personal_activeWish_isRecordAndStaysInResults() {
         readyAuction(101L, 1001L, 0, now.plusDays(1), SELLER_ID);
         wish(1L, 1001L, 101L, true, now.minusHours(1));
         readyAuction(102L, 1002L, 60, now.plusDays(1), SELLER_ID);
         readyAuction(103L, 1003L, 10, now.plusDays(1), SELLER_ID);
 
-        assertThat(personalAuctionIds(1L)).containsExactly(1003L, 1002L);
+        assertThat(personalAuctionIds(1L)).containsExactly(1001L, 1003L, 1002L);
     }
 
     @Test
-    @DisplayName("찜만 있는 회원은 인기 경매를 받고, 찜한 경매는 빠지지만 찜을 취소한 경매는 그대로 나온다")
-    void personal_wishOnlyMember_popularExcludesOnlyActiveWish() {
+    @DisplayName("찜만 있는 회원은 인기 경매를 받고, 찜한 경매와 찜을 취소한 경매가 모두 나온다")
+    void personal_wishOnlyMember_popularKeepsWishedAuctions() {
         pendingAuction(301L, 3001L, now.plusHours(2), SELLER_ID);
         wish(3L, 3001L, 301L, true, now.minusHours(1));
         readyAuction(302L, 3002L, 0, now.plusHours(5), SELLER_ID);
         wish(3L, 3002L, 302L, false, now.minusHours(1));
         readyAuction(303L, 3003L, 30, now.plusDays(1), SELLER_ID);
 
-        assertThat(personalAuctionIds(3L)).containsExactly(3002L, 3003L);
+        assertThat(personalAuctionIds(3L)).containsExactly(3001L, 3002L, 3003L);
+    }
+
+    @Test
+    @DisplayName("찜 이벤트를 받은 뒤에도 찜한 경매는 맞춤 추천에 남고, 취향 기록이 되어 앞으로 온다")
+    void personal_wishEvent_keepsWishedAuction() {
+        readyAuction(101L, 1001L, 0, now.plusDays(1), SELLER_ID);
+        bid(1001L, 101L, 1L, now.plusDays(1), now.minusHours(1));
+        readyAuction(102L, 1002L, 80, now.plusDays(1), SELLER_ID);
+        readyAuction(103L, 1003L, 10, now.plusDays(1), SELLER_ID);
+        readyAuction(104L, 1004L, 60, now.plusDays(1), SELLER_ID);
+
+        assertThat(personalAuctionIds(1L)).containsExactly(1003L, 1004L, 1002L);
+
+        recommendKafkaListener.handle(new ProductWishChangedEvent(102L, 1L, WISHED, 1002L, now.minusMinutes(10)));
+
+        assertThat(personalAuctionIds(1L)).containsExactly(1003L, 1002L, 1004L);
     }
 
     @Test

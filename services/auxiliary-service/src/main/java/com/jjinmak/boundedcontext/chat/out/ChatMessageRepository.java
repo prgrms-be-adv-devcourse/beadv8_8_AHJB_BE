@@ -28,4 +28,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     List<ChatUnreadCount> countUnreadByRooms(@Param("memberId") Long memberId, @Param("roomIds") List<Long> roomIds);
     Page<ChatMessage> findByRoomId(Long roomId, Pageable pageable);
     boolean existsByIdAndRoomId(Long id, Long roomId);
+
+    /** 같은 방에서 이 회원이 보낸 최근 메시지 (쪼개 보내기 검사용) */
+    List<ChatMessage> findTop10ByRoomIdAndSenderIdOrderByIdDesc(Long roomId, Long senderId);
 }

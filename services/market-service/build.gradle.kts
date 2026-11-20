@@ -56,3 +56,29 @@ tasks.withType<Test> {
 tasks.bootJar {
     archiveFileName.set("app.jar")
 }
+// 동시성 정합성 테스트 (@Tag("concurrency"), Docker 필요). 기본 test·CI에서는 제외
+// 실행: ./gradlew :services:market-service:concurrencyTest -PlockLabel=v0-baseline [--tests '*.concurrency.English*']
+// 결과: build/concurrency-results/{lockLabel}.md, build/reports/tests/concurrencyTest/index.html
+tasks.named<Test>("test") {
+    useJUnitPlatform {
+        excludeTags("concurrency")
+    }
+}
+
+val concurrencyTest by tasks.registering(Test::class) {
+    description = "동시성 정합성 테스트 (Testcontainers PostgreSQL)"
+    group = "verification"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform {
+        includeTags("concurrency")
+    }
+    systemProperty("lockLabel", (project.findProperty("lockLabel") ?: "local").toString())
+    systemProperty("concurrency.resultDir", layout.buildDirectory.dir("concurrency-results").get().asFile.absolutePath)
+    testLogging {
+        events("passed", "failed", "skipped")
+        showStandardStreams = true
+    }
+    outputs.upToDateWhen { false }
+    shouldRunAfter(tasks.named("test"))
+}

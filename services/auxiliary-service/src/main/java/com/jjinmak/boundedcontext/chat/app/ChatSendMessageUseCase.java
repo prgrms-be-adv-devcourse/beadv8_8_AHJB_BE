@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -26,8 +27,9 @@ public class ChatSendMessageUseCase {
 
     /**
      * 채팅방에 메시지를 저장한다. 그 방의 참여자만, 방이 OPEN일 때만 보낼 수 있다.
-     * 전화번호·계좌·외부 채널·현금 거래 유도가 담긴 메시지는 저장하지 않고 CHAT007을 던진다
+     * 전화번호·계좌·은행 이름·외부 채널·현금 거래 유도가 담긴 메시지는 저장하지 않고 CHAT007을 던진다
      * (보낸 사람에게만 안내, 상대에게는 가지 않음. 내용은 로그에 남기지 않는다).
+     * 짧은 메시지로 쪼개 보내는 우회는 같은 사람의 직전 조각들을 이어 붙여 다시 검사해 잡는다.
      * 저장 후 방의 마지막 메시지 시각·내용을 갱신한다 (목록 정렬·미리보기용).
      *
      * @param memberId - 보내는 회원 ID (WebSocket 세션의 Principal)
@@ -45,7 +47,11 @@ public class ChatSendMessageUseCase {
             throw new BusinessException(ChatErrorCode.INVALID_MESSAGE);
         }
 
-        Optional<ChatBlockReason> blocked = ChatMessagePolicy.check(content);
+        List<String> recentOwn = chatMessageRepository.findTop10ByRoomIdAndSenderIdOrderByIdDesc(roomId, memberId).stream()
+                .map(ChatMessage::getContent)
+                .toList();
+
+        Optional<ChatBlockReason> blocked = ChatMessagePolicy.checkWithRecent(content, recentOwn);
         if (blocked.isPresent()) {
             log.info("chat message blocked: roomId={}, memberId={}, reason={}", roomId, memberId, blocked.get());
             throw new BusinessException(ChatErrorCode.MESSAGE_BLOCKED);

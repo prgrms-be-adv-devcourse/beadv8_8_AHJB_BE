@@ -79,4 +79,11 @@ public class LedgerRecorder {
         wallet.withdrawal(amount);
         walletTransactionRepository.save(WalletTransaction.of(wallet, type, -amount, UUID.randomUUID().toString(), refType, refId));
     }
+
+    // 정산금이 외부(계좌)로 나가는 돈. 상대 계정이 원장 밖이라 한 줄. SETTLEMENT 주머니로 기록된다
+    public void withdrawSettlement(Wallet wallet, WalletTransactionType type, long amount, ReferenceType refType, Long refId) {
+        wallet.withdrawSettlement(amount);
+        walletTransactionRepository.save(WalletTransaction.of(
+                wallet, WalletAccount.SETTLEMENT, type, -amount, UUID.randomUUID().toString(), refType, refId));
+    }
 }

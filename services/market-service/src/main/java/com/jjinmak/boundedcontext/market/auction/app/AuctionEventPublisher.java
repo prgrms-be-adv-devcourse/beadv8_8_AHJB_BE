@@ -27,12 +27,17 @@ public class AuctionEventPublisher {
         ));
     }
     public void publishFailed(Auction auction, LocalDateTime failedAt){
+        publishFailed(auction.getId(), auction.getProductId(), auction.getSellerId(), auction.getFailureReason(), failedAt);
+    }
+
+    // 일괄 유찰처럼 엔티티를 읽지 않고 처리한 경우 (#516)
+    public void publishFailed(Long auctionId, Long productId, Long sellerId, FailureReason reason, LocalDateTime failedAt){
         eventPublisher.publish(new AuctionFailedEvent(
-                auction.getId(),
-                auction.getProductId(),
-                auction.getFailureReason().name(),
+                auctionId,
+                productId,
+                reason.name(),
                 failedAt,
-                auction.getSellerId()
+                sellerId
         ));
     }
 

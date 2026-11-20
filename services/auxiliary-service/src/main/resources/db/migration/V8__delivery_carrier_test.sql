@@ -1,0 +1,8 @@
+ALTER TABLE delivery DROP CONSTRAINT ck_delivery_carrier;
+
+ALTER TABLE delivery ADD CONSTRAINT ck_delivery_carrier CHECK (carrier IN (
+    'CJ', 'LOTTE', 'EPOST', 'HANJIN', 'LOGEN', 'KDEXP', 'HDEXP', 'DAESIN', 'ILYANG',
+    'KUNYOUNG', 'CHUNIL', 'HONAM', 'COUPANG', 'CU_POST', 'GS_POSTBOX', 'HOMEPICK',
+    'GOODSTOLUCK', 'DELIBOX', 'YONGMA', 'TODAY_PICKUP', 'TODAY', 'LX_PANTOS', 'CWAY',
+    'SLX', 'LTL', 'HPL', 'TEST'
+));

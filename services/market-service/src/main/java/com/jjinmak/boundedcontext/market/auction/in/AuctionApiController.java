@@ -1,6 +1,7 @@
 package com.jjinmak.boundedcontext.market.auction.in;
 
 import com.jjinmak.boundedcontext.market.auction.app.AuctionFacade;
+import com.jjinmak.boundedcontext.market.auction.app.support.AuctionRetrySupport;
 import com.jjinmak.boundedcontext.market.auction.domain.AuctionListStatus;
 import com.jjinmak.boundedcontext.market.auction.domain.AuctionSortType;
 import com.jjinmak.boundedcontext.market.auction.dto.*;
@@ -30,6 +31,7 @@ import java.util.List;
 @RequestMapping("/api/v1/auctions")
 public class AuctionApiController {
     private final AuctionFacade auctionFacade;
+    private final AuctionRetrySupport auctionRetrySupport;
 
     @Operation(
             summary = "입찰",
@@ -43,12 +45,9 @@ public class AuctionApiController {
             @AuthenticationPrincipal AuthPrincipal principal,
             @Valid @RequestBody AuctionBidRequestDto request
     ){
-        AuctionBidResponseDto response;
-        try{
-            response = auctionFacade.bid(auctionId,principal.memberId(),request.bidPrice());
-        }catch (ObjectOptimisticLockingFailureException e){
-            throw new BusinessException(AuctionErrorCode.BID_CONFLICT);
-        }
+        // 낙관적 락 충돌이면 새 트랜잭션에서 재검증부터 다시 실행 (최대 3회, 소진 시 AUCTION008)
+        AuctionBidResponseDto response = auctionRetrySupport.execute(AuctionRetrySupport.Operation.BID,
+                () -> auctionFacade.bid(auctionId, principal.memberId(), request.bidPrice()));
         return ResponseEntity.status(HttpStatus.CREATED).body(new RsData<>(true,"입찰이 완료되었습니다.",response));
     }
 
@@ -62,12 +61,8 @@ public class AuctionApiController {
             @PathVariable Long auctionId,
             @AuthenticationPrincipal AuthPrincipal principal
     ) {
-        AuctionInstantWinResponseDto response;
-        try {
-            response = auctionFacade.instantWin(auctionId, principal.memberId());
-        } catch (ObjectOptimisticLockingFailureException e) {
-            throw new BusinessException(AuctionErrorCode.BID_CONFLICT);
-        }
+        AuctionInstantWinResponseDto response = auctionRetrySupport.execute(AuctionRetrySupport.Operation.INSTANT_WIN,
+                () -> auctionFacade.instantWin(auctionId, principal.memberId()));
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new RsData<>(true, "즉시 낙찰되었습니다.", response));
     }

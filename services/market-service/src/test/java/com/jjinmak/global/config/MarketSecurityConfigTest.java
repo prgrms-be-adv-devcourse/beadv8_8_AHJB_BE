@@ -1,6 +1,7 @@
 package com.jjinmak.global.config;
 
 import com.jjinmak.boundedcontext.market.auction.app.AuctionFacade;
+import com.jjinmak.boundedcontext.market.auction.app.support.AuctionRetrySupport;
 import com.jjinmak.boundedcontext.market.auction.in.AuctionApiController;
 import com.jjinmak.boundedcontext.market.product.app.ProductFacade;
 import com.jjinmak.boundedcontext.market.product.app.ProductQnaFacade;
@@ -41,6 +42,7 @@ class MarketSecurityConfigTest {
     @MockitoBean ProductFacade productFacade;
     @MockitoBean ProductQnaFacade productQnaFacade;
     @MockitoBean AuctionFacade auctionFacade;
+    @MockitoBean AuctionRetrySupport auctionRetrySupport;
 
     @Test
     void 비로그인도_상품_상세를_조회할_수_있다() throws Exception {

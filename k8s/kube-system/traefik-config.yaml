@@ -1,0 +1,23 @@
+# k3s 내장 Traefik 설정 덮어쓰기
+#
+# Traefik은 k3s가 자동 설치한다 (217: /var/lib/rancher/k3s/server/manifests/traefik.yaml).
+# 그 파일은 k3s 재시작 때 원래대로 덮어써지므로 직접 고치지 않고, 이 HelmChartConfig로 values를 덧씌운다.
+#   kubectl apply -f k8s/kube-system/traefik-config.yaml
+#   -> k3s helm-controller가 traefik을 다시 배포한다 (재시작 동안 수 초 외부 접속 끊김)
+#
+# 목적: 기본 설치에는 requests/limits가 없어(BestEffort) 메모리 부족 시 가장 먼저 축출된다.
+#       Traefik이 축출되면 api·grafana 외부 접속이 모두 끊기므로 requests를 지정한다.
+# 값 근거: 실사용 약 42Mi (2026-11-19 kubectl top)
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        memory: 128Mi

@@ -28,6 +28,7 @@ public class WalletFacade {
     private final WalletGetLedgerUseCase walletGetLedgerUseCase;
     private final WalletGetHoldingsUseCase walletGetHoldingsUseCase;
     private final WalletWithdrawUseCase walletWithdrawUseCase;
+    private final WalletWithdrawSettlementUseCase walletWithdrawSettlementUseCase;
     private final WalletGetWithdrawalsUseCase walletGetWithdrawalsUseCase;
     private final PaymentCloseUseCase paymentCloseUseCase;
 
@@ -89,6 +90,11 @@ public class WalletFacade {
     @Transactional
     public WithdrawalDto withdrawAll(Long holderId) {
         return walletWithdrawUseCase.withdrawAll(holderId);
+    }
+
+    @Transactional
+    public WithdrawalDto withdrawSettlementAll(Long holderId) {
+        return walletWithdrawSettlementUseCase.withdrawAll(holderId);
     }
 
     @Transactional(readOnly = true)

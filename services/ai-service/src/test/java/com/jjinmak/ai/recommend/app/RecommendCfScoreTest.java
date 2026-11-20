@@ -203,6 +203,7 @@ class RecommendCfScoreTest extends RecommendIntegrationTestSupport {
     @DisplayName("맞춤: 협업 점수에는 회원 기록의 가중치를 곱한다")
     void personal_collaborativeScore_isWeightedByRecord() {
         wish(BASE_AUCTION_ID, BASE_PRODUCT_ID, true, MEMBER_ID);
+        recommendKafkaListener.handle(new AuctionFailedEvent(BASE_AUCTION_ID, BASE_PRODUCT_ID, "NO_BID", now));
         readyAuction(CANDIDATE_A_PRODUCT_ID, CANDIDATE_A_AUCTION_ID, 0.5);
         wish(CANDIDATE_A_AUCTION_ID, CANDIDATE_A_PRODUCT_ID, true, 4, 5, 6, 7, 8);
         pair(CANDIDATE_A_PRODUCT_ID, BASE_PRODUCT_ID, 1.0);

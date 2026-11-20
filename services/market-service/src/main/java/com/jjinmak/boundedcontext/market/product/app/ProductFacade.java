@@ -56,6 +56,11 @@ public class ProductFacade {
     }
 
     @Transactional(readOnly = true)
+    public long countBySellerAndPolicyVersion(Long sellerId, String policyVersion){
+        return productReadMineUseCase.countByPolicyVersion(sellerId, policyVersion);
+    }
+
+    @Transactional(readOnly = true)
     public List<Long> findAuctionRequestTargetIds(LocalDateTime now){
         return productRequestAuctionUseCase.findTargetIds(now);
     }

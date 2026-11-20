@@ -65,7 +65,7 @@ public interface InteractionRepository extends JpaRepository<Interaction, Long> 
               AND NOT EXISTS (
                   SELECT 1 FROM interaction m
                   WHERE m.member_id = :memberId AND m.auction_id = a.id
-                    AND m.type IN ('BID', 'WISH') AND m.active = true
+                    AND m.type = 'BID' AND m.active = true
               )
             GROUP BY a.id, p.id
         ),
