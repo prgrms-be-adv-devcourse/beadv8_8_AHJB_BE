@@ -1,6 +1,7 @@
 package com.jjinmak.back.payment.in.scheduler;
 
 import com.jjinmak.back.payment.app.dto.HoldDto;
+import com.jjinmak.back.payment.app.dto.WithdrawalDto;
 import com.jjinmak.back.payment.app.facade.WalletFacade;
 import com.jjinmak.back.payment.app.support.HoldingCreator;
 import com.jjinmak.back.payment.app.support.LedgerRecorder;
@@ -14,7 +15,9 @@ import com.jjinmak.back.payment.domain.enums.MismatchStatus;
 import com.jjinmak.back.payment.domain.enums.MismatchTargetType;
 import com.jjinmak.back.payment.domain.enums.MismatchType;
 import com.jjinmak.back.payment.domain.enums.ReconciliationRunStatus;
+import com.jjinmak.back.payment.domain.enums.WalletAccount;
 import com.jjinmak.back.payment.domain.enums.WalletType;
+import com.jjinmak.back.payment.domain.enums.WithdrawalStatus;
 import com.jjinmak.back.payment.in.scheduler.ReconciliationScheduler;
 import com.jjinmak.back.payment.out.repository.ChargeRepository;
 import com.jjinmak.back.payment.out.repository.ReconciliationMismatchRepository;
@@ -287,6 +290,33 @@ class ReconciliationLedgerIntegrationTest extends PaymentIntegrationTestSupport 
 
         assertStatus(run, MATCHED);
         assertThat(run.getAttempt()).isEqualTo(1);
+    }
+
+    // ===== 정산금 출금 =====
+
+    @Test
+    @DisplayName("판매자가 정산금을 전액 출금해도 검사는 모두 일치하고, 정산금만 0 이 되며 출금 내역이 남는다")
+    void settlementWithdrawalMatches() {
+        scenario();                                                      // 판매자 정산금 18,000
+
+        WithdrawalDto withdrawal = walletFacade.withdrawSettlementAll(SELLER_ID);
+
+        ReconciliationRun run = reconcile(today);
+
+        assertStatus(run, MATCHED);
+        assertThat(mismatchesOf(run)).isEmpty();
+
+        assertThat(withdrawal.amount()).isEqualTo(18_000);
+        assertThat(withdrawal.account()).isEqualTo(WalletAccount.SETTLEMENT);
+        assertThat(withdrawal.status()).isEqualTo(WithdrawalStatus.COMPLETED);
+
+        Wallet seller = walletOf(SELLER_ID);
+        assertThat(seller.getSettlementBalance()).isZero();
+        assertThat(seller.getBalance()).isZero();
+
+        assertThat(walletFacade.listWithdrawals(SELLER_ID, 0, 20).content())
+                .extracting(WithdrawalDto::account)
+                .containsExactly(WalletAccount.SETTLEMENT);
     }
 
     // ===== 포인트 =====
