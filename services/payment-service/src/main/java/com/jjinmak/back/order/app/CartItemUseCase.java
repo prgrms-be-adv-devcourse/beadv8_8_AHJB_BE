@@ -52,7 +52,7 @@ public class CartItemUseCase {
     public List<CartItemDto> readWinnerItems(Long winnerId){
         OrderMember winner = orderSupport.getMember(winnerId);
 
-        List<CartItem> items = cartItemRepository.findAllByWinnerOrderByWinAt(winner);
+        List<CartItem> items = cartItemRepository.findUnexpiredByWinner(winner, LocalDateTime.now());
 
         return items.stream().map(CartItem::dto).toList();
     }
