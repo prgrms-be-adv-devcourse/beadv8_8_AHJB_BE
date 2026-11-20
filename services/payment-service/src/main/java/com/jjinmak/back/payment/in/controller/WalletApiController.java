@@ -19,7 +19,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 
-@Tag(name = "지갑", description = "예치금 잔액·원장·홀딩(묶인 돈 / 정산 예정 금액) 조회")
+@Tag(name = "지갑", description = "예치금 잔액·원장·홀딩(묶인 돈 / 정산 예정 금액) 조회, 예치금·정산금 출금")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/wallet")
@@ -86,7 +86,18 @@ public class WalletApiController {
         return ResponseEntity.status(HttpStatus.CREATED).body(new RsData<>(response));
     }
 
-    @Operation(summary = "내 출금 내역 조회", description = "최신순. size 최대 50.")
+    @Operation(
+            summary = "정산금 전액 출금 (명목상)",
+            description = "보유 중인 정산금 전액을 등록된 계좌로 지급한 것으로 기록합니다. 현재 실제 송금은 이루어지지 않으며 정산금이 0 이 되고 "
+                    + "출금 내역(account = SETTLEMENT)과 원장(SETTLEMENT_WITHDRAWAL)에 남습니다. 예치금과 포인트는 출금되지 않습니다. 정산금이 0 이면 WALLET603."
+    )
+    @PostMapping("/me/settlement-withdrawals")
+    public ResponseEntity<RsData<WithdrawalDto>> withdrawSettlementAll(@AuthenticationPrincipal AuthPrincipal principal) {
+        WithdrawalDto response = retry.withRetry(() -> walletFacade.withdrawSettlementAll(principal.memberId()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new RsData<>(response));
+    }
+
+    @Operation(summary = "내 출금 내역 조회", description = "예치금 출금과 정산금 출금을 함께 최신순으로 조회합니다. account 로 구분합니다 (DEPOSIT = 예치금, SETTLEMENT = 정산금). size 최대 50.")
     @GetMapping("/me/withdrawals")
     public ResponseEntity<RsData<PageDto<WithdrawalDto>>> listWithdrawals(
             @AuthenticationPrincipal AuthPrincipal principal,
