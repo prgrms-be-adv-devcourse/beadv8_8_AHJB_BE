@@ -7,7 +7,7 @@ import com.jjinmak.boundedcontext.market.auction.concurrency.support.Concurrency
 import com.jjinmak.boundedcontext.market.auction.concurrency.support.ConcurrencyRunner;
 import com.jjinmak.boundedcontext.market.auction.concurrency.support.ConcurrencyRunner.Outcome;
 import com.jjinmak.boundedcontext.market.auction.concurrency.support.ConcurrencyRunner.Task;
-import com.jjinmak.boundedcontext.market.auction.concurrency.support.KafkaSendCounter;
+import com.jjinmak.boundedcontext.market.auction.concurrency.support.OutboxEventCounter;
 import com.jjinmak.boundedcontext.market.auction.domain.AuctionStatus;
 import com.jjinmak.boundedcontext.market.auction.domain.Bid;
 import com.jjinmak.boundedcontext.market.auction.domain.EnglishAuction;
@@ -66,7 +66,7 @@ class CloseRaceConcurrencyTest extends AuctionIntegrationTestSupport {
     }
 
     private long 결과_이벤트(Long id) {
-        return KafkaSendCounter.count(kafkaTemplate, AUCTION_WON, id) + KafkaSendCounter.count(kafkaTemplate, AUCTION_FAILED, id);
+        return OutboxEventCounter.count(jdbcTemplate, AUCTION_WON, id) + OutboxEventCounter.count(jdbcTemplate, AUCTION_FAILED, id);
     }
 
     @Test
@@ -123,7 +123,7 @@ class CloseRaceConcurrencyTest extends AuctionIntegrationTestSupport {
             if (instantOk == 0 && after.getStatus() == AuctionStatus.WON) {
                 closeWon++;
             }
-            long wonEvents = KafkaSendCounter.count(kafkaTemplate, AUCTION_WON, id);
+            long wonEvents = OutboxEventCounter.count(jdbcTemplate, AUCTION_WON, id);
             List<String> v = AuctionInvariants.checkEnglish(auctionRepository, bidRepository, id);
             boolean ok = v.isEmpty() && instantOk <= 1 && after.getStatus() == AuctionStatus.WON && wonEvents == 1
                     && !ConcurrencyRunner.hasUnexpectedError(outcomes);

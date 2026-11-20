@@ -1,10 +1,12 @@
 package com.jjinmak.boundedcontext.market.auction.support;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -36,4 +38,8 @@ public abstract class AuctionIntegrationTestSupport {
 
     @MockitoBean
     protected KafkaTemplate<String, Object> kafkaTemplate;
+
+    // 아웃박스 행 확인용 (경매 시작·낙찰·유찰 이벤트는 Kafka 대신 auction_outbox에 저장된다, #548)
+    @Autowired
+    protected JdbcTemplate jdbcTemplate;
 }

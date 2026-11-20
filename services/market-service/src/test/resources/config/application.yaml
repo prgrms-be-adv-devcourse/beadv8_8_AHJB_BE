@@ -19,6 +19,12 @@ spring:
       properties:
         "[max.block.ms]": 0   # 브로커 없이 send가 막히지 않게 바로 실패
 
+# 아웃박스 전송 스케줄러는 끈다 (KafkaTemplate이 mock, #548)
+market:
+  outbox:
+    relay:
+      enabled: false
+
 product-image:
   storage: local
   bucket: ""

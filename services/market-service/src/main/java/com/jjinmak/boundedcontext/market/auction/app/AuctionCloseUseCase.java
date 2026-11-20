@@ -22,7 +22,7 @@ public class AuctionCloseUseCase {
     private final AuctionBulkCloseRepository auctionBulkCloseRepository;
 
     // 입찰 없는 경매를 UPDATE 한 번으로 유찰하고, 유찰된 경매마다 유찰 이벤트를 발행한다 (#516)
-    // 이벤트는 커밋 후(AFTER_COMMIT) 전송되므로 건별 처리와 같은 시점에 나간다
+    // 이벤트는 같은 트랜잭션에서 outbox에 저장되고(#548) 릴레이가 보낸다. 건별 처리와 같은 경로
     public int failNoBidAuctions(LocalDateTime now, int batchSize) {
         List<FailedAuction> failed = auctionBulkCloseRepository.failNoBidAuctions(now, LocalDateTime.now(), batchSize);
         for (FailedAuction f : failed) {
