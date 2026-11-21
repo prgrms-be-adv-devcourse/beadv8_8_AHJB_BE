@@ -4,12 +4,18 @@ import com.jjinmak.back.order.app.dto.OutboxSendResult;
 import com.jjinmak.back.order.domain.OrderOutbox;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.back.order.app.OrderFacade;
+import com.jjinmak.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Set;
+
+import static com.jjinmak.back.order.exception.OrderErrorCode.CART_ITEM_NOT_FOUND;
+import static com.jjinmak.back.order.exception.OrderErrorCode.ORDER_STATE_BAD_REQUEST;
 
 @Slf4j
 @Component
@@ -18,6 +24,8 @@ public class OrderScheduler {
 
     private static final int OUTBOX_BATCH_SIZE = 100;
     private static final int OUTBOX_BATCHES_PER_RUN = 10;
+
+    private static final Set<ErrorCode> RACE_LOST_CODES = Set.of(ORDER_STATE_BAD_REQUEST, CART_ITEM_NOT_FOUND);
 
     private final OrderFacade orderFacade;
 
@@ -32,7 +40,12 @@ public class OrderScheduler {
             try {
                 orderFacade.sendPaymentDueSoonReminder(id);
             } catch (BusinessException e){
-                log.error("오류가 발생해 결제 임박 알림을 전송하지 못했습니다.\ncartId: {}\nerrorCode: {}", id, e.getErrorCode());
+                if (RACE_LOST_CODES.contains(e.getErrorCode()))
+                    log.info("다른 요청이 먼저 처리해 결제 임박 알림을 건너뜁니다.\ncartId: {}\nerrorCode: {}", id, e.getErrorCode());
+                else
+                    log.error("오류가 발생해 결제 임박 알림을 전송하지 못했습니다.\ncartId: {}\nerrorCode: {}", id, e.getErrorCode());
+            } catch (OptimisticLockingFailureException e){
+                log.info("다른 요청이 먼저 처리해 결제 임박 알림을 건너뜁니다.\ncartId: {}", id);
             } catch (Exception e){
                 log.error("결제 임박 알림 전송 실패.\ncartId: {}", id, e);
             }
@@ -48,9 +61,9 @@ public class OrderScheduler {
             try {
                 orderFacade.deleteExpiredItem(id);
             } catch (BusinessException e){
-                log.error("오류가 발생해 만료 상품을 취소하지 못했습니다.\ncartId: %d\nerrorCode: %s".formatted(id, e.getErrorCode()));
+                log.error("오류가 발생해 만료 상품을 취소하지 못했습니다.\ncartId: {}\nerrorCode: {}", id, e.getErrorCode());
             } catch (Exception e){
-                log.error("만료 상품 삭제 실패.\ncartId: %d".formatted(id), e);
+                log.error("만료 상품 삭제 실패.\ncartId: {}", id, e);
             }
         }
     }
@@ -64,7 +77,12 @@ public class OrderScheduler {
             try {
                 orderFacade.sendAutoConfirmReminder(id);
             } catch (BusinessException e){
-                log.error("오류가 발생해 구매 확정 알림을 전송하지 못했습니다.\norderId: {}\nerrorCode: {}", id, e.getErrorCode());
+                if (RACE_LOST_CODES.contains(e.getErrorCode()))
+                    log.info("다른 요청이 먼저 처리해 구매 확정 알림을 건너뜁니다.\norderId: {}\nerrorCode: {}", id, e.getErrorCode());
+                else
+                    log.error("오류가 발생해 구매 확정 알림을 전송하지 못했습니다.\norderId: {}\nerrorCode: {}", id, e.getErrorCode());
+            } catch (OptimisticLockingFailureException e){
+                log.info("다른 요청이 먼저 처리해 구매 확정 알림을 건너뜁니다.\norderId: {}", id);
             } catch (Exception e){
                 log.error("구매 확정 알림 전송 실패.\norderId: {}", id, e);
             }
@@ -80,9 +98,14 @@ public class OrderScheduler {
             try {
                 orderFacade.confirmPurchaseAuto(id);
             } catch (BusinessException e){
-                log.error("오류가 발생해 자동 확정을 진행하지 못했습니다.\norderId: %d\nerrorCode: %s".formatted(id, e.getErrorCode()));
+                if (RACE_LOST_CODES.contains(e.getErrorCode()))
+                    log.info("다른 요청이 먼저 처리해 자동 확정을 건너뜁니다.\norderId: {}\nerrorCode: {}", id, e.getErrorCode());
+                else
+                    log.error("오류가 발생해 자동 확정을 진행하지 못했습니다.\norderId: {}\nerrorCode: {}", id, e.getErrorCode());
+            } catch (OptimisticLockingFailureException e){
+                log.info("다른 요청이 먼저 처리해 자동 확정을 건너뜁니다.\norderId: {}", id);
             } catch (Exception e){
-                log.error("자동 구매 확정 실패.\norderId: %d".formatted(id), e);
+                log.error("자동 구매 확정 실패.\norderId: {}", id, e);
             }
         }
     }
@@ -95,7 +118,12 @@ public class OrderScheduler {
             try{
                 orderFacade.requestSystemRefund(id);
             } catch (BusinessException e){
-                log.error("오류가 발생해 자동 환불을 진행하지 못했습니다.\norderId: {}\nerrorCode: {}", id, e.getErrorCode());
+                if (RACE_LOST_CODES.contains(e.getErrorCode()))
+                    log.info("다른 요청이 먼저 처리해 자동 환불을 건너뜁니다.\norderId: {}\nerrorCode: {}", id, e.getErrorCode());
+                else
+                    log.error("오류가 발생해 자동 환불을 진행하지 못했습니다.\norderId: {}\nerrorCode: {}", id, e.getErrorCode());
+            } catch (OptimisticLockingFailureException e){
+                log.info("다른 요청이 먼저 처리해 자동 환불을 건너뜁니다.\norderId: {}", id);
             } catch (Exception e){
                 log.error("알 수 없는 오류가 발생해 자동 환불을 진행하지 못했습니다.\norderId: {}", id, e);
             }
