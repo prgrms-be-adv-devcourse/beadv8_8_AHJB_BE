@@ -1,5 +1,7 @@
 package com.jjinmak.boundedcontext.market.auction.out;
 
+import com.jjinmak.boundedcontext.market.auction.dto.AuctionDeadlineDto;
+
 import com.jjinmak.boundedcontext.market.auction.domain.Auction;
 import com.jjinmak.boundedcontext.market.auction.domain.AuctionStatus;
 import com.jjinmak.boundedcontext.market.auction.domain.DutchAuction;
@@ -28,6 +30,16 @@ public interface AuctionRepository extends JpaRepository<Auction,Long> {
             """
     )
     List<Long> findCloseTargetIds(@Param("status") AuctionStatus status,@Param("now") LocalDateTime now, Pageable pageable);
+
+    // 종료 타이머 미리 읽기 (#548 4차): until 전에 끝나는(이미 끝난 것 포함) 진행 중 경매의 id·종료 시각. idx_auction_status_end_at 사용
+    @Query("""
+            select new com.jjinmak.boundedcontext.market.auction.dto.AuctionDeadlineDto(a.id, a.endAt)
+            from Auction a
+            where a.status = :status and a.endAt <= :until
+            order by a.endAt asc
+            """)
+    List<AuctionDeadlineDto> findDeadlinesBefore(
+            @Param("status") AuctionStatus status, @Param("until") LocalDateTime until, Pageable pageable);
 
     @Query("""
             select a from EnglishAuction a

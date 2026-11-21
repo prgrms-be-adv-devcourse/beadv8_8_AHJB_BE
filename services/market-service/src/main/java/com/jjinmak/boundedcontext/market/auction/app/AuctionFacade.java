@@ -49,6 +49,10 @@ public class AuctionFacade {
     @Transactional(readOnly = true)
     public List<Long> findCloseTargetIds(LocalDateTime now,int batchSize){return auctionCloseUseCase.findCloseTargetIds(now,batchSize);}
 
+    // 종료 타이머 미리 읽기 (#548 4차)
+    @Transactional(readOnly = true)
+    public List<AuctionDeadlineDto> findDeadlinesBefore(LocalDateTime until, int limit){return auctionCloseUseCase.findDeadlinesBefore(until, limit);}
+
     @Transactional
     public AuctionCloseResult closeAuction(Long auctionId,LocalDateTime now){return auctionCloseUseCase.closeAuction(auctionId,now);}
     // 입찰 없는 경매 일괄 유찰 (한 트랜잭션)

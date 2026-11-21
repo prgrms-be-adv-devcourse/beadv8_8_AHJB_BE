@@ -24,6 +24,11 @@ market:
   outbox:
     relay:
       enabled: false
+  # 경매 종료 타이머(100ms tick)는 끈다. 타이밍 휠은 TimingWheelTest·AuctionCloseTimerTest에서 단위로 검증 (#548 4차)
+  auction:
+    close:
+      timer:
+        enabled: false
 
 product-image:
   storage: local

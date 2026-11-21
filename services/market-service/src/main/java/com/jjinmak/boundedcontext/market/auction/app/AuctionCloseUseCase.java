@@ -4,6 +4,7 @@ import com.jjinmak.boundedcontext.market.auction.domain.Auction;
 import com.jjinmak.boundedcontext.market.auction.domain.AuctionCloseResult;
 import com.jjinmak.boundedcontext.market.auction.domain.AuctionStatus;
 import com.jjinmak.boundedcontext.market.auction.domain.FailureReason;
+import com.jjinmak.boundedcontext.market.auction.dto.AuctionDeadlineDto;
 import com.jjinmak.boundedcontext.market.auction.out.AuctionBulkCloseRepository;
 import com.jjinmak.boundedcontext.market.auction.out.AuctionBulkCloseRepository.FailedAuction;
 import com.jjinmak.boundedcontext.market.auction.out.AuctionBulkCloseRepository.WonAuction;
@@ -41,6 +42,10 @@ public class AuctionCloseUseCase {
                     w.winningPrice(), w.shippingFee(), w.winAt());
         }
         return won.size();
+    }
+
+    public List<AuctionDeadlineDto> findDeadlinesBefore(LocalDateTime until, int limit){
+        return auctionRepository.findDeadlinesBefore(AuctionStatus.IN_PROGRESS, until, PageRequest.of(0, limit));
     }
 
     public List<Long> findCloseTargetIds(LocalDateTime now, int batchsize){
