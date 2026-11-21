@@ -68,7 +68,8 @@ public class AuctionFacade {
     @Transactional
     public int winBidAuctions(LocalDateTime now,int batchSize){return auctionCloseUseCase.winBidAuctions(now,batchSize);}
 
-    @Transactional
+    // 트랜잭션을 열지 않는다 (#557): 캐시 적중이면 DB 커넥션을 아예 잡지 않는다.
+    // 캐시에 없을 때만 리포지토리 조회(자체 읽기 전용 트랜잭션)로 커넥션을 잠깐 쓴다
     public AuctionDetailResponseDto detail(Long auctionId,Long memberId){return auctionDetailUseCase.detail(auctionId,memberId,LocalDateTime.now());}
 
     @Transactional

@@ -29,6 +29,9 @@ market:
     close:
       timer:
         enabled: false
+    # 상세 캐시는 끈다: 테스트가 DB를 직접 바꾼 뒤 상세를 읽어도 바로 보이게. 캐시는 AuctionDetailCache*Test에서 켜고 검증 (#557)
+    detail-cache:
+      enabled: false
 
 product-image:
   storage: local
