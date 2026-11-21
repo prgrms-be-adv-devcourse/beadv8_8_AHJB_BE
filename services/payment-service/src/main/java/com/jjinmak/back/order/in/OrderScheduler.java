@@ -1,5 +1,6 @@
 package com.jjinmak.back.order.in;
 
+import com.jjinmak.back.order.app.dto.OutboxSendResult;
 import com.jjinmak.back.order.domain.OrderOutbox;
 import com.jjinmak.common.exception.BusinessException;
 import com.jjinmak.back.order.app.OrderFacade;
@@ -15,7 +16,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrderScheduler {
 
+    private static final int OUTBOX_BATCH_SIZE = 100;
+    private static final int OUTBOX_BATCHES_PER_RUN = 10;
+
     private final OrderFacade orderFacade;
+
+    private boolean outboxSendFailed;
 
     // TODO: 서버를 늘리면 모든 JVM에서 스케줄러가 돌아감
     @Scheduled(fixedDelay = 60_000)
@@ -114,14 +120,25 @@ public class OrderScheduler {
 
     @Scheduled(fixedDelay = 1_000)
     public void sendOutbox(){
-        for (OrderOutbox outbox : orderFacade.findUnpublishedOutboxes()){
-            try {
-                orderFacade.sendOutbox(outbox);
-            } catch (Exception e){
-                log.error("주문 이벤트 발행 실패. 다음 주기에 다시 보냅니다.\noutboxId: {}\ntopic: {}", outbox.getId(), outbox.getTopic(), e);
+        for (int batch = 0; batch < OUTBOX_BATCHES_PER_RUN; batch++){
+            List<OrderOutbox> outboxes = orderFacade.findUnpublishedOutboxes();
+            if (outboxes.isEmpty())
                 return;
-            }
-            orderFacade.markOutboxPublished(outbox.getId());
+
+            if (outboxSendFailed)
+                outboxes = outboxes.subList(0, 1);
+
+            OutboxSendResult result = orderFacade.sendOutboxes(outboxes);
+            outboxSendFailed = !result.failures().isEmpty();
+
+            orderFacade.markOutboxesPublished(result.sentIds());
+
+            result.failures().forEach((outbox, e) ->
+                    log.error("주문 이벤트 발행 실패. 다음 주기에 다시 보냅니다.\noutboxId: {}\ntopic: {}", outbox.getId(), outbox.getTopic(), e)
+            );
+
+            if (outboxSendFailed || outboxes.size() < OUTBOX_BATCH_SIZE)
+                return;
         }
     }
 }
