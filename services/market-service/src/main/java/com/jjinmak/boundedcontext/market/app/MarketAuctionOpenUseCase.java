@@ -2,6 +2,7 @@ package com.jjinmak.boundedcontext.market.app;
 
 import com.jjinmak.boundedcontext.market.auction.app.AuctionFacade;
 import com.jjinmak.boundedcontext.market.auction.dto.AuctionCreateResultDto;
+import com.jjinmak.boundedcontext.market.product.in.dto.ProductAuctionOpenDto;
 import com.jjinmak.boundedcontext.market.product.app.ProductFacade;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,5 +30,22 @@ public class MarketAuctionOpenUseCase {
             AuctionCreateResultDto created = auctionFacade.createAuction(MarketAuctionRequests.from(open));
             productFacade.startAuction(productId, created.auctionId());
         });
+    }
+
+    // 일괄 열기 (#548): 여러 상품을 한 트랜잭션에서 연다. 순서는 건별과 같다(요청 표시 → 경매 생성 → 경매 id 기록).
+    // 상품·경매 조회는 한 번씩, 아웃박스는 커밋 직전 한 번에 저장된다. 하나라도 실패하면 묶음 전체가 롤백된다.
+    public int openAuctions(List<Long> productIds, LocalDateTime now) {
+        List<ProductAuctionOpenDto> opens = productFacade.prepareAuctionOpens(productIds, now);
+        if (opens.isEmpty()) {
+            return 0;
+        }
+
+        List<AuctionCreateResultDto> created = auctionFacade.createAuctions(
+                opens.stream().map(MarketAuctionRequests::from).toList());
+        for (int i = 0; i < opens.size(); i++) {
+            // 상품은 이미 영속성 컨텍스트에 있어 다시 조회하지 않는다
+            productFacade.startAuction(opens.get(i).productId(), created.get(i).auctionId());
+        }
+        return opens.size();
     }
 }

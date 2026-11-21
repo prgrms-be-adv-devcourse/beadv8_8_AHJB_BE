@@ -23,6 +23,9 @@ public interface AuctionRepository extends JpaRepository<Auction,Long> {
     // 같은 상품의 해당 회차 경매 (product_id, round 유니크)
     Optional<Auction> findByProductIdAndRound(Long productId, int round);
 
+    // 일괄 열기의 중복 확인용: 여러 상품의 경매를 한 번에 (회차는 호출하는 쪽에서 거른다)
+    List<Auction> findByProductIdIn(Collection<Long> productIds);
+
     @Query(
             """
             select a.id from Auction a where a.status =:status and a.endAt<= :now

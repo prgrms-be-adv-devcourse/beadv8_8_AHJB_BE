@@ -58,7 +58,10 @@ class MarketAuctionFlowIntegrationTest extends AuctionIntegrationTestSupport {
     }
 
     private Long 상품을_등록한다() {
-        MarketMember seller = marketMemberRepository.save(new MarketMember(SELLER_ID, "판매자"));
+        return 상품을_등록한다(marketMemberRepository.save(new MarketMember(SELLER_ID, "판매자")));
+    }
+
+    private Long 상품을_등록한다(MarketMember seller) {
         ProductAuctionTerms terms = ProductAuctionTerms.create(10_000L, null, AuctionDuration.DAYS_1, null, OPEN_AT);
         return productRepository.save(Product.create(seller, "스위치", ProductCategory.CONSOLE, Manufacturer.NINTENDO,
                 null, "설명", ShippingFeeType.FREE, null, false, "v1", CREATED_AT, terms)).getId();
@@ -74,6 +77,27 @@ class MarketAuctionFlowIntegrationTest extends AuctionIntegrationTestSupport {
     private void 유찰시킨다(Long auctionId) {
         transactionTemplate.executeWithoutResult(status ->
                 auctionRepository.findById(auctionId).orElseThrow().fail(FailureReason.NO_BID));
+    }
+
+    @Test
+    void 일괄_열기는_한_트랜잭션에서_여러_상품의_경매를_열고_이미_열린_상품은_건너뛴다() {
+        MarketMember seller = marketMemberRepository.save(new MarketMember(SELLER_ID, "판매자"));
+        Long first = 상품을_등록한다(seller);
+        Long second = 상품을_등록한다(seller);
+        Long alreadyOpened = 상품을_등록한다(seller);
+        marketFacade.openAuction(alreadyOpened, OPEN_AT);
+
+        int opened = marketFacade.openAuctions(List.of(first, second, alreadyOpened), OPEN_AT);
+
+        assertThat(opened).isEqualTo(2);
+        for (Long productId : List.of(first, second, alreadyOpened)) {
+            Long auctionId = productRepository.findById(productId).orElseThrow().getCurrentAuctionId();
+            Auction auction = auctionRepository.findById(auctionId).orElseThrow();
+            assertThat(auction.getProductId()).isEqualTo(productId);
+            assertThat(auction.getStatus()).isEqualTo(AuctionStatus.IN_PROGRESS);
+            assertThat(auction.getEndAt()).isEqualTo(OPEN_AT.plusDays(1));
+        }
+        assertThat(auctionRepository.findAll()).hasSize(3);
     }
 
     @Test

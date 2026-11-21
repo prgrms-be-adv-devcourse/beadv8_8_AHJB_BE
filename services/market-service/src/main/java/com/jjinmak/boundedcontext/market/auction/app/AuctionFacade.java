@@ -31,6 +31,12 @@ public class AuctionFacade {
         return auctionCreateUseCase.createAuction(dto);
     }
 
+    // 일괄 열기 (#548): market 경매 시작 흐름의 트랜잭션에 참여한다.
+    @Transactional
+    public List<AuctionCreateResultDto> createAuctions(List<AuctionCreateDto> dtos){
+        return auctionCreateUseCase.createAuctions(dtos);
+    }
+
     // market 재등록 흐름(MarketRelistUseCase)의 트랜잭션에 참여한다.
     @Transactional
     public void validateRelistable(Long auctionId){

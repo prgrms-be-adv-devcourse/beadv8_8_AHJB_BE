@@ -30,6 +30,12 @@ public class MarketFacade {
         marketAuctionOpenUseCase.openAuction(productId, now);
     }
 
+    // 일괄 열기 (#548): 묶음 하나가 한 트랜잭션. 실패하면 스케줄러가 그 묶음만 건별로 다시 처리한다.
+    @Transactional
+    public int openAuctions(List<Long> productIds, LocalDateTime now) {
+        return marketAuctionOpenUseCase.openAuctions(productIds, now);
+    }
+
     @Transactional
     public MarketRelistResponseDto relist(Long sellerId, Long productId, LocalDateTime now) {
         return marketRelistUseCase.relist(sellerId, productId, now);
