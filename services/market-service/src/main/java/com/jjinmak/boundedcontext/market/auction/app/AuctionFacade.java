@@ -24,7 +24,6 @@ public class AuctionFacade {
     private final AuctionDutchBuyUseCase auctionDutchBuyUseCase;
     private final AuctionEndingSoonUseCase auctionEndingSoonUseCase;
     private final AuctionRelistCheckUseCase auctionRelistCheckUseCase;
-    private final AuctionOutboxUseCase auctionOutboxUseCase;
 
 
     @Transactional
@@ -91,19 +90,4 @@ public class AuctionFacade {
 
     @Transactional
     public boolean notifyEndingSoon(Long auctionId, LocalDateTime now) {return auctionEndingSoonUseCase.notifyEndingSoon(auctionId, now);}
-
-    // 아웃박스 (#548): 조회(읽기 전용) → 묶음 전송(트랜잭션 없음, ack 대기 중 커넥션을 잡지 않음) → 묶음 발행 표시(쓰기)
-    @Transactional(readOnly = true)
-    public List<AuctionOutbox> findUnpublishedOutboxes(){
-        return auctionOutboxUseCase.findUnpublished();
-    }
-
-    public List<AuctionOutbox> sendOutboxes(List<AuctionOutbox> outboxes){
-        return auctionOutboxUseCase.send(outboxes);
-    }
-
-    @Transactional
-    public void markOutboxesPublished(List<AuctionOutbox> published){
-        auctionOutboxUseCase.markPublished(published);
-    }
 }

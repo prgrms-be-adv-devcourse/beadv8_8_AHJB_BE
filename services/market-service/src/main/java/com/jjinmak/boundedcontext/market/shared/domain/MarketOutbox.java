@@ -1,4 +1,4 @@
-package com.jjinmak.boundedcontext.market.auction.domain;
+package com.jjinmak.boundedcontext.market.shared.domain;
 
 import com.jjinmak.common.jpa.entity.BaseIdAndTime;
 import jakarta.persistence.Column;
@@ -9,11 +9,12 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-// 경매 외부 이벤트 아웃박스 (#548, 팀 공통 아웃박스 구조)
+// market 외부 이벤트 아웃박스 (#548, 팀 공통 아웃박스 구조). 상품·경매 이벤트를 함께 담는다.
+// 저장은 MarketOutboxRecorder가 JDBC 일괄 INSERT로 하고, 조회·발행 표시는 이 엔티티로 한다.
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class AuctionOutbox extends BaseIdAndTime {
+public class MarketOutbox extends BaseIdAndTime {
 
     @Column(nullable = false, length = 100)
     private String topic;
@@ -26,7 +27,7 @@ public class AuctionOutbox extends BaseIdAndTime {
 
     private LocalDateTime publishedAt;
 
-    public AuctionOutbox(String topic, String messageKey, String payload){
+    public MarketOutbox(String topic, String messageKey, String payload){
         this.topic = topic;
         this.messageKey = messageKey;
         this.payload = payload;

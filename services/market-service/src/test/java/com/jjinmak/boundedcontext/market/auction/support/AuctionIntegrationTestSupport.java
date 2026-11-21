@@ -39,7 +39,7 @@ public abstract class AuctionIntegrationTestSupport {
     @MockitoBean
     protected KafkaTemplate<String, Object> kafkaTemplate;
 
-    // 아웃박스 행 확인용 (경매 시작·낙찰·유찰 이벤트는 Kafka 대신 auction_outbox에 저장된다, #548)
+    // 아웃박스 행 확인용 (경매 시작·낙찰·유찰 이벤트는 Kafka 대신 market_outbox에 저장된다, #548)
     @Autowired
     protected JdbcTemplate jdbcTemplate;
 }

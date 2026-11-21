@@ -11,7 +11,7 @@ public final class OutboxEventCounter {
 
     public static long count(JdbcTemplate jdbcTemplate, String topic, Long auctionId) {
         Long count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM auction_outbox WHERE topic = ? AND message_key = ?",
+                "SELECT COUNT(*) FROM market_outbox WHERE topic = ? AND message_key = ?",
                 Long.class, topic, String.valueOf(auctionId));
         return count == null ? 0 : count;
     }

@@ -1,6 +1,6 @@
-package com.jjinmak.boundedcontext.market.auction.out;
+package com.jjinmak.boundedcontext.market.shared.out;
 
-import com.jjinmak.boundedcontext.market.auction.domain.AuctionOutbox;
+import com.jjinmak.boundedcontext.market.shared.domain.MarketOutbox;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Component
-public class AuctionOutboxSender {
+public class MarketOutboxSender {
 
     private static final long ACK_TIMEOUT_SECONDS = 10;
 
@@ -31,11 +31,11 @@ public class AuctionOutboxSender {
     private final ObjectMapper objectMapper;
     private final Timer sendTimer;
 
-    public AuctionOutboxSender(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper, MeterRegistry meterRegistry) {
+    public MarketOutboxSender(KafkaTemplate<String, Object> kafkaTemplate, ObjectMapper objectMapper, MeterRegistry meterRegistry) {
         this.kafkaTemplate = kafkaTemplate;
         this.objectMapper = objectMapper;
         // 묶음 1개를 보내고 ack를 모두 확인하기까지 걸린 시간 (실패 포함)
-        this.sendTimer = Timer.builder("auction.outbox.send")
+        this.sendTimer = Timer.builder("market.outbox.send")
                 .description("아웃박스 묶음 Kafka 전송(ack까지) 시간")
                 .publishPercentileHistogram()
                 .register(meterRegistry);
@@ -44,15 +44,15 @@ public class AuctionOutboxSender {
     /**
      * @return 앞에서부터 연속으로 전송에 성공한 건수. 묶음 크기보다 작으면 그 다음 행에서 실패했다
      */
-    public int sendAll(List<AuctionOutbox> outboxes) {
+    public int sendAll(List<MarketOutbox> outboxes) {
         return sendTimer.record(() -> {
             List<CompletableFuture<?>> futures = new ArrayList<>(outboxes.size());
-            for (AuctionOutbox outbox : outboxes) {
+            for (MarketOutbox outbox : outboxes) {
                 try {
                     futures.add(kafkaTemplate.send(outbox.getTopic(), outbox.getMessageKey(), objectMapper.readTree(outbox.getPayload())));
                 } catch (RuntimeException e) {
                     // 브로커 중단 시 send가 메타데이터를 기다리다(max.block.ms) 예외를 던진다
-                    log.error("Auction 이벤트 발행 실패, 다음 주기에 다시 보냅니다.\noutboxId: {}\ntopic: {}", outbox.getId(), outbox.getTopic(), e);
+                    log.error("Market 이벤트 발행 실패, 다음 주기에 다시 보냅니다.\noutboxId: {}\ntopic: {}", outbox.getId(), outbox.getTopic(), e);
                     break;
                 }
             }
@@ -61,8 +61,8 @@ public class AuctionOutboxSender {
                 try {
                     future.orTimeout(ACK_TIMEOUT_SECONDS, TimeUnit.SECONDS).join();
                 } catch (RuntimeException e) {
-                    AuctionOutbox failed = outboxes.get(sent);
-                    log.error("Auction 이벤트 발행 실패, 다음 주기에 다시 보냅니다.\noutboxId: {}\ntopic: {}", failed.getId(), failed.getTopic(), e);
+                    MarketOutbox failed = outboxes.get(sent);
+                    log.error("Market 이벤트 발행 실패, 다음 주기에 다시 보냅니다.\noutboxId: {}\ntopic: {}", failed.getId(), failed.getTopic(), e);
                     break;
                 }
                 sent++;

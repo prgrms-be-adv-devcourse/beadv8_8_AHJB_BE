@@ -1,6 +1,6 @@
-package com.jjinmak.boundedcontext.market.auction.out;
+package com.jjinmak.boundedcontext.market.shared.out;
 
-import com.jjinmak.boundedcontext.market.auction.domain.AuctionOutbox;
+import com.jjinmak.boundedcontext.market.shared.domain.MarketOutbox;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,22 +25,22 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class AuctionOutboxSenderTest {
+class MarketOutboxSenderTest {
 
     @SuppressWarnings("unchecked")
     private final KafkaTemplate<String, Object> kafkaTemplate = mock(KafkaTemplate.class);
     private final ObjectMapper objectMapper = JsonMapper.builder().build();
     private SimpleMeterRegistry meterRegistry;
-    private AuctionOutboxSender sender;
+    private MarketOutboxSender sender;
 
     @BeforeEach
     void setUp() {
         meterRegistry = new SimpleMeterRegistry();
-        sender = new AuctionOutboxSender(kafkaTemplate, objectMapper, meterRegistry);
+        sender = new MarketOutboxSender(kafkaTemplate, objectMapper, meterRegistry);
     }
 
-    private AuctionOutbox 유찰(long auctionId) {
-        return new AuctionOutbox("auction.failed", String.valueOf(auctionId),
+    private MarketOutbox 유찰(long auctionId) {
+        return new MarketOutbox("auction.failed", String.valueOf(auctionId),
                 "{\"auctionId\":" + auctionId + ",\"productId\":2,\"reason\":\"NO_BID\",\"failedAt\":\"2026-11-20T12:00:00\",\"sellerId\":3}");
     }
 
@@ -48,8 +48,8 @@ class AuctionOutboxSenderTest {
     @DisplayName("묶음 전체를 저장 순서대로 JsonNode로 보내고, 모두 성공하면 전체 건수를 돌려준다")
     void sendAll_sendsAllAsJsonNode() {
         when(kafkaTemplate.send(anyString(), anyString(), any())).thenReturn(CompletableFuture.completedFuture(null));
-        AuctionOutbox first = 유찰(1L);
-        AuctionOutbox second = 유찰(2L);
+        MarketOutbox first = 유찰(1L);
+        MarketOutbox second = 유찰(2L);
 
         int sent = sender.sendAll(List.of(first, second));
 
@@ -60,7 +60,7 @@ class AuctionOutboxSenderTest {
         order.verify(kafkaTemplate).send(eq("auction.failed"), eq("2"), any());
         assertThat(value.getValue()).isInstanceOf(JsonNode.class);
         assertThat(value.getValue()).isEqualTo(objectMapper.readTree(first.getPayload()));
-        assertThat(meterRegistry.get("auction.outbox.send").timer().count()).isEqualTo(1);
+        assertThat(meterRegistry.get("market.outbox.send").timer().count()).isEqualTo(1);
     }
 
     @Test

@@ -113,7 +113,16 @@ class CloseRaceConcurrencyTest extends AuctionIntegrationTestSupport {
             Long id = auction.getId();
             LocalDateTime closeNow = auction.getEndAt().plusSeconds(1);
             List<Task> tasks = new ArrayList<>();
-            tasks.add(new Task("close", () -> auctionFacade.winBidAuctions(closeNow, 1000)));
+            // 일괄 낙찰 시작을 회차마다 0·5·10ms 늦춰, 입찰이 먼저 커밋되고 일괄 낙찰이 바뀐 최고가를 가져가는 경우도 만든다
+            long closeDelayMs = (r % 3) * 5L;
+            tasks.add(new Task("close", () -> {
+                try {
+                    Thread.sleep(closeDelayMs);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                auctionFacade.winBidAuctions(closeNow, 1000);
+            }));
             for (int k = 0; k < 20; k++) {
                 long member = 2 + k;
                 long price = 11_000L + 1_000L * k;
