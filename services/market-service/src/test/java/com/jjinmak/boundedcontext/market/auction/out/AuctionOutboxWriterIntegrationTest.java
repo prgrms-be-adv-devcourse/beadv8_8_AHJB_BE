@@ -81,13 +81,13 @@ class AuctionOutboxWriterIntegrationTest extends AuctionIntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("발행으로 표시한 행은 미발행 조회에서 빠진다")
+    @DisplayName("묶음 발행 표시(UPDATE 한 번)한 행은 미발행 조회에서 빠진다")
     void published_excludedFromUnpublished() {
         transactionTemplate.executeWithoutResult(status -> eventPublisher.publish(낙찰(990_003L)));
         AuctionOutbox saved = 키로_조회(990_003L).getFirst();
 
         transactionTemplate.executeWithoutResult(status ->
-                auctionOutboxRepository.findById(saved.getId()).orElseThrow().published(LocalDateTime.now()));
+                auctionOutboxRepository.markPublished(List.of(saved.getId()), LocalDateTime.now()));
 
         assertThat(auctionOutboxRepository.findTop100ByPublishedAtIsNullOrderByIdAsc())
                 .extracting(AuctionOutbox::getId)

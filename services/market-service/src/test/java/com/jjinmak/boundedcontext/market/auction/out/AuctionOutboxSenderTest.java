@@ -6,20 +6,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.springframework.kafka.core.KafkaTemplate;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -31,38 +33,57 @@ class AuctionOutboxSenderTest {
     private SimpleMeterRegistry meterRegistry;
     private AuctionOutboxSender sender;
 
-    private final AuctionOutbox outbox = new AuctionOutbox("auction.failed", "1",
-            "{\"auctionId\":1,\"productId\":2,\"reason\":\"NO_BID\",\"failedAt\":\"2026-11-20T12:00:00\",\"sellerId\":3}");
-
     @BeforeEach
     void setUp() {
         meterRegistry = new SimpleMeterRegistry();
         sender = new AuctionOutboxSender(kafkaTemplate, objectMapper, meterRegistry);
     }
 
+    private AuctionOutbox 유찰(long auctionId) {
+        return new AuctionOutbox("auction.failed", String.valueOf(auctionId),
+                "{\"auctionId\":" + auctionId + ",\"productId\":2,\"reason\":\"NO_BID\",\"failedAt\":\"2026-11-20T12:00:00\",\"sellerId\":3}");
+    }
+
     @Test
-    @DisplayName("저장된 JSON을 JsonNode로 바꿔 아웃박스의 토픽과 키로 보내고 전송 시간을 기록한다")
-    void send_sendsPayloadAsJsonNode() {
+    @DisplayName("묶음 전체를 저장 순서대로 JsonNode로 보내고, 모두 성공하면 전체 건수를 돌려준다")
+    void sendAll_sendsAllAsJsonNode() {
         when(kafkaTemplate.send(anyString(), anyString(), any())).thenReturn(CompletableFuture.completedFuture(null));
+        AuctionOutbox first = 유찰(1L);
+        AuctionOutbox second = 유찰(2L);
 
-        sender.send(outbox);
+        int sent = sender.sendAll(List.of(first, second));
 
+        assertThat(sent).isEqualTo(2);
+        InOrder order = inOrder(kafkaTemplate);
         ArgumentCaptor<Object> value = ArgumentCaptor.forClass(Object.class);
-        verify(kafkaTemplate).send(eq("auction.failed"), eq("1"), value.capture());
+        order.verify(kafkaTemplate).send(eq("auction.failed"), eq("1"), value.capture());
+        order.verify(kafkaTemplate).send(eq("auction.failed"), eq("2"), any());
         assertThat(value.getValue()).isInstanceOf(JsonNode.class);
-        assertThat(value.getValue()).isEqualTo(objectMapper.readTree(outbox.getPayload()));
+        assertThat(value.getValue()).isEqualTo(objectMapper.readTree(first.getPayload()));
         assertThat(meterRegistry.get("auction.outbox.send").timer().count()).isEqualTo(1);
     }
 
     @Test
-    @DisplayName("Kafka 전송이 실패하면 예외를 던진다 (전송 시간은 실패도 기록)")
-    void send_throwsWhenSendFails() {
-        when(kafkaTemplate.send(anyString(), anyString(), any()))
+    @DisplayName("중간 행의 ack가 실패하면 그 앞까지만 성공으로 센다 (순서 유지)")
+    void sendAll_countsOnlyLeadingSuccesses() {
+        when(kafkaTemplate.send(anyString(), eq("1"), any())).thenReturn(CompletableFuture.completedFuture(null));
+        when(kafkaTemplate.send(anyString(), eq("2"), any()))
                 .thenReturn(CompletableFuture.failedFuture(new IllegalStateException("broker down")));
+        when(kafkaTemplate.send(anyString(), eq("3"), any())).thenReturn(CompletableFuture.completedFuture(null));
 
-        assertThatThrownBy(() -> sender.send(outbox))
-                .isInstanceOf(CompletionException.class)
-                .hasRootCauseMessage("broker down");
-        assertThat(meterRegistry.get("auction.outbox.send").timer().count()).isEqualTo(1);
+        int sent = sender.sendAll(List.of(유찰(1L), 유찰(2L), 유찰(3L)));
+
+        assertThat(sent).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("send가 바로 예외를 던지면 그 뒤 행은 보내지 않는다")
+    void sendAll_stopsWhenSendThrows() {
+        when(kafkaTemplate.send(anyString(), eq("1"), any())).thenThrow(new IllegalStateException("metadata timeout"));
+
+        int sent = sender.sendAll(List.of(유찰(1L), 유찰(2L)));
+
+        assertThat(sent).isZero();
+        verify(kafkaTemplate, never()).send(anyString(), eq("2"), any());
     }
 }

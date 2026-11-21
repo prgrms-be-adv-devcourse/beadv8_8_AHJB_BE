@@ -34,16 +34,18 @@ public class AuctionOutboxUseCase {
         return auctionOutboxRepository.findTop100ByPublishedAtIsNullOrderByIdAsc();
     }
 
-    public void send(AuctionOutbox outbox){
-        auctionOutboxSender.send(outbox);
+    // 묶음을 보내고, 앞에서부터 연속으로 성공한 행만 돌려준다
+    public List<AuctionOutbox> send(List<AuctionOutbox> outboxes){
+        int sent = auctionOutboxSender.sendAll(outboxes);
+        return outboxes.subList(0, sent);
     }
 
-    public void markPublished(Long outboxId){
-        auctionOutboxRepository.findById(outboxId)
-                .ifPresent(outbox -> {
-                    LocalDateTime now = LocalDateTime.now();
-                    outbox.published(now);
-                    publishLagTimer.record(Duration.between(outbox.getCreatedAt(), now));
-                });
+    public void markPublished(List<AuctionOutbox> published){
+        if (published.isEmpty()) {
+            return;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        auctionOutboxRepository.markPublished(published.stream().map(AuctionOutbox::getId).toList(), now);
+        published.forEach(outbox -> publishLagTimer.record(Duration.between(outbox.getCreatedAt(), now)));
     }
 }

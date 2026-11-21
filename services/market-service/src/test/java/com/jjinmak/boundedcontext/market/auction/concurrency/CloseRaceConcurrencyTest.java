@@ -104,6 +104,44 @@ class CloseRaceConcurrencyTest extends AuctionIntegrationTestSupport {
     }
 
     @Test
+    void CT06B_일괄_낙찰과_막판_입찰_20건이_경합해도_불변식과_결과_이벤트_1번이_지켜진다() {
+        // #548: 낙찰도 UPDATE ... FOR UPDATE SKIP LOCKED 한 번으로 처리한다. 입찰이 행을 잡고 있으면 건너뛰고 다음 주기에 처리
+        int rounds = 10, violated = 0;
+        Map<String, Integer> total = new TreeMap<>();
+        for (int r = 0; r < rounds; r++) {
+            EnglishAuction auction = 경매(null);
+            Long id = auction.getId();
+            LocalDateTime closeNow = auction.getEndAt().plusSeconds(1);
+            List<Task> tasks = new ArrayList<>();
+            tasks.add(new Task("close", () -> auctionFacade.winBidAuctions(closeNow, 1000)));
+            for (int k = 0; k < 20; k++) {
+                long member = 2 + k;
+                long price = 11_000L + 1_000L * k;
+                tasks.add(new Task("bid", () -> retryBid(id, member, price)));
+            }
+            List<Outcome> outcomes = ConcurrencyRunner.runTogether(tasks);
+            ConcurrencyRunner.countByCode(outcomes).forEach((k, v) -> total.merge(k, v, Integer::sum));
+            // 입찰이 잡고 있어 건너뛰었으면 다음 주기처럼 한 번 더
+            if (auctionRepository.findById(id).orElseThrow().getStatus() == AuctionStatus.IN_PROGRESS) {
+                auctionFacade.winBidAuctions(closeNow, 1000);
+            }
+            EnglishAuction after = (EnglishAuction) auctionRepository.findById(id).orElseThrow();
+            List<String> v = AuctionInvariants.checkEnglish(auctionRepository, bidRepository, id);
+            long events = 결과_이벤트(id);
+            boolean winnerIsHighest = after.getWinnerId() != null
+                    && after.getWinnerId().equals(after.getHighestBidderId())
+                    && after.getWinningPrice().equals(after.getHighestBidPrice());
+            if (!v.isEmpty() || after.getStatus() != AuctionStatus.WON || !winnerIsHighest || events != 1
+                    || ConcurrencyRunner.hasUnexpectedError(outcomes)) {
+                violated++;
+                System.out.println("CT-06B 위반: " + v + " 상태 " + after.getStatus() + " 결과 이벤트 " + events);
+            }
+        }
+        ConcurrencyReport.record("CT-06B", "일괄 낙찰 vs 막판 입찰 20", rounds, violated, total.toString());
+        assertThat(violated).isZero();
+    }
+
+    @Test
     void CT08_종료_처리와_즉시낙찰_5건이_경합해도_낙찰은_정확히_1번이다() {
         int rounds = 10, violated = 0, closeWon = 0, instantWon = 0;
         for (int r = 0; r < rounds; r++) {

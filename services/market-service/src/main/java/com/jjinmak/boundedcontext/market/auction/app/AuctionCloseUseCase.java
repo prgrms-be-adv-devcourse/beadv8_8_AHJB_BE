@@ -6,6 +6,7 @@ import com.jjinmak.boundedcontext.market.auction.domain.AuctionStatus;
 import com.jjinmak.boundedcontext.market.auction.domain.FailureReason;
 import com.jjinmak.boundedcontext.market.auction.out.AuctionBulkCloseRepository;
 import com.jjinmak.boundedcontext.market.auction.out.AuctionBulkCloseRepository.FailedAuction;
+import com.jjinmak.boundedcontext.market.auction.out.AuctionBulkCloseRepository.WonAuction;
 import com.jjinmak.boundedcontext.market.auction.out.AuctionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -29,6 +30,17 @@ public class AuctionCloseUseCase {
             auctionEventPublisher.publishFailed(f.auctionId(), f.productId(), f.sellerId(), FailureReason.NO_BID, now);
         }
         return failed.size();
+    }
+
+    // 입찰 있는 영국식 경매를 UPDATE 한 번으로 낙찰하고, 낙찰된 경매마다 낙찰 이벤트를 발행한다 (#548)
+    // 2차 측정에서 종료 지연의 원인이 "낙찰 건별 트랜잭션(건당 약 6ms)"으로 확인되어 유찰과 같은 방식으로 바꾼다
+    public int winBidAuctions(LocalDateTime now, int batchSize) {
+        List<WonAuction> won = auctionBulkCloseRepository.winBidAuctions(now, LocalDateTime.now(), batchSize);
+        for (WonAuction w : won) {
+            auctionEventPublisher.publishWon(w.auctionId(), w.productId(), w.winnerId(), w.sellerId(),
+                    w.winningPrice(), w.shippingFee(), w.winAt());
+        }
+        return won.size();
     }
 
     public List<Long> findCloseTargetIds(LocalDateTime now, int batchsize){

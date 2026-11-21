@@ -55,6 +55,9 @@ public class AuctionFacade {
     // 입찰 없는 경매 일괄 유찰 (한 트랜잭션)
     @Transactional
     public int failNoBidAuctions(LocalDateTime now,int batchSize){return auctionCloseUseCase.failNoBidAuctions(now,batchSize);}
+    // 입찰 있는 경매 일괄 낙찰 (한 트랜잭션, #548)
+    @Transactional
+    public int winBidAuctions(LocalDateTime now,int batchSize){return auctionCloseUseCase.winBidAuctions(now,batchSize);}
 
     @Transactional
     public AuctionDetailResponseDto detail(Long auctionId,Long memberId){return auctionDetailUseCase.detail(auctionId,memberId,LocalDateTime.now());}
@@ -89,18 +92,18 @@ public class AuctionFacade {
     @Transactional
     public boolean notifyEndingSoon(Long auctionId, LocalDateTime now) {return auctionEndingSoonUseCase.notifyEndingSoon(auctionId, now);}
 
-    // 아웃박스 (#548): 조회(읽기 전용) → 전송(트랜잭션 없음, ack 대기 중 커넥션을 잡지 않음) → 발행 표시(쓰기)
+    // 아웃박스 (#548): 조회(읽기 전용) → 묶음 전송(트랜잭션 없음, ack 대기 중 커넥션을 잡지 않음) → 묶음 발행 표시(쓰기)
     @Transactional(readOnly = true)
     public List<AuctionOutbox> findUnpublishedOutboxes(){
         return auctionOutboxUseCase.findUnpublished();
     }
 
-    public void sendOutbox(AuctionOutbox outbox){
-        auctionOutboxUseCase.send(outbox);
+    public List<AuctionOutbox> sendOutboxes(List<AuctionOutbox> outboxes){
+        return auctionOutboxUseCase.send(outboxes);
     }
 
     @Transactional
-    public void markOutboxPublished(Long outboxId){
-        auctionOutboxUseCase.markPublished(outboxId);
+    public void markOutboxesPublished(List<AuctionOutbox> published){
+        auctionOutboxUseCase.markPublished(published);
     }
 }
