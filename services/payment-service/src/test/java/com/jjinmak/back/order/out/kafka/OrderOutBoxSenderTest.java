@@ -8,7 +8,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.kafka.KafkaException;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -58,13 +60,35 @@ class OrderOutBoxSenderTest {
     }
 
     @Test
-    @DisplayName("Kafka 전송이 실패하면 예외를 던진다")
-    void send_throwsWhenSendFails() {
+    @DisplayName("Kafka 응답을 기다리지 않고, 아직 끝나지 않은 future를 바로 돌려준다")
+    void send_returnsWithoutWaiting() {
+        when(kafkaTemplate.send(anyString(), anyString(), any())).thenReturn(new CompletableFuture<>());
+
+        CompletableFuture<SendResult<String, Object>> future = orderOutBoxSender.send(outbox);
+
+        assertThat(future).isNotDone();
+    }
+
+    @Test
+    @DisplayName("Kafka 응답이 실패로 끝나면 실패로 끝나는 future를 돌려준다")
+    void send_returnsFailedFutureWhenSendFails() {
         when(kafkaTemplate.send(anyString(), anyString(), any()))
                 .thenReturn(CompletableFuture.failedFuture(new IllegalStateException("broker down")));
 
-        assertThatThrownBy(() -> orderOutBoxSender.send(outbox))
+        CompletableFuture<SendResult<String, Object>> future = orderOutBoxSender.send(outbox);
+
+        assertThatThrownBy(future::join)
                 .isInstanceOf(CompletionException.class)
                 .hasRootCauseMessage("broker down");
+    }
+
+    @Test
+    @DisplayName("Kafka 전송 호출이 바로 예외를 던지면 그 예외를 그대로 던진다")
+    void send_rethrowsImmediateFailure() {
+        when(kafkaTemplate.send(anyString(), anyString(), any())).thenThrow(new KafkaException("Send failed"));
+
+        assertThatThrownBy(() -> orderOutBoxSender.send(outbox))
+                .isInstanceOf(KafkaException.class)
+                .hasMessage("Send failed");
     }
 }
