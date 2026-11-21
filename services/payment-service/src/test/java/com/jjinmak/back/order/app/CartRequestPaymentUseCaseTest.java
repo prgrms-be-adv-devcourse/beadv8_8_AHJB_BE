@@ -239,7 +239,7 @@ class CartRequestPaymentUseCaseTest {
     }
 
     @Test
-    @DisplayName("재사용할 주문 그룹은 낙찰자와 지금 시각으로, lifeTime이 남은 그룹 중에서 찾는다")
+    @DisplayName("재사용할 주문 그룹은 낙찰자와 지금 시각으로, lifeTime이 남은 WAITING 그룹 중에서 찾는다")
     void createOrder_findsReusableGroupsWithWinnerAndNow() {
         when(orderSupport.getMember(1L)).thenReturn(winner);
         when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L)))
@@ -252,7 +252,7 @@ class CartRequestPaymentUseCaseTest {
         LocalDateTime after = LocalDateTime.now();
 
         ArgumentCaptor<LocalDateTime> captor = ArgumentCaptor.forClass(LocalDateTime.class);
-        verify(orderGroupRepository).findAllByWinnerAndLifeTime(eq(winner), captor.capture());
+        verify(orderGroupRepository).findWaitingByWinnerAndLifeTime(eq(winner), captor.capture());
         assertThat(captor.getValue()).isBetween(before, after);
     }
 
@@ -263,7 +263,7 @@ class CartRequestPaymentUseCaseTest {
         order(existing, 100L, seller, 10L, 20L, 30_000L, 3_000L);
         order(existing, 101L, otherSeller, 11L, 21L, 50_000L, 4_000L);
         stubCartWithTwoItems();
-        when(orderGroupRepository.findAllByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(existing));
+        when(orderGroupRepository.findWaitingByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(existing));
 
         PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(21L, 20L), "TRANSFER", 3_000L);
 
@@ -283,32 +283,13 @@ class CartRequestPaymentUseCaseTest {
         when(orderSupport.getMember(1L)).thenReturn(winner);
         when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L)))
                 .thenReturn(List.of(cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now())));
-        when(orderGroupRepository.findAllByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(existing));
+        when(orderGroupRepository.findWaitingByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(existing));
 
         LocalDateTime before = LocalDateTime.now();
         cartRequestPaymentUseCase.createOrder(1L, List.of(20L), "DEPOSIT", 0L);
         LocalDateTime after = LocalDateTime.now();
 
         assertThat(existing.getLifeTime()).isBetween(before.plusHours(1), after.plusHours(1));
-    }
-
-    @Test
-    @DisplayName("같은 조합이어도 WAITING이 아닌(결제가 끝난) 그룹은 건너뛰고, 그 뒤에 있는 같은 조합의 WAITING 그룹을 재사용한다")
-    void createOrder_skipsNonWaitingGroup() {
-        OrderGroup paidGroup = group(49L, 33_000L);
-        order(paidGroup, 90L, seller, 10L, 20L, 30_000L, 3_000L).updateState(PAID);
-        OrderGroup waitingGroup = group(50L, 33_000L);
-        order(waitingGroup, 100L, seller, 10L, 20L, 30_000L, 3_000L);
-        when(orderSupport.getMember(1L)).thenReturn(winner);
-        when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L)))
-                .thenReturn(List.of(cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now())));
-        when(orderGroupRepository.findAllByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(paidGroup, waitingGroup));
-
-        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(20L), "DEPOSIT", 0L);
-
-        assertThat(request.orderGroupId()).isEqualTo(50L);
-        assertThat(request.items()).extracting(PaymentRequestDto.Item::orderId).containsExactly(100L);
-        verify(orderGroupRepository, never()).save(any(OrderGroup.class));
     }
 
     @Test
@@ -320,7 +301,7 @@ class CartRequestPaymentUseCaseTest {
         when(orderSupport.getMember(1L)).thenReturn(winner);
         when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L)))
                 .thenReturn(List.of(cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now())));
-        when(orderGroupRepository.findAllByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(existing));
+        when(orderGroupRepository.findWaitingByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(existing));
         when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(51L));
         when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(102L));
 
@@ -336,7 +317,7 @@ class CartRequestPaymentUseCaseTest {
         OrderGroup existing = group(50L, 33_000L);
         order(existing, 100L, seller, 10L, 20L, 30_000L, 3_000L);
         stubCartWithTwoItems();
-        when(orderGroupRepository.findAllByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(existing));
+        when(orderGroupRepository.findWaitingByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(existing));
         when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(51L));
         when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(102L)).thenAnswer(savedWithId(103L));
 
@@ -354,7 +335,7 @@ class CartRequestPaymentUseCaseTest {
         order(existing, 100L, seller, 10L, 20L, 30_000L, 3_000L);
         order(existing, 101L, otherSeller, 12L, 22L, 27_000L, 3_000L);
         stubCartWithTwoItems();
-        when(orderGroupRepository.findAllByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(existing));
+        when(orderGroupRepository.findWaitingByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(existing));
         when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(51L));
         when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(102L)).thenAnswer(savedWithId(103L));
 
