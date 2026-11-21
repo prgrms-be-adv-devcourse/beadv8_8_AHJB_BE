@@ -50,6 +50,8 @@ import static com.jjinmak.back.payment.exception.PaymentErrorCode.PAYMENT_ITEMS_
  *   지금 계획과 같은 승인 전 결제 건(Charge)이 있으면 그 건을 돌려주고, 없으면 새로 만든다.
  *   예전 계획으로 만든 건은 승인 단계에서 거절된다 (PaymentConfirmUseCase, CHARGE_SUPERSEDED).
  * 닫힌 결제: 주문이 버린 그룹(PaymentCloseUseCase)의 orderGroupId 로 다시 오면 PAYMENT_CLOSED 로 거절한다.
+ * 첫 요청이 동시에 오면: 아직 없는 Payment 는 잠글 수 없어 둘 다 새로 만들려 하고, 늦은 쪽은 유니크 제약에 걸린다.
+ *   호출하는 쪽(PaymentCreateRaceSupport)이 한 번 더 실행해, 먼저 만들어진 Payment 로 위의 멱등 규칙을 타게 한다.
  */
 @Service
 @RequiredArgsConstructor

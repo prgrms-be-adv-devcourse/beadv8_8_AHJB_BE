@@ -2,6 +2,7 @@ package com.jjinmak.back.payment.in;
 
 import com.jjinmak.back.payment.app.facade.PaymentFacade;
 import com.jjinmak.back.payment.app.facade.WalletFacade;
+import com.jjinmak.back.payment.app.support.PaymentCreateRaceSupport;
 import com.jjinmak.back.payment.app.support.PaymentLockWaitSupport;
 import com.jjinmak.back.payment.app.support.WalletRetrySupport;
 import com.jjinmak.back.shared.payment.port.PaymentPort;
@@ -21,10 +22,12 @@ public class PaymentPortAdapter implements PaymentPort {
     private final WalletFacade walletFacade;
     private final WalletRetrySupport retry;
     private final PaymentLockWaitSupport lockWait;
+    private final PaymentCreateRaceSupport createRace;
 
     @Override
     public PaymentResultDto requestPayment(PaymentRequestDto dto) {
-        return lockWait.orInProgress(() -> retry.withRetry(() -> paymentFacade.requestPayment(dto)));
+        return lockWait.orInProgress(() -> createRace.retryOnCreateRace(
+                () -> retry.withRetry(() -> paymentFacade.requestPayment(dto))));
     }
 
     @Override
