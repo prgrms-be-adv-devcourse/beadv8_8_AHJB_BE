@@ -44,7 +44,7 @@ public class CartRequestPaymentUseCase {
 
         Set<Long> productIdSet = new HashSet<>(productIds);
 
-        List<CartItem> cartItems = cartItemRepository.findAllByWinnerAndProductIdIn(winner, productIdSet);
+        List<CartItem> cartItems = cartItemRepository.findAllByWinnerAndProductIdInForUpdate(winner, productIdSet);
 
         if (productIdSet.size() != cartItems.size()){
             throw new BusinessException(CART_ITEM_FORBIDDEN);
