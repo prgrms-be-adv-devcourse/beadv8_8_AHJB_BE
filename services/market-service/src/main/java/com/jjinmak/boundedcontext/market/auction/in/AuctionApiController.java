@@ -15,12 +15,15 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -90,6 +93,22 @@ public class AuctionApiController {
         Long memberId = principal == null ? null : principal.memberId();
         AuctionDetailResponseDto response = auctionFacade.detail(auctionId,memberId);
         return ResponseEntity.ok(new RsData<>(true,"경매 상세 조회에 성공했습니다.",response));
+    }
+
+    @Operation(
+            summary = "경매 실시간 구독 (SSE)",
+            description = "경매 상세 화면의 실시간 갱신. 이벤트: auction(상세의 auction + serverTime, 연결 직후와 상태가 바뀔 때), "
+                    + "bid(새 입찰 한 행), viewers(현재 시청자 수, 1초 단위), 20초마다 주석 하트비트. "
+                    + "끝난 경매는 마지막 상태를 보내고 연결을 닫는다. 연결이 많으면 503 → 상세 API 폴링으로 대체한다."
+    )
+    @GetMapping(value = "/{auctionId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public ResponseEntity<SseEmitter> stream(@PathVariable Long auctionId){
+        return auctionFacade.subscribe(auctionId)
+                .map(emitter -> ResponseEntity.ok()
+                        .header(HttpHeaders.CACHE_CONTROL, "no-cache")
+                        .header("X-Accel-Buffering", "no")   // nginx 등 앞단 프록시가 이벤트를 모아 두지 않게
+                        .body(emitter))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build());
     }
 
     @Operation(

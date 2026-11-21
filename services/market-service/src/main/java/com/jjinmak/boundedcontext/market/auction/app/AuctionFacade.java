@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import com.jjinmak.contracts.auction.event.AuctionBidSucceedEvent;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +27,7 @@ public class AuctionFacade {
     private final AuctionDutchBuyUseCase auctionDutchBuyUseCase;
     private final AuctionEndingSoonUseCase auctionEndingSoonUseCase;
     private final AuctionRelistCheckUseCase auctionRelistCheckUseCase;
+    private final AuctionStreamUseCase auctionStreamUseCase;
 
 
     @Transactional
@@ -68,7 +72,19 @@ public class AuctionFacade {
     @Transactional
     public int winBidAuctions(LocalDateTime now,int batchSize){return auctionCloseUseCase.winBidAuctions(now,batchSize);}
 
-    @Transactional
+    // 실시간 구독 (SSE, #557). 트랜잭션을 열지 않는다: 연결이 열려 있는 동안 DB 커넥션을 잡지 않게
+    public Optional<SseEmitter> subscribe(Long auctionId){return auctionStreamUseCase.subscribe(auctionId);}
+
+    public void pushStreamAuction(Long auctionId){auctionStreamUseCase.pushAuction(auctionId);}
+
+    public void pushStreamBid(AuctionBidSucceedEvent event){auctionStreamUseCase.pushBid(event);}
+
+    public void broadcastStreamViewers(){auctionStreamUseCase.broadcastViewers();}
+
+    public void streamHeartbeat(){auctionStreamUseCase.heartbeat();}
+
+    // 트랜잭션을 열지 않는다 (#557): 캐시 적중이면 DB 커넥션을 아예 잡지 않는다.
+    // 캐시에 없을 때만 리포지토리 조회(자체 읽기 전용 트랜잭션)로 커넥션을 잠깐 쓴다
     public AuctionDetailResponseDto detail(Long auctionId,Long memberId){return auctionDetailUseCase.detail(auctionId,memberId,LocalDateTime.now());}
 
     @Transactional
