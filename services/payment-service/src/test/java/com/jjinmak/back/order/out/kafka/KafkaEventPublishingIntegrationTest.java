@@ -23,6 +23,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.kafka.KafkaException;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -43,7 +44,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:kafkapublishing;MODE=PostgreSQL")
@@ -152,10 +155,51 @@ class KafkaEventPublishingIntegrationTest {
     }
 
     @Test
-    @DisplayName("Kafka 전송이 실패하면 그 아웃박스는 발행으로 표시하지 않고, 그 회차에는 다음 아웃박스를 보내지 않는다")
-    void relay_sendFails_keepsUnpublishedAndStops() {
+    @DisplayName("Kafka 응답이 실패하면 그 아웃박스는 발행으로 표시하지 않고, 다음 실행에서는 맨 앞 1건만 다시 보낸다")
+    void relay_responseFails_keepsUnpublishedAndRetriesOnlyFirst() {
         doReturn(CompletableFuture.failedFuture(new IllegalStateException("broker down")))
                 .when(kafkaTemplate).send(anyString(), anyString(), any());
+        transactionTemplate.executeWithoutResult(status -> {
+            eventPublisher.publish(new OrderSendProductEvent(1L, 2L, 3L, CJ, "1111111111"));
+            eventPublisher.publish(new OrderSendProductEvent(2L, 2L, 3L, CJ, "2222222222"));
+        });
+
+        orderScheduler.sendOutbox();
+        orderScheduler.sendOutbox();
+
+        verify(kafkaTemplate, times(2)).send(eq("order.send-product"), eq("1"), any());
+        verify(kafkaTemplate, times(1)).send(eq("order.send-product"), eq("2"), any());
+        assertThat(orderOutboxRepository.findAll()).allSatisfy(outbox -> assertThat(outbox.getPublishedAt()).isNull());
+    }
+
+    @Test
+    @DisplayName("한 묶음에서 응답이 실패한 아웃박스만 발행 표시에서 빠지고, 성공한 아웃박스는 발행으로 표시한다")
+    void relay_partialFailure_marksOnlySent() {
+        doReturn(CompletableFuture.failedFuture(new IllegalStateException("broker down")))
+                .when(kafkaTemplate).send(eq("order.send-product"), eq("1"), any());
+        doReturn(CompletableFuture.completedFuture(null))
+                .when(kafkaTemplate).send(eq("order.send-product"), eq("2"), any());
+        transactionTemplate.executeWithoutResult(status -> {
+            eventPublisher.publish(new OrderSendProductEvent(1L, 2L, 3L, CJ, "1111111111"));
+            eventPublisher.publish(new OrderSendProductEvent(2L, 2L, 3L, CJ, "2222222222"));
+        });
+
+        orderScheduler.sendOutbox();
+
+        assertThat(orderOutboxRepository.findAll())
+                .filteredOn(outbox -> outbox.getMessageKey().equals("1"))
+                .singleElement()
+                .satisfies(outbox -> assertThat(outbox.getPublishedAt()).isNull());
+        assertThat(orderOutboxRepository.findAll())
+                .filteredOn(outbox -> outbox.getMessageKey().equals("2"))
+                .singleElement()
+                .satisfies(outbox -> assertThat(outbox.getPublishedAt()).isNotNull());
+    }
+
+    @Test
+    @DisplayName("Kafka 전송 호출이 바로 실패하면 그 묶음의 나머지는 보내지 않고, 어느 아웃박스도 발행으로 표시하지 않는다")
+    void relay_immediateFailure_stopsBatch() {
+        doThrow(new KafkaException("Send failed")).when(kafkaTemplate).send(anyString(), anyString(), any());
         transactionTemplate.executeWithoutResult(status -> {
             eventPublisher.publish(new OrderSendProductEvent(1L, 2L, 3L, CJ, "1111111111"));
             eventPublisher.publish(new OrderSendProductEvent(2L, 2L, 3L, CJ, "2222222222"));
