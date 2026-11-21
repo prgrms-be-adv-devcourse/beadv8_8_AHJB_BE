@@ -32,6 +32,10 @@ market:
     # 상세 캐시는 끈다: 테스트가 DB를 직접 바꾼 뒤 상세를 읽어도 바로 보이게. 캐시는 AuctionDetailCache*Test에서 켜고 검증 (#557)
     detail-cache:
       enabled: false
+    # 실시간 구독의 시청자 수·하트비트 주기 작업은 끈다. AuctionStreamIntegrationTest가 직접 호출해 검증 (#557)
+    stream:
+      scheduler:
+        enabled: false
 
 product-image:
   storage: local
