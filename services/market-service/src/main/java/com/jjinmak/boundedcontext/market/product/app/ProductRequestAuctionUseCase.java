@@ -12,7 +12,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -41,8 +44,31 @@ public class ProductRequestAuctionUseCase {
 
         product.requestAuction(now);
 
-        publishAuctionRequest(product);
+        publishAuctionRequest(product, productReadThumbnailUseCase.findThumbnailUrl(product.getId()));
         return Optional.of(ProductAuctionOpenDto.from(product));
+    }
+
+    // 일괄 열기 (#548): 상품 조회·대표 이미지 조회를 한 번씩만 하고, 열 수 있는 상품만 요청 표시한다.
+    // 조회 이후 삭제되었거나 이미 요청된 상품은 건너뛴다. (id 순서로 돌려준다)
+    public List<ProductAuctionOpenDto> prepareAuctionOpens(List<Long> productIds, LocalDateTime now){
+        List<Product> products = productRepository.findAllById(productIds).stream()
+                .filter(product -> product.isAuctionRequestable(now))
+                .sorted(Comparator.comparing(Product::getId))
+                .toList();
+        if (products.isEmpty()){
+            return List.of();
+        }
+
+        Map<Long, String> thumbnails = productReadThumbnailUseCase.findThumbnailUrls(
+                products.stream().map(Product::getId).toList());
+
+        List<ProductAuctionOpenDto> opens = new ArrayList<>(products.size());
+        for (Product product : products){
+            product.requestAuction(now);
+            publishAuctionRequest(product, thumbnails.get(product.getId()));
+            opens.add(ProductAuctionOpenDto.from(product));
+        }
+        return opens;
     }
 
     // 상품 등록 이벤트. 경매 생성에는 더 이상 쓰지 않고, 정산·채팅이 상품명·썸네일을 저장하는 데 쓴다.
@@ -51,7 +77,7 @@ public class ProductRequestAuctionUseCase {
     // 경매 방식에 맞는 조건만 채우고 다른 방식의 조건은 null로 보낸다.
     // - 영국식: english(즉시낙찰가, 종료 시각)
     // - 네덜란드식: dutch(최저가, 하락률, 하락 주기). 종료 시각은 경매가 가격 규칙으로 계산한다.
-    private void publishAuctionRequest(Product product){
+    private void publishAuctionRequest(Product product, String thumbnailUrl){
         ProductAuctionTerms auctionTerms = product.getAuctionTerms();
         LocalDateTime scheduledAt = product.getAuctionScheduledAt();
 
@@ -79,7 +105,7 @@ public class ProductRequestAuctionUseCase {
                 null,
                 product.getName(),
                 product.getCategory().name(),
-                productReadThumbnailUseCase.findThumbnailUrl(product.getId()),
+                thumbnailUrl,
                 auctionTerms.getAuctionType().name(),
                 scheduledAt,
                 english,

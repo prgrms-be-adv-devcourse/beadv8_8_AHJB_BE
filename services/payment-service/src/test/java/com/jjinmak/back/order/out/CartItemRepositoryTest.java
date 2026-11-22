@@ -47,7 +47,7 @@ class CartItemRepositoryTest {
 
     @Test
     @DisplayName("낙찰자 기준 목록: 내가 낙찰한 항목만, 낙찰 시각 오름차순으로 나온다")
-    void findAllByWinnerOrderByWinAt() {
+    void findUnexpiredByWinner() {
         save(a, b, 10L, 20L, at(10, 0));
         save(a, b, 11L, 21L, at(9, 0));
         save(b, a, 12L, 22L, at(8, 0));
@@ -55,10 +55,26 @@ class CartItemRepositoryTest {
         em.flush();
         em.clear();
 
-        List<CartItem> items = cartItemRepository.findAllByWinnerOrderByWinAt(a);
+        List<CartItem> items = cartItemRepository.findUnexpiredByWinner(a, at(12, 0));
 
         assertThat(items).extracting(CartItem::getAuctionId).containsExactly(11L, 10L);
         assertThat(items).allSatisfy(item -> assertThat(Hibernate.isInitialized(item.getSeller())).isTrue());
+    }
+
+    @Test
+    @DisplayName("낙찰자 기준 목록: 결제 기한이 기준 시각과 같거나 늦은 항목만 나오고, 기한이 지난 항목은 지워지기 전이어도 빠진다")
+    void findUnexpiredByWinner_excludesExpired() {
+        LocalDateTime base = LocalDateTime.of(2026, 10, 16, 12, 0);
+        save(a, b, 10L, 20L, base.minusDays(1).plusHours(1));
+        save(a, b, 11L, 21L, base.minusDays(1));
+        save(a, b, 12L, 22L, base.minusDays(1).minusMinutes(1));
+        save(a, b, 13L, 23L, base.minusDays(1).minusMinutes(30));
+        em.flush();
+        em.clear();
+
+        List<CartItem> items = cartItemRepository.findUnexpiredByWinner(a, base);
+
+        assertThat(items).extracting(CartItem::getAuctionId).containsExactly(11L, 10L);
     }
 
     @Test

@@ -1,14 +1,12 @@
 package com.jjinmak.back.order.app;
 
 import com.jjinmak.common.exception.BusinessException;
-import com.jjinmak.back.order.app.OrderSupport;
 import com.jjinmak.back.order.app.dto.OrderDto;
 import com.jjinmak.back.order.domain.Order;
 import com.jjinmak.back.order.domain.OrderMember;
 import com.jjinmak.back.order.domain.OrderState;
 import com.jjinmak.back.order.out.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -35,7 +33,7 @@ public class OrderReadOrderUseCase {
 
         OrderMember winner = orderSupport.getMember(winnerId);
 
-        Page<Order> orders = orderRepository.findAllByWinnerAndStateIn(winner, READ_STATES, PageRequest.of(Math.max(page, 0), Math.clamp(size, 10, 50)));
+        List<Order> orders = orderRepository.findAllByWinnerAndStateIn(winner, READ_STATES, PageRequest.of(Math.max(page, 0), Math.clamp(size, 10, 50)));
 
         return orders.stream().map(
                 (order) -> new OrderDto(
@@ -50,7 +48,7 @@ public class OrderReadOrderUseCase {
 
         OrderMember seller = orderSupport.getMember(sellerId);
 
-        Page<Order> orders = orderRepository.findAllBySellerAndStateIn(seller,READ_STATES, PageRequest.of(Math.max(page, 0), Math.clamp(size, 10, 50)));
+        List<Order> orders = orderRepository.findAllBySellerAndStateIn(seller,READ_STATES, PageRequest.of(Math.max(page, 0), Math.clamp(size, 10, 50)));
 
         return orders.stream().map(
                 (order) -> new OrderDto(

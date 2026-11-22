@@ -5,6 +5,7 @@ import com.jjinmak.contracts.payment.dto.PaymentRequestDto;
 import com.jjinmak.contracts.payment.dto.PaymentResultDto;
 import com.jjinmak.back.payment.app.facade.PaymentFacade;
 import com.jjinmak.back.payment.app.facade.WalletFacade;
+import com.jjinmak.back.payment.app.support.PaymentCreateRaceSupport;
 import com.jjinmak.back.payment.app.support.PaymentLockWaitSupport;
 import com.jjinmak.back.payment.app.support.WalletRetrySupport;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,6 +22,7 @@ public class PaymentInternalApiController {
     private final WalletFacade walletFacade;
     private final WalletRetrySupport retry;
     private final PaymentLockWaitSupport lockWait;
+    private final PaymentCreateRaceSupport createRace;
 
     @Operation(
             summary = "주문 건 결제 요청",
@@ -30,7 +32,8 @@ public class PaymentInternalApiController {
     public ResponseEntity<PaymentResultDto> request(
             @RequestBody PaymentRequestDto dto
     ) {
-        PaymentResultDto response = lockWait.orInProgress(() -> retry.withRetry(() -> paymentFacade.requestPayment(dto)));
+        PaymentResultDto response = lockWait.orInProgress(() -> createRace.retryOnCreateRace(
+                () -> retry.withRetry(() -> paymentFacade.requestPayment(dto))));
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 

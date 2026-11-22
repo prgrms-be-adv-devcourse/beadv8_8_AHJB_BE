@@ -7,7 +7,7 @@ import com.jjinmak.boundedcontext.market.auction.concurrency.support.Concurrency
 import com.jjinmak.boundedcontext.market.auction.concurrency.support.ConcurrencyRunner;
 import com.jjinmak.boundedcontext.market.auction.concurrency.support.ConcurrencyRunner.Outcome;
 import com.jjinmak.boundedcontext.market.auction.concurrency.support.ConcurrencyRunner.Task;
-import com.jjinmak.boundedcontext.market.auction.concurrency.support.KafkaSendCounter;
+import com.jjinmak.boundedcontext.market.auction.concurrency.support.OutboxEventCounter;
 import com.jjinmak.boundedcontext.market.auction.domain.AuctionStatus;
 import com.jjinmak.boundedcontext.market.auction.domain.EnglishAuction;
 import com.jjinmak.boundedcontext.market.auction.out.AuctionRepository;
@@ -181,7 +181,7 @@ class EnglishBidConcurrencyTest extends AuctionIntegrationTestSupport {
             List<Outcome> outcomes = ConcurrencyRunner.runTogether(tasks);
             합치기(total, outcomes);
             EnglishAuction auction = (EnglishAuction) auctionRepository.findById(id).orElseThrow();
-            long wonEvents = KafkaSendCounter.count(kafkaTemplate, AUCTION_WON, id);
+            long wonEvents = OutboxEventCounter.count(jdbcTemplate, AUCTION_WON, id);
             long expectedEvents = auction.getStatus() == AuctionStatus.WON ? 1 : 0;
             long instantOk = ConcurrencyRunner.count(outcomes, "instant", "OK");
             List<String> v = AuctionInvariants.checkEnglish(auctionRepository, bidRepository, id);

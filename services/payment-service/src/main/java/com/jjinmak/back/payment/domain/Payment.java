@@ -24,14 +24,18 @@ import static com.jjinmak.back.payment.exception.PaymentErrorCode.*;
 @Table(
         name = "payment",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_payment_order_group", columnNames = "order_group_id"),
-                @UniqueConstraint(name = "uk_payment_idempotency", columnNames = "idempotency_key")
+                @UniqueConstraint(name = Payment.UK_ORDER_GROUP, columnNames = "order_group_id"),
+                @UniqueConstraint(name = Payment.UK_IDEMPOTENCY, columnNames = "idempotency_key")
         },
         indexes = @Index(name = "idx_payment_holder", columnList = "holder_id, created_at")
 )
 @Getter
 @NoArgsConstructor
 public class Payment extends BaseIdAndTime {
+
+    // 주문 그룹당 Payment 는 하나. 같은 주문 그룹의 첫 결제 요청이 동시에 오면 늦은 쪽이 이 제약에 걸린다 (PaymentCreateRaceSupport)
+    public static final String UK_ORDER_GROUP = "uk_payment_order_group";
+    public static final String UK_IDEMPOTENCY = "uk_payment_idempotency";
 
     private static final String IDEMPOTENCY_PREFIX = "ORDER_GROUP:";
 

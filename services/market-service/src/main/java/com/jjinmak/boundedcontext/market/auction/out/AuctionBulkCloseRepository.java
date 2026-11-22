@@ -47,6 +47,24 @@ public class AuctionBulkCloseRepository {
             RETURNING id, product_id, seller_id
             """;
 
+    // 입찰 있는 영국식 경매 일괄 낙찰 (#548 3차). 낙찰자·낙찰가는 경매 행의 최고 입찰자·최고가 그대로다
+    // (EnglishAuction.close()와 같은 규칙: bid_count > 0이면 win(highestBidderId, highestBidPrice, now))
+    private static final String WIN_WITH_BID = """
+            UPDATE auction
+               SET status = 'WON', winner_id = highest_bidder_id, winning_price = highest_bid_price, win_at = :now,
+                   version = version + 1, updated_at = :updatedAt
+             WHERE id IN (
+                   SELECT id FROM auction
+                    WHERE status = 'IN_PROGRESS'
+                      AND end_at <= :now
+                      AND auction_type = 'ENGLISH'
+                      AND bid_count > 0
+                    ORDER BY end_at
+                    LIMIT :limit
+                      FOR UPDATE SKIP LOCKED)
+            RETURNING id, product_id, winner_id, seller_id, winning_price, shipping_fee
+            """;
+
     private final NamedParameterJdbcTemplate jdbc;
     private volatile Boolean postgres;
 
@@ -62,13 +80,31 @@ public class AuctionBulkCloseRepository {
                 new FailedAuction(rs.getLong("id"), rs.getLong("product_id"), rs.getLong("seller_id")));
     }
 
+    public List<WonAuction> winBidAuctions(LocalDateTime now, LocalDateTime updatedAt, int limit) {
+        if (!isPostgres()) {
+            return List.of();
+        }
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("now", now)
+                .addValue("updatedAt", updatedAt)
+                .addValue("limit", limit);
+        return jdbc.query(WIN_WITH_BID, params, (rs, i) -> new WonAuction(
+                rs.getLong("id"),
+                rs.getLong("product_id"),
+                rs.getLong("winner_id"),
+                rs.getLong("seller_id"),
+                rs.getLong("winning_price"),
+                rs.getObject("shipping_fee", Long.class),
+                now));
+    }
+
     private boolean isPostgres() {
         Boolean cached = postgres;
         if (cached == null) {
             cached = Objects.requireNonNullElse(jdbc.getJdbcTemplate().execute((Connection con) ->
                     "PostgreSQL".equalsIgnoreCase(con.getMetaData().getDatabaseProductName())), false);
             if (!cached) {
-                log.info("PostgreSQL이 아니라 입찰 없는 경매 일괄 유찰을 끄고 건별 처리만 한다");
+                log.info("PostgreSQL이 아니라 경매 일괄 종료(유찰·낙찰)를 끄고 건별 처리만 한다");
             }
             postgres = cached;
         }
@@ -76,5 +112,9 @@ public class AuctionBulkCloseRepository {
     }
 
     public record FailedAuction(Long auctionId, Long productId, Long sellerId) {
+    }
+
+    public record WonAuction(Long auctionId, Long productId, Long winnerId, Long sellerId,
+                             Long winningPrice, Long shippingFee, LocalDateTime winAt) {
     }
 }

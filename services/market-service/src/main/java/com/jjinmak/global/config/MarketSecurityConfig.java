@@ -41,7 +41,8 @@ public class MarketSecurityConfig {
             "/api/v1/auctions",
             "/api/v1/auctions/dutch",
             "/api/v1/auctions/{auctionId:\\d+}",
-            "/api/v1/auctions/{auctionId:\\d+}/bids"
+            "/api/v1/auctions/{auctionId:\\d+}/bids",
+            "/api/v1/auctions/{auctionId:\\d+}/stream"   // 실시간 구독 (#557): 상세와 같은 공개 범위
     };
 
     @Bean

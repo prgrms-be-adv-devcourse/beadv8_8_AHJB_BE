@@ -5,7 +5,7 @@ import com.jjinmak.boundedcontext.market.auction.concurrency.support.Concurrency
 import com.jjinmak.boundedcontext.market.auction.concurrency.support.ConcurrencyRunner;
 import com.jjinmak.boundedcontext.market.auction.concurrency.support.ConcurrencyRunner.Outcome;
 import com.jjinmak.boundedcontext.market.auction.concurrency.support.ConcurrencyRunner.Task;
-import com.jjinmak.boundedcontext.market.auction.concurrency.support.KafkaSendCounter;
+import com.jjinmak.boundedcontext.market.auction.concurrency.support.OutboxEventCounter;
 import com.jjinmak.boundedcontext.market.auction.domain.AuctionStatus;
 import com.jjinmak.boundedcontext.market.auction.domain.DutchAuction;
 import com.jjinmak.boundedcontext.market.auction.out.AuctionRepository;
@@ -77,7 +77,7 @@ class DutchBuyConcurrencyTest extends AuctionIntegrationTestSupport {
             ConcurrencyRunner.countByCode(outcomes).forEach((k, v) -> total.merge(k, v, Integer::sum));
             DutchAuction after = (DutchAuction) auctionRepository.findById(id).orElseThrow();
             long ok = ConcurrencyRunner.count(outcomes, "OK");
-            long wonEvents = KafkaSendCounter.count(kafkaTemplate, AUCTION_WON, id);
+            long wonEvents = OutboxEventCounter.count(jdbcTemplate, AUCTION_WON, id);
             boolean pass = ok == 1 && after.getStatus() == AuctionStatus.WON && after.getWinnerId() != null
                     && after.getWinningPrice() == START && wonEvents == 1 && 입찰_행_없음(id)
                     && !ConcurrencyRunner.hasUnexpectedError(outcomes);
@@ -112,8 +112,8 @@ class DutchBuyConcurrencyTest extends AuctionIntegrationTestSupport {
             List<Outcome> outcomes = ConcurrencyRunner.runTogether(tasks);
             ConcurrencyRunner.countByCode(outcomes).forEach((k, v) -> total.merge(k, v, Integer::sum));
             DutchAuction after = (DutchAuction) auctionRepository.findById(id).orElseThrow();
-            long wonEvents = KafkaSendCounter.count(kafkaTemplate, AUCTION_WON, id);
-            long failedEvents = KafkaSendCounter.count(kafkaTemplate, AUCTION_FAILED, id);
+            long wonEvents = OutboxEventCounter.count(jdbcTemplate, AUCTION_WON, id);
+            long failedEvents = OutboxEventCounter.count(jdbcTemplate, AUCTION_FAILED, id);
             if (after.getStatus() == AuctionStatus.WON) won++;
             if (after.getStatus() == AuctionStatus.FAILED) failed++;
             long buyOk = ConcurrencyRunner.count(outcomes, "buy", "OK");

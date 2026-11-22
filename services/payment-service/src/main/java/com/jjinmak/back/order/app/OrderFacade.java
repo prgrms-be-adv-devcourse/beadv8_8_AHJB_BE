@@ -1,6 +1,7 @@
 package com.jjinmak.back.order.app;
 
 import com.jjinmak.back.order.app.dto.OrderDto;
+import com.jjinmak.back.order.app.dto.OutboxSendResult;
 import com.jjinmak.back.order.app.dto.PaymentResponseDto;
 import com.jjinmak.back.order.domain.OrderMember;
 import com.jjinmak.back.order.domain.OrderOutbox;
@@ -189,12 +190,12 @@ public class OrderFacade {
         return orderOutboxUseCase.findUnpublished();
     }
 
-    public void sendOutbox(OrderOutbox outbox){
-        orderOutboxUseCase.send(outbox);
+    public OutboxSendResult sendOutboxes(List<OrderOutbox> outboxes){
+        return orderOutboxUseCase.sendAll(outboxes);
     }
 
     @Transactional
-    public void markOutboxPublished(Long outboxId){
-        orderOutboxUseCase.markPublished(outboxId);
+    public void markOutboxesPublished(List<Long> outboxIds){
+        orderOutboxUseCase.markPublished(outboxIds);
     }
 }

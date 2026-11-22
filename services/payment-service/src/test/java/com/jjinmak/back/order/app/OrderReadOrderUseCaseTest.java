@@ -15,7 +15,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -80,7 +79,7 @@ class OrderReadOrderUseCaseTest {
         Order second = order(100L, 10L, 20L, 30_000L, 3_000L, PAID);
         when(orderSupport.getMember(1L)).thenReturn(winner);
         when(orderRepository.findAllByWinnerAndStateIn(eq(winner), anySet(), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(first, second)));
+                .thenReturn(List.of(first, second));
 
         List<OrderDto> result = orderReadOrderUseCase.readWinnerOrders(1L, 0, 10);
 
@@ -95,7 +94,7 @@ class OrderReadOrderUseCaseTest {
     void readWinnerOrders_readsPaidAndLaterStates() {
         when(orderSupport.getMember(1L)).thenReturn(winner);
         when(orderRepository.findAllByWinnerAndStateIn(eq(winner), anySet(), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of()));
+                .thenReturn(List.of());
 
         orderReadOrderUseCase.readWinnerOrders(1L, 0, 10);
 
@@ -107,7 +106,7 @@ class OrderReadOrderUseCaseTest {
     void readWinnerOrders_negativePage() {
         when(orderSupport.getMember(1L)).thenReturn(winner);
         when(orderRepository.findAllByWinnerAndStateIn(eq(winner), anySet(), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of()));
+                .thenReturn(List.of());
 
         orderReadOrderUseCase.readWinnerOrders(1L, -1, 20);
 
@@ -123,7 +122,7 @@ class OrderReadOrderUseCaseTest {
     void readWinnerOrders_sizeBelowMinimum() {
         when(orderSupport.getMember(1L)).thenReturn(winner);
         when(orderRepository.findAllByWinnerAndStateIn(eq(winner), anySet(), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of()));
+                .thenReturn(List.of());
 
         orderReadOrderUseCase.readWinnerOrders(1L, 2, 5);
 
@@ -139,7 +138,7 @@ class OrderReadOrderUseCaseTest {
     void readWinnerOrders_sizeAboveMaximum() {
         when(orderSupport.getMember(1L)).thenReturn(winner);
         when(orderRepository.findAllByWinnerAndStateIn(eq(winner), anySet(), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of()));
+                .thenReturn(List.of());
 
         orderReadOrderUseCase.readWinnerOrders(1L, 2, 100);
 
@@ -155,7 +154,7 @@ class OrderReadOrderUseCaseTest {
     void readWinnerOrders_pageAndSizeInRange() {
         when(orderSupport.getMember(1L)).thenReturn(winner);
         when(orderRepository.findAllByWinnerAndStateIn(eq(winner), anySet(), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of()));
+                .thenReturn(List.of());
 
         orderReadOrderUseCase.readWinnerOrders(1L, 3, 20);
 
@@ -186,7 +185,7 @@ class OrderReadOrderUseCaseTest {
         Order second = shippedOrder(100L, 10L, 20L, 30_000L, 3_000L, CONFIRMED);
         when(orderSupport.getMember(2L)).thenReturn(seller);
         when(orderRepository.findAllBySellerAndStateIn(eq(seller), anySet(), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(first, second)));
+                .thenReturn(List.of(first, second));
 
         List<OrderDto> result = orderReadOrderUseCase.readSellerOrders(2L, 0, 10);
 
@@ -201,7 +200,7 @@ class OrderReadOrderUseCaseTest {
     void readSellerOrders_readsPaidAndLaterStates() {
         when(orderSupport.getMember(2L)).thenReturn(seller);
         when(orderRepository.findAllBySellerAndStateIn(eq(seller), anySet(), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of()));
+                .thenReturn(List.of());
 
         orderReadOrderUseCase.readSellerOrders(2L, 0, 10);
 
@@ -213,7 +212,7 @@ class OrderReadOrderUseCaseTest {
     void readSellerOrders_negativePageAndSizeBelowMinimum() {
         when(orderSupport.getMember(2L)).thenReturn(seller);
         when(orderRepository.findAllBySellerAndStateIn(eq(seller), anySet(), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of()));
+                .thenReturn(List.of());
 
         orderReadOrderUseCase.readSellerOrders(2L, -1, 5);
 
@@ -229,7 +228,7 @@ class OrderReadOrderUseCaseTest {
     void readSellerOrders_sizeAboveMaximum() {
         when(orderSupport.getMember(2L)).thenReturn(seller);
         when(orderRepository.findAllBySellerAndStateIn(eq(seller), anySet(), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of()));
+                .thenReturn(List.of());
 
         orderReadOrderUseCase.readSellerOrders(2L, 2, 100);
 

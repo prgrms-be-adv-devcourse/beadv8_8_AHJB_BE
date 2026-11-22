@@ -22,6 +22,8 @@ dependencies {
     implementation(project(":libs:event-contracts"))
 
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    // 경매 상세 공용 부분 캐시 (#557). 버전은 Spring Boot가 관리
+    implementation("com.github.ben-manes.caffeine:caffeine")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0")
 
     // 상품 이미지 저장소(S3)

@@ -116,6 +116,18 @@ class CartApiControllerTest {
     }
 
     @Test
+    @DisplayName("결제 기한이 지난 내 항목은 지워지기 전이어도 장바구니 조회에 나오지 않는다")
+    void read_hidesExpiredItems() throws Exception {
+        cartItemRepository.save(new CartItem(winner, seller, 12L, 22L, 40_000L, 2_500L, LocalDateTime.now().minusDays(1).minusMinutes(30)));
+
+        mockMvc.perform(get("/api/v1/cart")
+                        .header(AuthHeaders.MEMBER_ID, 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].id").value(myItemId));
+    }
+
+    @Test
     @DisplayName("회원 헤더는 있지만 주문 회원이 없으면 404 USER_NOT_FOUND")
     void read_memberNotSynced() throws Exception {
         mockMvc.perform(get("/api/v1/cart")

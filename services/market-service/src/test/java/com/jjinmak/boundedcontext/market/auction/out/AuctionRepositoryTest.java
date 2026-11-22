@@ -77,4 +77,25 @@ class AuctionRepositoryTest extends AuctionIntegrationTestSupport {
                 .hasSize(1)
                 .allMatch(DutchAuction.class::isInstance);
     }
+
+    @Test
+    void 종료_타이머_미리_읽기는_기준_시각_전에_끝나는_진행_중_경매만_종료_시각_순으로_돌려준다() {
+        // #548 4차. 미래 시각(START_AT 기준)으로 만들어 실제 종료 스케줄러와 겹치지 않게 한다
+        EnglishAuction early = auctionRepository.save(EnglishAuction.create(11L, 100L, 10_000L, null, 3_000L, CATEGORY,
+                START_AT.plusMinutes(1), START_AT));
+        EnglishAuction later = auctionRepository.save(EnglishAuction.create(12L, 100L, 10_000L, null, 3_000L, CATEGORY,
+                START_AT.plusMinutes(2), START_AT));
+        auctionRepository.save(EnglishAuction.create(13L, 100L, 10_000L, null, 3_000L, CATEGORY,
+                START_AT.plusMinutes(10), START_AT));   // 기준 시각 이후 → 제외
+        EnglishAuction closed = EnglishAuction.create(14L, 100L, 10_000L, null, 3_000L, CATEGORY,
+                START_AT.plusMinutes(1), START_AT);
+        closed.fail(com.jjinmak.boundedcontext.market.auction.domain.FailureReason.NO_BID);
+        auctionRepository.save(closed);   // 진행 중 아님 → 제외
+
+        var deadlines = auctionRepository.findDeadlinesBefore(
+                AuctionStatus.IN_PROGRESS, START_AT.plusMinutes(5), PageRequest.of(0, 100));
+
+        assertThat(deadlines).extracting(d -> d.auctionId()).containsExactly(early.getId(), later.getId());
+        assertThat(deadlines.getFirst().endAt()).isEqualTo(early.getEndAt());
+    }
 }
