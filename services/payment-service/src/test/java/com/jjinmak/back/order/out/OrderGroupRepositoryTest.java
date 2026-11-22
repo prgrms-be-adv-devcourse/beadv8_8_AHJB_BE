@@ -147,6 +147,29 @@ class OrderGroupRepositoryTest {
         assertThat(found.getFirst().getOrders()).extracting(Order::getAuctionId).containsExactlyInAnyOrder(10L, 11L);
     }
 
+    @Test
+    @DisplayName("겹치는 그룹 조회: 그 낙찰자의 결제 대기 그룹 중 요청 상품이 하나라도 든 그룹만 lifeTime과 상관없이 한 번씩 나온다 (결제된 그룹, 요청 상품이 없는 그룹, 다른 낙찰자의 그룹은 제외)")
+    void findWaitingByWinnerAndProductIdIn() {
+        LocalDateTime base = LocalDateTime.of(2026, 10, 16, 12, 0);
+        OrderGroup expired = groupWithLifeTime(a, base.minusMinutes(1));
+        OrderGroup alive = groupWithLifeTime(a, base.plusMinutes(1));
+        OrderGroup unrelated = groupWithLifeTime(a, base.plusMinutes(1));
+        OrderGroup paid = groupWithLifeTime(a, base.plusMinutes(1));
+        OrderGroup others = groupWithLifeTime(c, base.plusMinutes(1));
+        save(expired, a, 10L, 20L);
+        save(alive, a, 11L, 21L);
+        save(alive, a, 12L, 22L);
+        save(unrelated, a, 13L, 23L);
+        save(paid, a, 14L, 20L).paid(base);
+        save(others, c, 15L, 21L);
+        em.flush();
+        em.clear();
+
+        List<OrderGroup> found = orderGroupRepository.findWaitingByWinnerAndProductIdIn(a, Set.of(20L, 21L));
+
+        assertThat(found).extracting(OrderGroup::getId).containsExactlyInAnyOrder(expired.getId(), alive.getId());
+    }
+
     private OrderGroup groupWithLifeTime(OrderMember winner, LocalDateTime lifeTime) {
         OrderGroup group = new OrderGroup(winner, 33_000L);
         ReflectionTestUtils.setField(group, "lifeTime", lifeTime);
@@ -155,5 +178,9 @@ class OrderGroupRepositoryTest {
 
     private Order save(OrderGroup group, OrderMember winner, Long auctionId) {
         return orderRepository.save(new Order(group, winner, b, auctionId, 20L, 30_000L, 3_000L));
+    }
+
+    private Order save(OrderGroup group, OrderMember winner, Long auctionId, Long productId) {
+        return orderRepository.save(new Order(group, winner, b, auctionId, productId, 30_000L, 3_000L));
     }
 }

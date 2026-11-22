@@ -78,18 +78,19 @@ class CartItemRepositoryTest {
     }
 
     @Test
-    @DisplayName("결제 대상 조회: 같은 상품 id라도 내 항목만 나온다")
-    void findAllByWinnerAndProductIdIn() {
+    @DisplayName("결제 대상 조회: 같은 상품 id라도 내 항목만 id 순으로 나오고, 잠금이 장바구니 행에만 걸리도록 판매자는 함께 불러오지 않는다")
+    void findAllByWinnerAndProductIdInForUpdate() {
         save(a, b, 10L, 20L, at(10, 0));
         save(c, b, 11L, 20L, at(10, 0));
-        save(a, b, 12L, 21L, at(10, 0));
+        save(a, c, 12L, 21L, at(10, 0));
+        save(a, b, 13L, 22L, at(10, 0));
         em.flush();
         em.clear();
 
-        List<CartItem> items = cartItemRepository.findAllByWinnerAndProductIdIn(a, Set.of(20L));
+        List<CartItem> items = cartItemRepository.findAllByWinnerAndProductIdInForUpdate(a, Set.of(20L, 21L));
 
-        assertThat(items).extracting(CartItem::getAuctionId).containsExactly(10L);
-        assertThat(items).allSatisfy(item -> assertThat(Hibernate.isInitialized(item.getSeller())).isTrue());
+        assertThat(items).extracting(CartItem::getAuctionId).containsExactly(10L, 12L);
+        assertThat(items).noneSatisfy(item -> assertThat(Hibernate.isInitialized(item.getSeller())).isTrue());
     }
 
     @Test

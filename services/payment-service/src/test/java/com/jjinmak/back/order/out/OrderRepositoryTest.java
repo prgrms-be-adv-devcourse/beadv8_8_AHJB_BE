@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -32,6 +33,7 @@ import static com.jjinmak.back.order.domain.OrderState.SHIPPED;
 import static com.jjinmak.back.order.domain.OrderState.SHIPPING;
 import static com.jjinmak.back.order.domain.OrderState.WAITING;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -228,6 +230,16 @@ class OrderRepositoryTest {
         List<Long> ids = orderRepository.findExpiredSoonOrderIds(base);
 
         assertThat(ids).containsExactly(expiredSoon.getId());
+    }
+
+    @Test
+    @DisplayName("같은 경매 id로 주문을 두 번 저장할 수 없다")
+    void auctionId_isUnique() {
+        save(a, b, 10L, WAITING);
+        em.flush();
+
+        assertThatThrownBy(() -> orderRepository.saveAndFlush(new Order(group, a, b, 10L, 21L, 30_000L, 3_000L)))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     private Order save(OrderMember winner, OrderMember seller, Long auctionId, OrderState state) {

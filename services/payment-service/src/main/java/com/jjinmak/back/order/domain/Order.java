@@ -35,6 +35,7 @@ public class Order extends BaseIdAndTime {
     OrderMember seller;
 
     @NotNull
+    @Column(unique = true)
     Long auctionId;
 
     @NotNull

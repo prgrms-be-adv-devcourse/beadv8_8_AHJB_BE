@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,4 +17,7 @@ public interface OrderGroupRepository extends JpaRepository<OrderGroup, Long> {
 
     @Query("select og from OrderGroup og join fetch og.orders where og.winner = :winner and og.lifeTime > :now and exists (select o.id from Order o where o.group = og and o.state = OrderState.WAITING)")
     List<OrderGroup> findWaitingByWinnerAndLifeTime(OrderMember winner, LocalDateTime now);
+
+    @Query("select og from OrderGroup og where og.winner = :winner and exists (select o.id from Order o where o.group = og and o.state = OrderState.WAITING and o.productId in :productIds)")
+    List<OrderGroup> findWaitingByWinnerAndProductIdIn(OrderMember winner, Collection<Long> productIds);
 }

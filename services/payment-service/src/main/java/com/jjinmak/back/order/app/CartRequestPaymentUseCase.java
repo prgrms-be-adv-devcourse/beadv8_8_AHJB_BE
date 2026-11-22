@@ -2,7 +2,9 @@ package com.jjinmak.back.order.app;
 
 import com.jjinmak.back.global.eventPublisher.EventPublisher;
 import com.jjinmak.common.exception.BusinessException;
+import com.jjinmak.contracts.order.event.OrderGroupDeletedEvent;
 import com.jjinmak.contracts.order.event.OrderPaymentSucceedEvent;
+import com.jjinmak.contracts.payment.dto.PaymentCloseResultDto;
 import com.jjinmak.contracts.payment.dto.PaymentRequestDto;
 import com.jjinmak.contracts.payment.dto.PaymentResultDto;
 import com.jjinmak.contracts.payment.event.PaymentPaidEvent;
@@ -15,6 +17,7 @@ import com.jjinmak.back.order.out.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -34,6 +37,8 @@ public class CartRequestPaymentUseCase {
     private final OrderRepository orderRepository;
     private final OrderGroupRepository orderGroupRepository;
 
+    private static final Duration PAYMENT_REQUEST_GRACE = Duration.ofSeconds(10);
+
     /**
      * 낙찰자가 해당하는 상품을 보유하고 있는지 검사, 주문서를 생성한 후 결제 컨텍스트에 요청
      * @param winnerId   - 조회의 주체가 되는 낙찰자
@@ -44,7 +49,7 @@ public class CartRequestPaymentUseCase {
 
         Set<Long> productIdSet = new HashSet<>(productIds);
 
-        List<CartItem> cartItems = cartItemRepository.findAllByWinnerAndProductIdIn(winner, productIdSet);
+        List<CartItem> cartItems = cartItemRepository.findAllByWinnerAndProductIdInForUpdate(winner, productIdSet);
 
         if (productIdSet.size() != cartItems.size()){
             throw new BusinessException(CART_ITEM_FORBIDDEN);
@@ -81,6 +86,12 @@ public class CartRequestPaymentUseCase {
                 return new PaymentRequestDto(orderGroup.getId(), winnerId, totalPrice, items, payMethod, pointUseAmount);
             }
         }
+
+        for (OrderGroup group : orderGroupRepository.findWaitingByWinnerAndProductIdIn(winner, productIdSet)){
+            discardOverlappingGroup(group, winnerId, now);
+        }
+
+        orderGroupRepository.flush();
 
         orderGroupRepository.save(orderGroup);
 
@@ -149,5 +160,19 @@ public class CartRequestPaymentUseCase {
                     order.getWinner().getId(), order.getSeller().getId(), paidAt
             ));
         }
+    }
+
+    private void discardOverlappingGroup(OrderGroup group, Long winnerId, LocalDateTime now){
+        if (group.getUpdatedAt().isAfter(now.minus(PAYMENT_REQUEST_GRACE)))
+            throw new BusinessException(ORDER_STATE_BAD_REQUEST);
+
+        PaymentCloseResultDto result = paymentRequest.closePayment(group.getId(), winnerId);
+
+        if (!result.canDiscardOrderGroup())
+            throw new BusinessException(ORDER_STATE_BAD_REQUEST);
+
+        eventPublisher.publish(new OrderGroupDeletedEvent(group.getId(), group.getTotalPrice()));
+
+        orderGroupRepository.delete(group);
     }
 }

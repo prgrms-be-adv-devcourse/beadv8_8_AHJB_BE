@@ -2,7 +2,9 @@ package com.jjinmak.back.order.out.repository;
 
 import com.jjinmak.back.order.domain.CartItem;
 import com.jjinmak.back.order.domain.OrderMember;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
@@ -15,8 +17,9 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
     @Query("select ci from CartItem ci join fetch ci.seller where ci.winner = :winner and ci.paymentDueAt >= :now order by ci.winAt")
     List<CartItem> findUnexpiredByWinner(OrderMember winner, LocalDateTime now);
 
-    @Query("select ci from CartItem ci join fetch ci.seller where ci.winner = :winner and ci.productId in :productIds")
-    List<CartItem> findAllByWinnerAndProductIdIn(OrderMember winner, Collection<Long> productIds);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select ci from CartItem ci where ci.winner = :winner and ci.productId in :productIds order by ci.id")
+    List<CartItem> findAllByWinnerAndProductIdInForUpdate(OrderMember winner, Collection<Long> productIds);
 
     Optional<CartItem> findByAuctionId(Long auctionId);
 
