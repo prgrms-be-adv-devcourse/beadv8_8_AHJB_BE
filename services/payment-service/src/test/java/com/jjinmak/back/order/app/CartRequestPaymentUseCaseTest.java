@@ -1,7 +1,9 @@
 package com.jjinmak.back.order.app;
 
 import com.jjinmak.common.exception.BusinessException;
+import com.jjinmak.contracts.order.event.OrderGroupDeletedEvent;
 import com.jjinmak.contracts.order.event.OrderPaymentSucceedEvent;
+import com.jjinmak.contracts.payment.dto.PaymentCloseResultDto;
 import com.jjinmak.contracts.payment.dto.PaymentRequestDto;
 import com.jjinmak.contracts.payment.dto.PaymentResultDto;
 import com.jjinmak.contracts.payment.event.PaymentPaidEvent;
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -50,6 +53,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -99,7 +103,7 @@ class CartRequestPaymentUseCaseTest {
         CartItem item1 = cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now());
         CartItem item2 = cartItem(otherSeller, 11L, 21L, 50_000L, 4_000L, LocalDateTime.now());
         when(orderSupport.getMember(1L)).thenReturn(winner);
-        when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L, 21L)))
+        when(cartItemRepository.findAllByWinnerAndProductIdInForUpdate(winner, Set.of(20L, 21L)))
                 .thenReturn(List.of(item1, item2));
         when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(50L));
         when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(100L)).thenAnswer(savedWithId(101L));
@@ -144,7 +148,7 @@ class CartRequestPaymentUseCaseTest {
     @DisplayName("주문 생성 결과로 주문 그룹 id, 낙찰자 id, 총액, 저장된 주문 id·판매자 id·금액과 함께 요청받은 결제수단과 포인트 사용액을 담은 결제 요청 정보를 돌려준다")
     void createOrder_returnsPaymentRequestWithSavedOrderIds() {
         when(orderSupport.getMember(1L)).thenReturn(winner);
-        when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L, 21L)))
+        when(cartItemRepository.findAllByWinnerAndProductIdInForUpdate(winner, Set.of(20L, 21L)))
                 .thenReturn(List.of(
                         cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now()),
                         cartItem(otherSeller, 11L, 21L, 50_000L, 4_000L, LocalDateTime.now())));
@@ -162,7 +166,7 @@ class CartRequestPaymentUseCaseTest {
     @DisplayName("같은 상품 id를 중복으로 요청해도 한 번만 주문한다")
     void createOrder_duplicateProductIds() {
         when(orderSupport.getMember(1L)).thenReturn(winner);
-        when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L)))
+        when(cartItemRepository.findAllByWinnerAndProductIdInForUpdate(winner, Set.of(20L)))
                 .thenReturn(List.of(cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now())));
         when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(50L));
         when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(100L));
@@ -180,7 +184,7 @@ class CartRequestPaymentUseCaseTest {
     @DisplayName("요청한 상품 중 내 장바구니에 없는 것이 있으면 CART_ITEM_FORBIDDEN, 주문 그룹과 주문을 저장하지 않는다")
     void createOrder_itemNotInMyCart() {
         when(orderSupport.getMember(1L)).thenReturn(winner);
-        when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L, 99L)))
+        when(cartItemRepository.findAllByWinnerAndProductIdInForUpdate(winner, Set.of(20L, 99L)))
                 .thenReturn(List.of(cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now())));
 
         assertThatThrownBy(() -> cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 99L), "DEPOSIT", 0L))
@@ -196,7 +200,7 @@ class CartRequestPaymentUseCaseTest {
     void createOrder_expiredItemMixed() {
         LocalDateTime twoDaysAgo = LocalDateTime.now().minusDays(2);
         when(orderSupport.getMember(1L)).thenReturn(winner);
-        when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L, 21L)))
+        when(cartItemRepository.findAllByWinnerAndProductIdInForUpdate(winner, Set.of(20L, 21L)))
                 .thenReturn(List.of(
                         cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now()),
                         cartItem(otherSeller, 11L, 21L, 50_000L, 4_000L, twoDaysAgo)));
@@ -214,7 +218,7 @@ class CartRequestPaymentUseCaseTest {
     void createOrder_justBeforeDue() {
         LocalDateTime winAt = LocalDateTime.now().minusDays(1).plusMinutes(1);
         when(orderSupport.getMember(1L)).thenReturn(winner);
-        when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L)))
+        when(cartItemRepository.findAllByWinnerAndProductIdInForUpdate(winner, Set.of(20L)))
                 .thenReturn(List.of(cartItem(seller, 10L, 20L, 30_000L, 3_000L, winAt)));
         when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(50L));
         when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(100L));
@@ -242,7 +246,7 @@ class CartRequestPaymentUseCaseTest {
     @DisplayName("재사용할 주문 그룹은 낙찰자와 지금 시각으로, lifeTime이 남은 WAITING 그룹 중에서 찾는다")
     void createOrder_findsReusableGroupsWithWinnerAndNow() {
         when(orderSupport.getMember(1L)).thenReturn(winner);
-        when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L)))
+        when(cartItemRepository.findAllByWinnerAndProductIdInForUpdate(winner, Set.of(20L)))
                 .thenReturn(List.of(cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now())));
         when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(50L));
         when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(100L));
@@ -281,7 +285,7 @@ class CartRequestPaymentUseCaseTest {
         ReflectionTestUtils.setField(existing, "lifeTime", LocalDateTime.now().plusMinutes(1));
         order(existing, 100L, seller, 10L, 20L, 30_000L, 3_000L);
         when(orderSupport.getMember(1L)).thenReturn(winner);
-        when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L)))
+        when(cartItemRepository.findAllByWinnerAndProductIdInForUpdate(winner, Set.of(20L)))
                 .thenReturn(List.of(cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now())));
         when(orderGroupRepository.findWaitingByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(existing));
 
@@ -299,7 +303,7 @@ class CartRequestPaymentUseCaseTest {
         order(existing, 100L, seller, 10L, 20L, 30_000L, 3_000L);
         order(existing, 101L, otherSeller, 11L, 21L, 50_000L, 4_000L);
         when(orderSupport.getMember(1L)).thenReturn(winner);
-        when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L)))
+        when(cartItemRepository.findAllByWinnerAndProductIdInForUpdate(winner, Set.of(20L)))
                 .thenReturn(List.of(cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now())));
         when(orderGroupRepository.findWaitingByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(existing));
         when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(51L));
@@ -343,6 +347,116 @@ class CartRequestPaymentUseCaseTest {
 
         assertThat(request.orderGroupId()).isEqualTo(51L);
         verify(orderRepository, times(2)).save(any(Order.class));
+    }
+
+    @Test
+    @DisplayName("재사용할 그룹이 없으면 요청 상품이 하나라도 든 결제 대기 그룹을 낙찰자와 중복을 뺀 요청 상품으로 찾고, 없으면 결제를 닫지 않는다")
+    void createOrder_findsOverlappingGroupsWithWinnerAndProducts() {
+        stubCartWithTwoItems();
+        when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(51L));
+        when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(102L)).thenAnswer(savedWithId(103L));
+
+        cartRequestPaymentUseCase.createOrder(1L, List.of(21L, 20L, 20L), "DEPOSIT", 0L);
+
+        verify(orderGroupRepository).findWaitingByWinnerAndProductIdIn(winner, Set.of(20L, 21L));
+        verifyNoInteractions(paymentRequest);
+    }
+
+    @Test
+    @DisplayName("요청 상품이 든 결제 대기 그룹의 마지막 결제 요청이 10초보다 전이면, 그 그룹의 결제를 닫고 삭제 이벤트를 발행한 뒤 그룹을 지우고, 삭제를 DB에 반영(flush)한 다음 새 주문 그룹을 저장한다")
+    void createOrder_discardsOverlappingGroupBeforeSaving() {
+        OrderGroup overlapping = requestedSecondsAgo(group(50L, 33_000L), 11);
+        order(overlapping, 100L, seller, 10L, 20L, 30_000L, 3_000L);
+        stubCartWithTwoItems();
+        when(orderGroupRepository.findWaitingByWinnerAndProductIdIn(winner, Set.of(20L, 21L))).thenReturn(List.of(overlapping));
+        when(paymentRequest.closePayment(50L, 1L)).thenReturn(PaymentCloseResultDto.closed(50L, 7L));
+        when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(51L));
+        when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(102L)).thenAnswer(savedWithId(103L));
+
+        PaymentRequestDto request = cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 21L), "DEPOSIT", 0L);
+
+        assertThat(request.orderGroupId()).isEqualTo(51L);
+        InOrder inOrder = inOrder(paymentRequest, eventPublisher, orderGroupRepository);
+        inOrder.verify(paymentRequest).closePayment(50L, 1L);
+        inOrder.verify(eventPublisher).publish(new OrderGroupDeletedEvent(50L, 33_000L));
+        inOrder.verify(orderGroupRepository).delete(overlapping);
+        inOrder.verify(orderGroupRepository).flush();
+        inOrder.verify(orderGroupRepository).save(any(OrderGroup.class));
+    }
+
+    @Test
+    @DisplayName("요청 상품이 든 결제 대기 그룹이 여럿이면 모두 지운다. 결제 요청 전에 남은 그룹(결제 없음)도 10초가 지났으면 지운다")
+    void createOrder_discardsEveryOverlappingGroup() {
+        OrderGroup withoutPayment = requestedSecondsAgo(group(50L, 33_000L), 3_600);
+        order(withoutPayment, 100L, seller, 10L, 20L, 30_000L, 3_000L);
+        OrderGroup closed = requestedSecondsAgo(group(52L, 54_000L), 60);
+        order(closed, 101L, otherSeller, 11L, 21L, 50_000L, 4_000L);
+        stubCartWithTwoItems();
+        when(orderGroupRepository.findWaitingByWinnerAndProductIdIn(winner, Set.of(20L, 21L))).thenReturn(List.of(withoutPayment, closed));
+        when(paymentRequest.closePayment(50L, 1L)).thenReturn(PaymentCloseResultDto.notFound(50L));
+        when(paymentRequest.closePayment(52L, 1L)).thenReturn(PaymentCloseResultDto.closed(52L, 8L));
+        when(orderGroupRepository.save(any(OrderGroup.class))).thenAnswer(savedWithId(53L));
+        when(orderRepository.save(any(Order.class))).thenAnswer(savedWithId(102L)).thenAnswer(savedWithId(103L));
+
+        cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 21L), "DEPOSIT", 0L);
+
+        verify(orderGroupRepository).delete(withoutPayment);
+        verify(orderGroupRepository).delete(closed);
+        verify(eventPublisher).publish(new OrderGroupDeletedEvent(50L, 33_000L));
+        verify(eventPublisher).publish(new OrderGroupDeletedEvent(52L, 54_000L));
+    }
+
+    @Test
+    @DisplayName("요청 상품이 든 결제 대기 그룹의 마지막 결제 요청이 10초 안이면 결제가 아직 만들어지는 중일 수 있으므로 ORDER_STATE_BAD_REQUEST, 결제를 닫거나 그룹을 지우지 않고 새 주문 그룹도 저장하지 않는다")
+    void createOrder_recentlyRequestedOverlappingGroup_refused() {
+        OrderGroup overlapping = requestedSecondsAgo(group(50L, 33_000L), 9);
+        order(overlapping, 100L, seller, 10L, 20L, 30_000L, 3_000L);
+        stubCartWithTwoItems();
+        when(orderGroupRepository.findWaitingByWinnerAndProductIdIn(winner, Set.of(20L, 21L))).thenReturn(List.of(overlapping));
+
+        assertThatThrownBy(() -> cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 21L), "DEPOSIT", 0L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ORDER_STATE_BAD_REQUEST);
+
+        verifyNoInteractions(paymentRequest, eventPublisher, orderRepository);
+        verify(orderGroupRepository, never()).delete(any(OrderGroup.class));
+        verify(orderGroupRepository, never()).save(any(OrderGroup.class));
+    }
+
+    @Test
+    @DisplayName("요청 상품이 든 결제 대기 그룹의 결제가 이미 끝났으면 ORDER_STATE_BAD_REQUEST, 그 그룹을 지우거나 삭제 이벤트를 발행하지 않고 새 주문 그룹도 저장하지 않는다")
+    void createOrder_overlappingPaidGroup_refused() {
+        OrderGroup overlapping = requestedSecondsAgo(group(50L, 33_000L), 60);
+        order(overlapping, 100L, seller, 10L, 20L, 30_000L, 3_000L);
+        stubCartWithTwoItems();
+        when(orderGroupRepository.findWaitingByWinnerAndProductIdIn(winner, Set.of(20L, 21L))).thenReturn(List.of(overlapping));
+        when(paymentRequest.closePayment(50L, 1L)).thenReturn(PaymentCloseResultDto.alreadyPaid(50L, 7L));
+
+        assertThatThrownBy(() -> cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 21L), "DEPOSIT", 0L))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ORDER_STATE_BAD_REQUEST);
+
+        verifyNoInteractions(eventPublisher, orderRepository);
+        verify(orderGroupRepository, never()).delete(any(OrderGroup.class));
+        verify(orderGroupRepository, never()).save(any(OrderGroup.class));
+    }
+
+    @Test
+    @DisplayName("같은 조합의 그룹을 재사용하면 겹치는 그룹을 찾지 않고, 결제를 닫거나 flush 하지 않는다")
+    void createOrder_reuseSkipsOverlapCleanup() {
+        OrderGroup existing = group(50L, 87_000L);
+        order(existing, 100L, seller, 10L, 20L, 30_000L, 3_000L);
+        order(existing, 101L, otherSeller, 11L, 21L, 50_000L, 4_000L);
+        stubCartWithTwoItems();
+        when(orderGroupRepository.findWaitingByWinnerAndLifeTime(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(existing));
+
+        cartRequestPaymentUseCase.createOrder(1L, List.of(20L, 21L), "DEPOSIT", 0L);
+
+        verify(orderGroupRepository, never()).findWaitingByWinnerAndProductIdIn(any(), any());
+        verify(orderGroupRepository, never()).flush();
+        verifyNoInteractions(paymentRequest);
     }
 
     @Test
@@ -564,7 +678,7 @@ class CartRequestPaymentUseCaseTest {
 
     private void stubCartWithTwoItems() {
         when(orderSupport.getMember(1L)).thenReturn(winner);
-        when(cartItemRepository.findAllByWinnerAndProductIdIn(winner, Set.of(20L, 21L)))
+        when(cartItemRepository.findAllByWinnerAndProductIdInForUpdate(winner, Set.of(20L, 21L)))
                 .thenReturn(List.of(
                         cartItem(seller, 10L, 20L, 30_000L, 3_000L, LocalDateTime.now()),
                         cartItem(otherSeller, 11L, 21L, 50_000L, 4_000L, LocalDateTime.now())));
@@ -577,6 +691,11 @@ class CartRequestPaymentUseCaseTest {
     private OrderGroup group(Long id, Long totalPrice) {
         OrderGroup group = new OrderGroup(winner, totalPrice);
         ReflectionTestUtils.setField(group, "id", id);
+        return group;
+    }
+
+    private OrderGroup requestedSecondsAgo(OrderGroup group, long seconds) {
+        ReflectionTestUtils.setField(group, "updatedAt", LocalDateTime.now().minusSeconds(seconds));
         return group;
     }
 
