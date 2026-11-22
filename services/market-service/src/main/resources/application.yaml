@@ -42,7 +42,7 @@ spring:
   task:
     scheduling:
       pool:
-        size: 4
+        size: 5   # 경매 종료·열기·마감 임박·이미지 정리 + outbox 릴레이(#548, 브로커 중단 시 이 작업만 기다림)
 management:
   endpoints:
     web:

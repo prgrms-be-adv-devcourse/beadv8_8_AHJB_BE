@@ -19,6 +19,24 @@ spring:
       properties:
         "[max.block.ms]": 0   # 브로커 없이 send가 막히지 않게 바로 실패
 
+# 아웃박스 전송 스케줄러는 끈다 (KafkaTemplate이 mock, #548)
+market:
+  outbox:
+    relay:
+      enabled: false
+  # 경매 종료 타이머(100ms tick)는 끈다. 타이밍 휠은 TimingWheelTest·AuctionCloseTimerTest에서 단위로 검증 (#548 4차)
+  auction:
+    close:
+      timer:
+        enabled: false
+    # 상세 캐시는 끈다: 테스트가 DB를 직접 바꾼 뒤 상세를 읽어도 바로 보이게. 캐시는 AuctionDetailCache*Test에서 켜고 검증 (#557)
+    detail-cache:
+      enabled: false
+    # 실시간 구독의 시청자 수·하트비트 주기 작업은 끈다. AuctionStreamIntegrationTest가 직접 호출해 검증 (#557)
+    stream:
+      scheduler:
+        enabled: false
+
 product-image:
   storage: local
   bucket: ""

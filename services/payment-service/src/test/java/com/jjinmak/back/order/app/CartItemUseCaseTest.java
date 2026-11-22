@@ -25,6 +25,7 @@ import static com.jjinmak.common.exception.CommonErrorCode.USER_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -138,7 +139,7 @@ class CartItemUseCaseTest {
         CartItem second = cartItem(10L, LocalDateTime.of(2026, 10, 15, 10, 0));
 
         when(orderSupport.getMember(1L)).thenReturn(winner);
-        when(cartItemRepository.findAllByWinnerOrderByWinAt(winner)).thenReturn(List.of(first, second));
+        when(cartItemRepository.findUnexpiredByWinner(eq(winner), any(LocalDateTime.class))).thenReturn(List.of(first, second));
 
         List<CartItemDto> result = cartItemUseCase.readWinnerItems(1L);
 
@@ -155,11 +156,25 @@ class CartItemUseCaseTest {
     @DisplayName("장바구니가 비어 있으면 빈 목록을 돌려준다")
     void readWinnerItems_empty() {
         when(orderSupport.getMember(1L)).thenReturn(winner);
-        when(cartItemRepository.findAllByWinnerOrderByWinAt(winner)).thenReturn(List.of());
+        when(cartItemRepository.findUnexpiredByWinner(eq(winner), any(LocalDateTime.class))).thenReturn(List.of());
 
         List<CartItemDto> result = cartItemUseCase.readWinnerItems(1L);
 
         assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("장바구니를 조회할 때 지금 시각을 결제 기한의 기준 시각으로 넘긴다")
+    void readWinnerItems_passesCurrentTime() {
+        when(orderSupport.getMember(1L)).thenReturn(winner);
+
+        LocalDateTime before = LocalDateTime.now();
+        cartItemUseCase.readWinnerItems(1L);
+        LocalDateTime after = LocalDateTime.now();
+
+        ArgumentCaptor<LocalDateTime> now = ArgumentCaptor.forClass(LocalDateTime.class);
+        verify(cartItemRepository).findUnexpiredByWinner(eq(winner), now.capture());
+        assertThat(now.getValue()).isBetween(before, after);
     }
 
     @Test

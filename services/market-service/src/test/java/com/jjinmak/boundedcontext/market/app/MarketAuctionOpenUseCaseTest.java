@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -84,5 +85,35 @@ class MarketAuctionOpenUseCaseTest {
 
         then(auctionFacade).shouldHaveNoInteractions();
         then(productFacade).should(org.mockito.Mockito.never()).startAuction(any(), any());
+    }
+
+    private ProductAuctionOpenDto 영국식_열기(Long productId) {
+        return new ProductAuctionOpenDto(productId, 1, 100L, AuctionType.ENGLISH, 10_000L, 3_000L, "CONSOLE",
+                NOW, null, NOW.plusDays(1), null, null, null);
+    }
+
+    @Test
+    void 일괄_열기는_열_수_있는_상품의_경매를_한_번에_만들고_순서대로_경매_id를_기록한다() {
+        List<Long> ids = List.of(1L, 2L, 3L);
+        given(productFacade.prepareAuctionOpens(ids, NOW)).willReturn(List.of(영국식_열기(1L), 영국식_열기(3L)));
+        given(auctionFacade.createAuctions(any())).willReturn(
+                List.of(new AuctionCreateResultDto(11L), new AuctionCreateResultDto(13L)));
+
+        int opened = useCase.openAuctions(ids, NOW);
+
+        assertThat(opened).isEqualTo(2);
+        then(auctionFacade).should().createAuctions(org.mockito.ArgumentMatchers.argThat(dtos ->
+                dtos.stream().map(AuctionCreateDto::productId).toList().equals(List.of(1L, 3L))));
+        then(productFacade).should().startAuction(1L, 11L);
+        then(productFacade).should().startAuction(3L, 13L);
+    }
+
+    @Test
+    void 일괄_열기에서_열_수_있는_상품이_없으면_경매를_만들지_않는다() {
+        given(productFacade.prepareAuctionOpens(List.of(1L), NOW)).willReturn(List.of());
+
+        assertThat(useCase.openAuctions(List.of(1L), NOW)).isZero();
+
+        then(auctionFacade).shouldHaveNoInteractions();
     }
 }

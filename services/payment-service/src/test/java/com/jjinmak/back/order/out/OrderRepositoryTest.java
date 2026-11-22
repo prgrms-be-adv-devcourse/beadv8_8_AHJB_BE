@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -65,7 +64,7 @@ class OrderRepositoryTest {
     }
 
     @Test
-    @DisplayName("낙찰자 기준 목록: 내가 낙찰한 주문 중 요청한 상태만, 생성 시각 내림차순으로 나오고 전체 개수는 조건에 맞는 주문 수다")
+    @DisplayName("낙찰자 기준 목록: 내가 낙찰한 주문 중 요청한 상태만, 생성 시각 내림차순으로 요청한 페이지만큼 나온다")
     void findAllByWinnerAndStateIn() {
         save(a, b, 10L, PAID, at(9, 0));
         save(a, b, 11L, SHIPPING, at(11, 0));
@@ -76,15 +75,16 @@ class OrderRepositoryTest {
         em.flush();
         em.clear();
 
-        Page<Order> page = orderRepository.findAllByWinnerAndStateIn(a, Set.of(PAID, SHIPPING, CONFIRMED), PageRequest.of(0, 2));
+        List<Order> first = orderRepository.findAllByWinnerAndStateIn(a, Set.of(PAID, SHIPPING, CONFIRMED), PageRequest.of(0, 2));
+        List<Order> second = orderRepository.findAllByWinnerAndStateIn(a, Set.of(PAID, SHIPPING, CONFIRMED), PageRequest.of(1, 2));
 
-        assertThat(page.getContent()).extracting(Order::getAuctionId).containsExactly(11L, 12L);
-        assertThat(page.getTotalElements()).isEqualTo(3);
-        assertThat(page.getContent()).allSatisfy(order -> assertThat(Hibernate.isInitialized(order.getSeller())).isTrue());
+        assertThat(first).extracting(Order::getAuctionId).containsExactly(11L, 12L);
+        assertThat(second).extracting(Order::getAuctionId).containsExactly(10L);
+        assertThat(first).allSatisfy(order -> assertThat(Hibernate.isInitialized(order.getSeller())).isTrue());
     }
 
     @Test
-    @DisplayName("판매자 기준 목록: 내가 판매한 주문 중 요청한 상태만, 생성 시각 내림차순으로 나오고 전체 개수는 조건에 맞는 주문 수다")
+    @DisplayName("판매자 기준 목록: 내가 판매한 주문 중 요청한 상태만, 생성 시각 내림차순으로 요청한 페이지만큼 나온다")
     void findAllBySellerAndStateIn() {
         save(a, b, 10L, PAID, at(9, 0));
         save(c, b, 11L, SHIPPED, at(11, 0));
@@ -94,11 +94,12 @@ class OrderRepositoryTest {
         em.flush();
         em.clear();
 
-        Page<Order> page = orderRepository.findAllBySellerAndStateIn(b, Set.of(PAID, SHIPPED), PageRequest.of(0, 1));
+        List<Order> first = orderRepository.findAllBySellerAndStateIn(b, Set.of(PAID, SHIPPED), PageRequest.of(0, 1));
+        List<Order> second = orderRepository.findAllBySellerAndStateIn(b, Set.of(PAID, SHIPPED), PageRequest.of(1, 1));
 
-        assertThat(page.getContent()).extracting(Order::getAuctionId).containsExactly(11L);
-        assertThat(page.getTotalElements()).isEqualTo(2);
-        assertThat(page.getContent()).allSatisfy(order -> assertThat(Hibernate.isInitialized(order.getWinner())).isTrue());
+        assertThat(first).extracting(Order::getAuctionId).containsExactly(11L);
+        assertThat(second).extracting(Order::getAuctionId).containsExactly(10L);
+        assertThat(first).allSatisfy(order -> assertThat(Hibernate.isInitialized(order.getWinner())).isTrue());
     }
 
     @Test

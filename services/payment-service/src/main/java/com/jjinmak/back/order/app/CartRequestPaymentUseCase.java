@@ -63,11 +63,10 @@ public class CartRequestPaymentUseCase {
         OrderGroup orderGroup = new OrderGroup(winner, totalPrice);
         List<PaymentRequestDto.Item> items = new ArrayList<>();
 
-        for (OrderGroup group : orderGroupRepository.findAllByWinnerAndLifeTime(winner, LocalDateTime.now())){
-            if (group.getOrders().getFirst().getState() != OrderState.WAITING)
-                continue;
+        for (OrderGroup group : orderGroupRepository.findWaitingByWinnerAndLifeTime(winner, LocalDateTime.now())){
 
             List<Long> orderProductIds = group.getOrders().stream().map(Order::getProductId).toList();
+
             if (productIdSet.size() == orderProductIds.size() && productIdSet.containsAll(orderProductIds)){
                 orderGroup = group;
 

@@ -177,4 +177,19 @@ class AuctionCloseUseCaseTest {
         assertThat(auctionCloseUseCase.failNoBidAuctions(END_AT, 1000)).isZero();
         then(auctionEventPublisher).shouldHaveNoInteractions();
     }
+
+    @Test
+    void 일괄_낙찰된_경매마다_낙찰_이벤트를_발행한다() {
+        LocalDateTime now = END_AT.plusSeconds(1);
+        given(auctionBulkCloseRepository.winBidAuctions(org.mockito.ArgumentMatchers.eq(now), any(), org.mockito.ArgumentMatchers.eq(1000)))
+                .willReturn(java.util.List.of(
+                        new AuctionBulkCloseRepository.WonAuction(1L, 11L, 201L, SELLER_ID, 15_000L, 3_000L, now),
+                        new AuctionBulkCloseRepository.WonAuction(2L, 12L, 202L, SELLER_ID, 16_000L, null, now)));
+
+        int won = auctionCloseUseCase.winBidAuctions(now, 1000);
+
+        assertThat(won).isEqualTo(2);
+        then(auctionEventPublisher).should().publishWon(1L, 11L, 201L, SELLER_ID, 15_000L, 3_000L, now);
+        then(auctionEventPublisher).should().publishWon(2L, 12L, 202L, SELLER_ID, 16_000L, null, now);
+    }
 }

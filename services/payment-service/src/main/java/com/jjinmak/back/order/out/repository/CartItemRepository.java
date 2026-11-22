@@ -12,8 +12,8 @@ import java.util.Optional;
 
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 
-    @Query("select ci from CartItem ci join fetch ci.seller where ci.winner = :winner order by ci.winAt")
-    List<CartItem> findAllByWinnerOrderByWinAt(OrderMember winner);
+    @Query("select ci from CartItem ci join fetch ci.seller where ci.winner = :winner and ci.paymentDueAt >= :now order by ci.winAt")
+    List<CartItem> findUnexpiredByWinner(OrderMember winner, LocalDateTime now);
 
     @Query("select ci from CartItem ci join fetch ci.seller where ci.winner = :winner and ci.productId in :productIds")
     List<CartItem> findAllByWinnerAndProductIdIn(OrderMember winner, Collection<Long> productIds);

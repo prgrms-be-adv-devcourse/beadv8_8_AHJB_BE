@@ -71,6 +71,12 @@ public class ProductFacade {
         return productRequestAuctionUseCase.prepareAuctionOpen(productId, now);
     }
 
+    // 일괄 열기 (#548): market 경매 시작 흐름의 트랜잭션에 참여한다.
+    @Transactional
+    public List<ProductAuctionOpenDto> prepareAuctionOpens(List<Long> productIds, LocalDateTime now){
+        return productRequestAuctionUseCase.prepareAuctionOpens(productIds, now);
+    }
+
     @Transactional
     public void startAuction(Long productId, Long auctionId){
         productStartAuctionUseCase.startAuction(productId, auctionId);

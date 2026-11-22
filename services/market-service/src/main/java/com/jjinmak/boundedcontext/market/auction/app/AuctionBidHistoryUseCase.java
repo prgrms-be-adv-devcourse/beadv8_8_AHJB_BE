@@ -56,7 +56,8 @@ public class AuctionBidHistoryUseCase {
         // totalElements는 경매의 입찰 수(입찰할 때마다 같은 트랜잭션에서 +1, 동시성 테스트 불변식 "bidCount = 입찰 행 수")
         return new AuctionBidHistoryResponseDto(content, safePage, safeSize, english.getBidCount(), bids.hasNext());
     }
-    private String maskNickname(String nickname){
+    // 실시간 구독의 bid 이벤트도 같은 규칙으로 가린다 (#557)
+    static String maskNickname(String nickname){
         if(nickname==null){return"알 수 없음";}
         if(nickname.length()<=1){return "*";}
         return nickname.charAt(0)+"**";

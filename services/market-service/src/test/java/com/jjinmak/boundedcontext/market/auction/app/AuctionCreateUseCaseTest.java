@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -95,6 +96,26 @@ class AuctionCreateUseCaseTest {
         assertThat(captor.getValue()).isInstanceOf(DutchAuction.class);
         assertThat(captor.getValue().getStartAt()).isEqualTo(startAt);
         assertThat(captor.getValue().getEndAt()).isEqualTo(startAt.plusMinutes(26));
+        then(auctionEventPublisher).should().publishStarted(captor.getValue());
+    }
+
+    @Test
+    void 일괄_생성은_이미_있는_회차는_돌려주고_없는_것만_만든다() {
+        LocalDateTime now = LocalDateTime.now();
+        AuctionCreateDto first = AuctionCreateDto.english(1L, 1, 100L, 10_000L, 3_000L, now, "CONSOLE", null, now.plusDays(3));
+        AuctionCreateDto second = AuctionCreateDto.english(2L, 1, 100L, 10_000L, 3_000L, now, "CONSOLE", null, now.plusDays(3));
+        EnglishAuction existing = EnglishAuction.create(1L, 100L, 10_000L, null, 3_000L,
+                "CONSOLE", first.endAt(), first.startAt());
+        given(auctionRepository.findByProductIdIn(List.of(1L, 2L))).willReturn(List.of(existing));
+        given(auctionRepository.save(any(Auction.class))).willAnswer(inv -> inv.getArgument(0));
+
+        List<AuctionCreateResultDto> results = auctionCreateUseCase.createAuctions(List.of(first, second));
+
+        assertThat(results).hasSize(2);
+        assertThat(results.get(0).auctionId()).isEqualTo(existing.getId());
+        ArgumentCaptor<Auction> captor = ArgumentCaptor.forClass(Auction.class);
+        then(auctionRepository).should().save(captor.capture());
+        assertThat(captor.getValue().getProductId()).isEqualTo(2L);
         then(auctionEventPublisher).should().publishStarted(captor.getValue());
     }
 }

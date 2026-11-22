@@ -3,7 +3,6 @@ package com.jjinmak.back.order.out.repository;
 import com.jjinmak.back.order.domain.Order;
 import com.jjinmak.back.order.domain.OrderMember;
 import com.jjinmak.back.order.domain.OrderState;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -15,17 +14,11 @@ import java.util.Set;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
-    @Query(
-            value = "select o from Order o join fetch o.seller where o.winner = :winner and o.state in :states order by o.createdAt desc",
-            countQuery = "select count(o) from Order o where o.winner = :winner and o.state in :states"
-    )
-    Page<Order> findAllByWinnerAndStateIn(OrderMember winner, Set<OrderState> states, Pageable pageable);
+    @Query("select o from Order o join fetch o.seller where o.winner = :winner and o.state in :states order by o.createdAt desc")
+    List<Order> findAllByWinnerAndStateIn(OrderMember winner, Set<OrderState> states, Pageable pageable);
 
-    @Query(
-            value = "select o from Order o join fetch o.winner where o.seller = :seller and o.state in :states order by o.createdAt desc",
-            countQuery = "select count(o) from Order o where o.seller = :seller and o.state in :states"
-    )
-    Page<Order> findAllBySellerAndStateIn(OrderMember seller, Set<OrderState> states, Pageable pageable);
+    @Query("select o from Order o join fetch o.winner where o.seller = :seller and o.state in :states order by o.createdAt desc")
+    List<Order> findAllBySellerAndStateIn(OrderMember seller, Set<OrderState> states, Pageable pageable);
 
     @Query("select o from Order o join fetch o.winner join fetch o.seller where o.id = :orderId and o.state in :states")
     Optional<Order> findByIdAndStateInWithWinnerAndSeller(Long orderId, Set<OrderState> states);

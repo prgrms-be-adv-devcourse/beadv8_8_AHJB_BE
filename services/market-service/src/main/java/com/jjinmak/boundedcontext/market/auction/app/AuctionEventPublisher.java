@@ -26,6 +26,12 @@ public class AuctionEventPublisher {
                 auction.getWinAt()
         ));
     }
+    // 일괄 낙찰처럼 엔티티를 읽지 않고 처리한 경우 (#548)
+    public void publishWon(Long auctionId, Long productId, Long winnerId, Long sellerId,
+                           Long winningPrice, Long shippingFee, LocalDateTime winAt){
+        eventPublisher.publish(new AuctionWonEvent(auctionId, productId, winnerId, sellerId, winningPrice, shippingFee, winAt));
+    }
+
     public void publishFailed(Auction auction, LocalDateTime failedAt){
         publishFailed(auction.getId(), auction.getProductId(), auction.getSellerId(), auction.getFailureReason(), failedAt);
     }

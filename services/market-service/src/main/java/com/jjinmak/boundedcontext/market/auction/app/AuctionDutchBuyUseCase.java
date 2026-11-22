@@ -20,7 +20,7 @@ public class AuctionDutchBuyUseCase {
         DutchAuction auction = auctionReader.getDutch(auctionId);
         validateBuy(auction, memberId, expectedPrice, now);
         auction.buy(memberId, expectedPrice, now);
-        auctionEventPublisher.publishWon(auction);   // AFTER_COMMIT: 락 충돌로 롤백되면 발행 안 됨
+        auctionEventPublisher.publishWon(auction);   // 커밋 직전 outbox에 저장(#548): 락 충돌로 롤백되면 함께 사라짐
 
         return new DutchBuyResponseDto(auction.getId(), auction.getWinningPrice(), auction.getWinAt(), auction.getStatus());
     }

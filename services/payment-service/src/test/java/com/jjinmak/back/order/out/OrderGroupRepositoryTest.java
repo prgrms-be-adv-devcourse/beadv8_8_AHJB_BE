@@ -106,8 +106,8 @@ class OrderGroupRepositoryTest {
     }
 
     @Test
-    @DisplayName("재사용 후보 조회: 그 낙찰자의 그룹 중 lifeTime이 기준 시각보다 뒤인 그룹만 주문과 함께 한 번씩 나온다 (같은 시각, 이미 지난 그룹, 다른 낙찰자의 그룹은 제외)")
-    void findAllByWinnerAndLifeTime() {
+    @DisplayName("재사용 후보 조회: 그 낙찰자의 WAITING 그룹 중 lifeTime이 기준 시각보다 뒤인 그룹만 주문과 함께 한 번씩 나온다 (같은 시각, 이미 지난 그룹, 다른 낙찰자의 그룹은 제외)")
+    void findWaitingByWinnerAndLifeTime() {
         LocalDateTime base = LocalDateTime.of(2026, 10, 16, 12, 0);
         OrderGroup alive = groupWithLifeTime(a, base.plusMinutes(1));
         OrderGroup sameTime = groupWithLifeTime(a, base);
@@ -121,10 +121,29 @@ class OrderGroupRepositoryTest {
         em.flush();
         em.clear();
 
-        List<OrderGroup> found = orderGroupRepository.findAllByWinnerAndLifeTime(a, base);
+        List<OrderGroup> found = orderGroupRepository.findWaitingByWinnerAndLifeTime(a, base);
 
         assertThat(found).extracting(OrderGroup::getId).containsExactly(alive.getId());
         assertThat(Hibernate.isInitialized(found.getFirst().getOrders())).isTrue();
+        assertThat(found.getFirst().getOrders()).extracting(Order::getAuctionId).containsExactlyInAnyOrder(10L, 11L);
+    }
+
+    @Test
+    @DisplayName("재사용 후보 조회: lifeTime이 남았어도 주문이 결제된 그룹은 나오지 않고, 결제 대기 그룹은 주문을 모두 담아 나온다")
+    void findWaitingByWinnerAndLifeTime_excludesPaidGroup() {
+        LocalDateTime base = LocalDateTime.of(2026, 10, 16, 12, 0);
+        OrderGroup waiting = groupWithLifeTime(a, base.plusMinutes(1));
+        OrderGroup paid = groupWithLifeTime(a, base.plusMinutes(1));
+        save(waiting, a, 10L);
+        save(waiting, a, 11L);
+        save(paid, a, 12L).paid(base);
+        save(paid, a, 13L).paid(base);
+        em.flush();
+        em.clear();
+
+        List<OrderGroup> found = orderGroupRepository.findWaitingByWinnerAndLifeTime(a, base);
+
+        assertThat(found).extracting(OrderGroup::getId).containsExactly(waiting.getId());
         assertThat(found.getFirst().getOrders()).extracting(Order::getAuctionId).containsExactlyInAnyOrder(10L, 11L);
     }
 
