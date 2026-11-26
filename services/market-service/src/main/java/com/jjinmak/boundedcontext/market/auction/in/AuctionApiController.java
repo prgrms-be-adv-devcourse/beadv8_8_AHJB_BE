@@ -99,11 +99,13 @@ public class AuctionApiController {
             summary = "경매 실시간 구독 (SSE)",
             description = "경매 상세 화면의 실시간 갱신. 이벤트: auction(상세의 auction + serverTime, 연결 직후와 상태가 바뀔 때), "
                     + "bid(새 입찰 한 행), viewers(현재 시청자 수, 1초 단위), 20초마다 주석 하트비트. "
-                    + "끝난 경매는 마지막 상태를 보내고 연결을 닫는다. 연결이 많으면 503 → 상세 API 폴링으로 대체한다."
+                    + "끝난 경매는 마지막 상태를 보내고 연결을 닫는다. 연결이 많으면 503 → 상세 API 폴링으로 대체한다. "
+                    + "clientId = 탭 ID(UUID). 같은 탭이 다시 연결하면 이전 연결에 replaced를 보내고 닫는다 (시청자 수 = 탭 수)."
     )
     @GetMapping(value = "/{auctionId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public ResponseEntity<SseEmitter> stream(@PathVariable Long auctionId){
-        return auctionFacade.subscribe(auctionId)
+    public ResponseEntity<SseEmitter> stream(@PathVariable Long auctionId,
+                                             @RequestParam(required = false) String clientId){
+        return auctionFacade.subscribe(auctionId, clientId)
                 .map(emitter -> ResponseEntity.ok()
                         .header(HttpHeaders.CACHE_CONTROL, "no-cache")
                         .header("X-Accel-Buffering", "no")   // nginx 등 앞단 프록시가 이벤트를 모아 두지 않게
