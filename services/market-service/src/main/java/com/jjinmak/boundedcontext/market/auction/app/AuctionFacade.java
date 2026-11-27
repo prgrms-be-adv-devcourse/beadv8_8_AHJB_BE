@@ -73,7 +73,7 @@ public class AuctionFacade {
     public int winBidAuctions(LocalDateTime now,int batchSize){return auctionCloseUseCase.winBidAuctions(now,batchSize);}
 
     // 실시간 구독 (SSE, #557). 트랜잭션을 열지 않는다: 연결이 열려 있는 동안 DB 커넥션을 잡지 않게
-    public Optional<SseEmitter> subscribe(Long auctionId){return auctionStreamUseCase.subscribe(auctionId);}
+    public Optional<SseEmitter> subscribe(Long auctionId, String clientId){return auctionStreamUseCase.subscribe(auctionId, clientId);}
 
     public void pushStreamAuction(Long auctionId){auctionStreamUseCase.pushAuction(auctionId);}
 

@@ -77,7 +77,7 @@ class AuctionStreamIntegrationTest extends AuctionIntegrationTestSupport {
 
     private RecordingEmitter 구독자(Long auctionId) {
         RecordingEmitter emitter = new RecordingEmitter();
-        registry.add(auctionId, emitter);
+        registry.add(auctionId, "test-tab-" + registered.size(), emitter);
         registered.add(new Registered(auctionId, emitter));
         return emitter;
     }
@@ -123,18 +123,41 @@ class AuctionStreamIntegrationTest extends AuctionIntegrationTestSupport {
     void 구독하면_보관소에_등록되고_상한을_넘으면_거절한다() {
         Long id = 진행중_경매();
         for (int i = 0; i < 3; i++) {
-            Optional<SseEmitter> emitter = auctionFacade.subscribe(id);
+            Optional<SseEmitter> emitter = auctionFacade.subscribe(id, "tab-000" + i);
             assertThat(emitter).isPresent();
             registered.add(new Registered(id, emitter.get()));
         }
 
         assertThat(registry.viewerCount(id)).isEqualTo(3);
-        assertThat(auctionFacade.subscribe(id)).isEmpty();
+        assertThat(auctionFacade.subscribe(id, "tab-0009")).isEmpty();
+    }
+
+    @Test
+    void 같은_탭에서_다시_구독하면_이전_연결을_닫고_한_명으로_센다() {
+        Long id = 진행중_경매();
+        SseEmitter before = auctionFacade.subscribe(id, "tab-refresh").orElseThrow();
+        SseEmitter after = auctionFacade.subscribe(id, "tab-refresh").orElseThrow();
+        registered.add(new Registered(id, after));
+
+        assertThat(registry.viewerCount(id)).isEqualTo(1);
+        assertThat(registry.emitters(id)).containsExactly(after);
+        // 닫힌 연결에는 더 보낼 수 없다
+        assertThatThrownBy(() -> before.send("ping")).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void 탭_ID가_없거나_형식이_다르면_서로_다른_연결로_센다() {
+        Long id = 진행중_경매();
+        for (String clientId : new String[]{null, "", "bad id!"}) {
+            registered.add(new Registered(id, auctionFacade.subscribe(id, clientId).orElseThrow()));
+        }
+
+        assertThat(registry.viewerCount(id)).isEqualTo(3);
     }
 
     @Test
     void 없는_경매는_구독할_수_없다() {
-        assertThatThrownBy(() -> auctionFacade.subscribe(-1L)).isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> auctionFacade.subscribe(-1L, "tab-0001")).isInstanceOf(BusinessException.class);
         assertThat(registry.viewerCount(-1L)).isZero();
     }
 
